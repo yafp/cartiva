@@ -7,7 +7,7 @@
 const APP = {
   NAME: "cartiva",
   DESCRIPTION: "a small, self-contained creative cartography web-app",
-  VERSION: "2026.09.11.151600", // yyyy.mm.dd.HHMMSS
+  VERSION: "2026.09.12.223328", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
@@ -86,7 +86,7 @@ function getStoredLocation() {
       pitch: Number.isFinite(value.pitch) ? value.pitch : 0
     };
   } catch (error) {
-    console.warn('The saved cartiva location could not be read.', error);
+    globalThis.CartivaDiagnostics?.report('location.restore', error);
     return null;
   }
 }
@@ -109,7 +109,7 @@ function saveLastLocation() {
       pitch: map.getPitch()
     }));
   } catch (error) {
-    console.warn('The current cartiva location could not be saved.', error);
+    CartivaDiagnostics.report('location.save', error);
   }
 }
 
@@ -140,7 +140,7 @@ if (shareBtn && sharingSupported) {
     } catch (error) {
       // AbortError means the user intentionally closed the native share dialog.
       if (error.name !== 'AbortError') {
-        console.warn('Sharing cartiva failed.', error);
+        CartivaDiagnostics.report('sharing', error);
       }
     }
   });
@@ -149,14 +149,22 @@ if (shareBtn && sharingSupported) {
 // -----------------------------------------------------------------------------
 // DEFAULT CONFIGURATION
 // Frozen object with default values for presets, labels, export, filters,
-// terrain, STL options, and layer ordering.
+// terrain, STL options, and the canonical layer order.
 // -----------------------------------------------------------------------------
+const FIXED_LAYER_ORDER = CartivaLayerRegistry.order;
 const DEFAULTS = Object.freeze({
       preset: 'alpine',
       labelStyle: 'corner-bottom-right',
       labelOpacity: '100',
       textFilter: 'none',
       format: 'a4-portrait',
+      customWidthMm: 210,
+      customHeightMm: 297,
+      bleedMm: 0,
+      safeMm: 5,
+      guidesEnabled: false,
+      exportQuality: '1.5',
+      printLineWeight: 'standard',
       exportType: 'image/png',
       exportDpi: 300,
       filterPreset: 'none',
@@ -172,7 +180,7 @@ const DEFAULTS = Object.freeze({
       stlRoadsEnabled: true,
       scaleEnabled: false,
       northEnabled: false,
-      layerOrder: ['land', 'water', 'forest', 'landCover', 'terrain', 'road', 'boundary', 'building']
+      layerOrder: FIXED_LAYER_ORDER
     });
 
 // -----------------------------------------------------------------------------
@@ -182,6 +190,7 @@ const DEFAULTS = Object.freeze({
 // -----------------------------------------------------------------------------
     const state = {
       ...DEFAULTS,
+      layerOrder: [...FIXED_LAYER_ORDER],
       center: [...START_LOCATION.center],
       zoom: START_LOCATION.zoom,
       bearing: START_LOCATION.bearing || 0,
@@ -191,15 +200,39 @@ const DEFAULTS = Object.freeze({
       country: START_LOCATION.country,
       layers: {}
     };
-    const stateStore = CartivaState.createStore(state);
+    const runtimeState = CartivaRuntime;
+    runtimeState.history.snapshot = JSON.stringify(state);
+
+    function updateHistoryButtons() {
+      const history = runtimeState.history;
+      $('undoBtn')?.toggleAttribute('disabled', history.past.length === 0);
+      $('redoBtn')?.toggleAttribute('disabled', history.future.length === 0);
+      if ($('historyStatus')) $('historyStatus').textContent = `${history.past.length} change${history.past.length === 1 ? '' : 's'}`;
+    }
+
+    function commitHistory() {
+      const history = runtimeState.history;
+      if (history.applying) return;
+      const next = JSON.stringify(state);
+      if (next === history.snapshot) return;
+      history.past.push(JSON.parse(history.snapshot));
+      if (history.past.length > 50) history.past.shift();
+      history.future.length = 0;
+      history.snapshot = next;
+      updateHistoryButtons();
+    }
 
 // -----------------------------------------------------------------------------
 // DOM CONTROL CACHE
-// Build a frozen map from element id → element for fast lookup.
+// Build a frozen map from element ID to element for fast lookup.
 // -----------------------------------------------------------------------------
     const controls = Object.freeze(Object.fromEntries(
       Array.from(document.querySelectorAll('[id]'), element => [element.id, element])
     ));
+    document.querySelectorAll('svg').forEach(icon => {
+      icon.setAttribute('aria-hidden', 'true');
+      icon.setAttribute('focusable', 'false');
+    });
 
 // -----------------------------------------------------------------------------
 // HELPER: SHORT $() FOR GETTING CONTROLS BY ID
@@ -226,6 +259,8 @@ const DEFAULTS = Object.freeze({
       'square-medium': { width: 3508, height: 3508 },
       'square-small': { width: 2480, height: 2480 }
     };
+
+    const mmToPixels = (mm, dpi) => Math.round(Number(mm) * dpi / 25.4);
 
 
 // -----------------------------------------------------------------------------
@@ -258,8 +293,15 @@ const DEFAULTS = Object.freeze({
 // -----------------------------------------------------------------------------
     function syncStateFromControls() {
       state.format = readControl('formatSelect');
+      state.customWidthMm = Number(readControl('customWidthMm')) || 210;
+      state.customHeightMm = Number(readControl('customHeightMm')) || 297;
+      state.bleedMm = Number(readControl('bleedMm')) || 0;
+      state.safeMm = Number(readControl('safeMm')) || 5;
+      state.guidesEnabled = readControl('guidesToggle');
       state.exportType = readControl('exportType');
       state.exportDpi = Number(readControl('exportDpi'));
+      state.exportQuality = readControl('exportQuality');
+      state.printLineWeight = readControl('printLineWeight');
       state.preset = readControl('colorPresetSelect');
       state.labelStyle = readControl('labelStyle');
       state.labelOpacity = Number(readControl('labelOpacity'));
@@ -287,16 +329,7 @@ const DEFAULTS = Object.freeze({
       state.borderWidth = Number(readControl('borderWidth'));
       state.outerBorderRadius = Number(readControl('outerBorderRadius'));
       state.innerBorderRadius = Number(readControl('innerBorderRadius'));
-      [
-        'waterColor', 'waterOpacity', 'waterToggle',
-        'forestColor', 'forestColorAccent', 'forestOpacity', 'forestToggle',
-        'landColor', 'landOpacity', 'landToggle',
-        'landCoverColor', 'landCoverColorAccent', 'landCoverOpacity', 'landCoverToggle',
-        'roadColor', 'roadOpacity', 'roadToggle',
-        'boundaryColor', 'boundaryOpacity', 'boundaryToggle',
-        'buildingColor', 'buildingOpacity', 'buildingToggle',
-        'buildingOutlineToggle', 'buildingOutlineColor'
-      ].forEach(id => {
+      CartivaLayerRegistry.controlIds.forEach(id => {
         state.layers[id] = readControl(id);
       });
       state.city = $('cityName').textContent;
@@ -318,7 +351,7 @@ const DEFAULTS = Object.freeze({
 // Applies a partial update to `state` and optionally re-renders preview.
 // -----------------------------------------------------------------------------
     function setState(patch, { render = true } = {}) {
-      stateStore.patch(patch, { notify: false });
+      Object.assign(state, patch);
       if (render) renderPreview();
     }
 
@@ -329,6 +362,12 @@ const DEFAULTS = Object.freeze({
 // Update on-screen dimension readout.
 // -----------------------------------------------------------------------------
     function getTargetDimensions(format = readControl('formatSelect'), dpi = Number(readControl('exportDpi'))) {
+      if (format === 'custom') {
+        return {
+          width: mmToPixels(readControl('customWidthMm'), dpi),
+          height: mmToPixels(readControl('customHeightMm'), dpi)
+        };
+      }
       const baseDims = dimsMap[format];
       if (!baseDims) throw new Error('Unsupported output format.');
       const scale = dpi / 300;
@@ -382,46 +421,51 @@ const DEFAULTS = Object.freeze({
 // - Map annotations (scale/north), text filters, dimensions, contrast warning
 // -----------------------------------------------------------------------------
     function renderPreview() {
-      if (!mapReady) return;
-      contrastNum.textContent = state.contrast;
-      brightnessNum.textContent = state.brightness;
-      saturationNum.textContent = state.saturation;
-      mapEl.style.filter = `${filterPresets[state.filterPreset] || ''} contrast(${state.contrast}%) brightness(${state.brightness}%) saturate(${state.saturation}%)`.trim();
-      opacityNum.textContent = state.labelOpacity;
-      mapLabelOverlay.style.display = state.labelStyle === 'none' ? 'none' : 'block';
-      if (state.labelStyle !== 'none') {
-        mapLabelOverlay.className = `map-label-overlay ${state.labelStyle}`;
-        mapLabelOverlay.style.fontFamily = state.labelFont;
-        const hex = state.labelBgColor;
-        const alpha = state.labelOpacity / 100;
+      if (!runtimeState.mapReady) return;
+      const renderSpec = CartivaRenderSpec.create(state);
+      contrastNum.textContent = renderSpec.contrast;
+      brightnessNum.textContent = renderSpec.brightness;
+      saturationNum.textContent = renderSpec.saturation;
+      mapEl.style.filter = `${filterPresets[renderSpec.filterPreset] || ''} contrast(${renderSpec.contrast}%) brightness(${renderSpec.brightness}%) saturate(${renderSpec.saturation}%)`.trim();
+      opacityNum.textContent = renderSpec.labelOpacity;
+      mapLabelOverlay.style.display = renderSpec.labelStyle === 'none' ? 'none' : 'block';
+      if (renderSpec.labelStyle !== 'none') {
+        mapLabelOverlay.className = `map-label-overlay ${renderSpec.labelStyle}`;
+        mapLabelOverlay.style.fontFamily = renderSpec.labelFont;
+        const hex = renderSpec.labelBgColor;
+        const alpha = renderSpec.labelOpacity / 100;
         const rgb = [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16));
-        mapLabelOverlay.style.backgroundColor = state.labelStyle === 'special-minimal'
+        mapLabelOverlay.style.backgroundColor = renderSpec.labelStyle === 'special-minimal'
           ? 'transparent'
           : `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
-        cityNameEl.style.color = state.labelTextColor;
-        cityCoordsEl.style.color = state.labelCoordColor;
-        cityCountryEl.style.color = state.labelCountryColor;
+        cityNameEl.style.color = renderSpec.labelTextColor;
+        cityCoordsEl.style.color = renderSpec.labelCoordColor;
+        cityCountryEl.style.color = renderSpec.labelCountryColor;
         [cityNameEl, cityCoordsEl, cityCountryEl].forEach(element => {
-          element.style.fontFamily = state.labelFont;
+          element.style.fontFamily = renderSpec.labelFont;
         });
       }
-      borderWidthVal.textContent = state.borderWidth;
-      $('outerBorderRadiusVal').textContent = state.outerBorderRadius;
-      $('innerBorderRadiusVal').textContent = state.innerBorderRadius;
+      borderWidthVal.textContent = renderSpec.borderWidth;
+      $('outerBorderRadiusVal').textContent = renderSpec.outerBorderRadius;
+      $('innerBorderRadiusVal').textContent = renderSpec.innerBorderRadius;
       borderUiItems.forEach(item => {
-        item.style.display = state.borderEnabled ? 'flex' : 'none';
+        item.style.display = renderSpec.borderEnabled ? 'flex' : 'none';
       });
-      mapFrame.style.border = state.borderEnabled
-        ? `${state.borderWidth}px solid ${state.borderColor}`
+      mapFrame.style.border = renderSpec.borderEnabled
+        ? `${renderSpec.borderWidth}px solid ${renderSpec.borderColor}`
         : 'none';
-      mapFrame.style.backgroundColor = state.borderEnabled ? state.borderColor : '#ffffff';
-      mapFrame.style.borderRadius = `${state.outerBorderRadius}px`;
-      mapEl.style.borderRadius = `${state.innerBorderRadius}px`;
-      mapFrame.className = `map-frame ratio-${state.format}`;
-      renderShapeMask();
+      mapFrame.style.backgroundColor = renderSpec.borderEnabled ? renderSpec.borderColor : '#ffffff';
+      mapFrame.style.borderRadius = `${renderSpec.outerBorderRadius}px`;
+      mapEl.style.borderRadius = `${renderSpec.innerBorderRadius}px`;
+      mapFrame.className = `map-frame ratio-${renderSpec.format}`;
+      if (renderSpec.format === 'custom') mapFrame.style.aspectRatio = `${renderSpec.customWidthMm} / ${renderSpec.customHeightMm}`;
+      else mapFrame.style.removeProperty('aspect-ratio');
+      document.body.classList.toggle('guides-visible', renderSpec.guidesEnabled);
+      const safeGuide = mapFrame.querySelector('.safe-guide');
+      if (safeGuide) safeGuide.style.inset = `${Math.max(0, renderSpec.safeMm)}mm`;
+      renderShapeMask(renderSpec);
       renderMapAnnotations();
-      // Reapply the shared map policy so preview styling follows export styling.
-      applyMapState(map, state);
+      applyMapState(map, renderSpec);
       updateOutputDimensions();
       updateContrastWarning();
     }
@@ -433,6 +477,7 @@ const DEFAULTS = Object.freeze({
 // -----------------------------------------------------------------------------
     function updateStateFromControls() {
       syncStateFromControls();
+      commitHistory();
       renderPreview();
     }
 
@@ -440,7 +485,7 @@ const DEFAULTS = Object.freeze({
 // -----------------------------------------------------------------------------
 // SHAPE MASKS
 // getShapePath: create scaled Path2D for a shape.
-// getShapeSvgPath: SVG path strings for various shapes (100×¹00 viewBox).
+// getShapeSvgPath: SVG path strings for various shapes (100 x 100 viewBox).
 // renderShapeMask: show/hide and configure the SVG shape mask overlay.
 // -----------------------------------------------------------------------------
     function getShapePath(shape, width, height) {
@@ -465,22 +510,48 @@ const DEFAULTS = Object.freeze({
       return '';
     }
 
-    function renderShapeMask() {
+    function renderShapeMask(renderSpec = CartivaRenderSpec.create(state)) {
       const mask = $('shapeMask');
-      if (state.shape === 'none') {
+      if (renderSpec.shape === 'none') {
         mask.style.display = 'none';
         return;
       }
       mask.style.display = 'block';
-      $('shapeCutoutPath').setAttribute('d', getShapeSvgPath(state.shape));
-      $('shapeMaskColor').setAttribute('fill', state.shapeColor);
+      $('shapeCutoutPath').setAttribute('d', getShapeSvgPath(renderSpec.shape));
+      $('shapeMaskColor').setAttribute('fill', renderSpec.shapeColor);
     }
 
-    document.getElementById('settingsForm').addEventListener('input', updateStateFromControls);
-    document.getElementById('settingsForm').addEventListener('change', updateStateFromControls);
-    let mapReady = false;
+    const settingsForm = document.getElementById('settingsForm');
+    const delegatedControlExclusions = new Set(['searchInput', 'geoJsonInput', 'projectFileInput', 'colorPresetSelect']);
+    function handleSettingsChange(event) {
+      const control = event.target;
+      if (!(control instanceof HTMLInputElement || control instanceof HTMLSelectElement)) return;
+      if (delegatedControlExclusions.has(control.id)) return;
+      const continuous = control.matches('input[type="range"], input[type="color"], input[type="number"]');
+      if ((continuous && event.type !== 'input') || (!continuous && event.type !== 'change')) return;
 
+      if (control.closest('.layer-control-card')) state.preset = null;
+      updateStateFromControls();
 
+      const layerDefinition = CartivaLayerRegistry.definitions.find(definition =>
+        [definition.colorId, definition.accentColorId, definition.opacityId, definition.toggleId,
+          definition.outlineToggleId, definition.outlineColorId].includes(control.id)
+      );
+      if (layerDefinition?.valueId) $(layerDefinition.valueId).textContent = state.layers[layerDefinition.opacityId];
+
+      if (control.id === 'formatSelect') {
+        $('customSizeControls').hidden = state.format !== 'custom';
+        clearTimeout(runtimeState.timers.mapResize);
+        runtimeState.timers.mapResize = setTimeout(() => map.resize(), 300);
+      }
+      if (['terrainToggle', 'mountainColor', 'terrainExaggeration'].includes(control.id)) {
+        $('terrainExaggerationVal').textContent = state.terrainExaggeration;
+        configureTerrain(map, state);
+        updateTerrainColorization(map, state).catch(error => CartivaDiagnostics.report('terrain.color', error));
+      }
+    }
+    settingsForm.addEventListener('input', handleSettingsChange);
+    settingsForm.addEventListener('change', handleSettingsChange);
 // -----------------------------------------------------------------------------
 // INITIALIZATION
 // Reset form, apply default values to controls, and sync state.
@@ -519,10 +590,8 @@ const DEFAULTS = Object.freeze({
       writeControl('stlRoadsToggle', DEFAULTS.stlRoadsEnabled);
       writeControl('scaleToggle', DEFAULTS.scaleEnabled);
       writeControl('northToggle', DEFAULTS.northEnabled);
-      updateBorderElementsVisibility();
-      updateLabelStyle();
-      updateBorderStyle();
-      if (mapReady) {
+      renderPreview();
+      if (runtimeState.mapReady) {
         applyTextFilters();
         applyColorPreset(DEFAULTS.preset);
       }
@@ -593,8 +662,6 @@ const DEFAULTS = Object.freeze({
 // -----------------------------------------------------------------------------
     // Live Effects Engine
     const mapEl = document.getElementById('map');
-    const filterPreset = document.getElementById('filterPreset');
-    const contrastVal = document.getElementById('contrastVal');
     const contrastNum = document.getElementById('contrastNum');
     const brightnessNum = document.getElementById('brightnessNum');
     const saturationNum = document.getElementById('saturationNum');
@@ -607,21 +674,6 @@ const DEFAULTS = Object.freeze({
       'invert': 'invert(100%) hue-rotate(180deg)'
     };
 
-    function applyLiveFilters() {
-      setState({
-        filterPreset: readControl('filterPreset'),
-        contrast: Number(readControl('contrastVal')),
-        brightness: Number(readControl('brightnessVal')),
-        saturation: Number(readControl('saturationVal'))
-      });
-    }
-
-    filterPreset.addEventListener('change', applyLiveFilters);
-    contrastVal.addEventListener('input', applyLiveFilters);
-    $('brightnessVal').addEventListener('input', applyLiveFilters);
-    $('saturationVal').addEventListener('input', applyLiveFilters);
-
-
 // -----------------------------------------------------------------------------
 
 // LABEL OVERLAY & FONT STYLING
@@ -630,14 +682,7 @@ const DEFAULTS = Object.freeze({
 // -----------------------------------------------------------------------------
     // Text Label Overlay & Font Styling (with 3 separate color fields)
     const mapLabelOverlay = document.getElementById('mapLabelOverlay');
-    const labelStyle = document.getElementById('labelStyle');
-    const labelTextColor = document.getElementById('labelTextColor');
-    const labelCoordColor = document.getElementById('labelCoordColor');
-    const labelCountryColor = document.getElementById('labelCountryColor');
-    const labelBgColor = document.getElementById('labelBgColor');
-    const labelOpacity = document.getElementById('labelOpacity');
     const opacityNum = document.getElementById('opacityNum');
-    const labelFontSelect = document.getElementById('labelFontSelect');
 
     // Capture the preview's label geometry once so canvas export and DOM preview
     // use the same offsets, baselines, font sizes, and colors.
@@ -667,157 +712,14 @@ const DEFAULTS = Object.freeze({
       };
     }
 
-    function updateLabelStyle() {
-      syncStateFromControls();
-      renderPreview();
-    }
-
-    labelStyle.addEventListener('change', updateLabelStyle);
-    labelTextColor.addEventListener('input', updateLabelStyle);
-    labelCoordColor.addEventListener('input', updateLabelStyle);
-    labelCountryColor.addEventListener('input', updateLabelStyle);
-    labelBgColor.addEventListener('input', updateLabelStyle);
-    labelOpacity.addEventListener('input', updateLabelStyle);
-    labelFontSelect.addEventListener('change', updateLabelStyle);
-
-
 // -----------------------------------------------------------------------------
 // BORDER & ASPECT RATIO
 // Toggle border, choose color/width, and adjust inner/outer radii.
 // Format select changes aspect ratio and resizes map.
 // -----------------------------------------------------------------------------
     // Border & Aspect Ratio Controls
-    const borderCheckbox = document.getElementById('borderCheckbox');
-    const borderColor = document.getElementById('borderColor');
-    const borderWidth = document.getElementById('borderWidth');
     const borderWidthVal = document.getElementById('borderWidthVal');
     const borderUiItems = document.querySelectorAll('.border-ui-item');
-
-    function updateBorderElementsVisibility() {
-      renderPreview();
-    }
-
-    function updateBorderStyle() {
-      syncStateFromControls();
-      renderPreview();
-    }
-
-    borderCheckbox.addEventListener('change', updateBorderStyle);
-    borderColor.addEventListener('input', updateBorderStyle);
-    borderWidth.addEventListener('input', updateBorderStyle);
-    $('outerBorderRadius').addEventListener('input', updateBorderStyle);
-    $('innerBorderRadius').addEventListener('input', updateBorderStyle);
-
-    const formatSelect = document.getElementById('formatSelect');
-    formatSelect.addEventListener('change', () => {
-      setState({ format: readControl('formatSelect') });
-      setTimeout(() => map.resize(), 300);
-    });
-    $('exportDpi').addEventListener('change', updateOutputDimensions);
-    function getFileTimestamp() {
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const dd = String(now.getDate()).padStart(2, '0');
-      const hh = String(now.getHours()).padStart(2, '0');
-      const min = String(now.getMinutes()).padStart(2, '0');
-      const ss = String(now.getSeconds()).padStart(2, '0');
-      return `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
-    }
-
-// -----------------------------------------------------------------------------
-// PROJECTS & USER PRESETS
-// Versioned project JSON keeps a design reproducible and makes manual presets
-// independent from the built-in palette catalog.
-// -----------------------------------------------------------------------------
-    function applyProjectState(projectState) {
-      const simpleKeys = [
-        'format', 'exportType', 'exportDpi', 'labelStyle', 'labelOpacity', 'labelFont',
-        'labelTextColor', 'labelCoordColor', 'labelCountryColor', 'labelBgColor', 'textFilter',
-        'filterPreset', 'contrast', 'brightness', 'saturation', 'shape', 'shapeColor',
-        'terrainEnabled', 'mountainColor', 'terrainExaggeration', 'stlBuildingsEnabled',
-        'stlRoadsEnabled', 'scaleEnabled', 'northEnabled', 'borderEnabled', 'borderColor',
-        'borderWidth', 'outerBorderRadius', 'innerBorderRadius'
-      ];
-      const controlMap = {
-        format: 'formatSelect', exportType: 'exportType', exportDpi: 'exportDpi', labelStyle: 'labelStyle',
-        labelOpacity: 'labelOpacity', labelFont: 'labelFontSelect', labelTextColor: 'labelTextColor',
-        labelCoordColor: 'labelCoordColor', labelCountryColor: 'labelCountryColor', labelBgColor: 'labelBgColor',
-        textFilter: 'textFilter', filterPreset: 'filterPreset', contrast: 'contrastVal', brightness: 'brightnessVal',
-        saturation: 'saturationVal', shape: 'shapeSelect', shapeColor: 'shapeColor', terrainEnabled: 'terrainToggle',
-        mountainColor: 'mountainColor', terrainExaggeration: 'terrainExaggeration', stlBuildingsEnabled: 'stlBuildingsToggle',
-        stlRoadsEnabled: 'stlRoadsToggle', scaleEnabled: 'scaleToggle', northEnabled: 'northToggle',
-        borderEnabled: 'borderCheckbox', borderColor: 'borderColor', borderWidth: 'borderWidth',
-        outerBorderRadius: 'outerBorderRadius', innerBorderRadius: 'innerBorderRadius'
-      };
-      simpleKeys.forEach(key => {
-        if (Object.prototype.hasOwnProperty.call(projectState, key) && controlMap[key]) writeControl(controlMap[key], projectState[key]);
-      });
-      Object.entries(projectState.layers || {}).forEach(([key, value]) => {
-        if ($(key)) writeControl(key, value);
-      });
-      if (Array.isArray(projectState.layerOrder)) state.layerOrder = [...projectState.layerOrder];
-      if (Object.prototype.hasOwnProperty.call(projectState, 'preset')) state.preset = projectState.preset;
-      if (projectState.city) $('cityName').textContent = projectState.city;
-      if (projectState.coordinates) $('cityCoords').textContent = projectState.coordinates;
-      if (projectState.country) $('cityCountry').textContent = projectState.country;
-      if (Array.isArray(projectState.center) && Number.isFinite(projectState.zoom)) {
-        map.jumpTo({ center: projectState.center, zoom: projectState.zoom, bearing: projectState.bearing || 0, pitch: projectState.pitch || 0 });
-      }
-      syncStateFromControls();
-      triggerAllLayerUpdates();
-      renderPreview();
-    }
-
-    function currentProject() {
-      syncStateFromControls();
-      return CartivaProject.create(state);
-    }
-
-    const saveProjectBtn = $('saveProjectBtn');
-    const downloadProjectBtn = $('downloadProjectBtn');
-    const loadProjectBtn = $('loadProjectBtn');
-    const savePresetBtn = $('savePresetBtn');
-    const loadPresetBtn = $('loadPresetBtn');
-    const projectFileInput = $('projectFileInput');
-    saveProjectBtn?.addEventListener('click', () => {
-      CartivaProject.save(currentProject());
-      setStatus('Project saved in this browser.');
-    });
-    downloadProjectBtn?.addEventListener('click', () => {
-      CartivaProject.download(currentProject(), `cartiva_${getFileTimestamp()}.json`);
-      setStatus('Project JSON downloaded.');
-    });
-    loadProjectBtn?.addEventListener('click', () => projectFileInput?.click());
-    projectFileInput?.addEventListener('change', async () => {
-      const file = projectFileInput.files?.[0];
-      if (!file) return;
-      try {
-        const project = await CartivaProject.readFile(file);
-        applyProjectState(project.state);
-        setStatus('Project loaded.');
-      } catch (error) {
-        CartivaDiagnostics.report('project.load', error);
-        setStatus(`Project load failed: ${error.message}`, true);
-      } finally {
-        projectFileInput.value = '';
-      }
-    });
-    savePresetBtn?.addEventListener('click', () => {
-      const name = window.prompt('Preset name');
-      if (!name?.trim()) return;
-      CartivaProject.savePreset(name.trim(), currentProject().state);
-      setStatus(`Preset saved: ${name.trim()}`);
-    });
-    loadPresetBtn?.addEventListener('click', () => {
-      const presets = CartivaProject.listPresets();
-      if (!presets.length) { setStatus('No saved user presets.', true); return; }
-      const name = window.prompt(`Preset name:\n${presets.map(item => item.name).join('\n')}`);
-      const preset = presets.find(item => item.name === name);
-      if (!preset) { setStatus('Preset not found.', true); return; }
-      applyProjectState(preset.state);
-      setStatus(`Preset loaded: ${name}`);
-    });
 
     document.querySelectorAll('input[type="color"]').forEach(input => {
       if (!input.getAttribute('aria-label')) {
@@ -825,6 +727,4 @@ const DEFAULTS = Object.freeze({
         input.setAttribute('aria-label', title.trim());
       }
     });
-
-
-// -----------------------------------------------------------------------------
+    $('customSizeControls').hidden = readControl('formatSelect') !== 'custom';

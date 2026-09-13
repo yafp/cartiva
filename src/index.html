@@ -14,6 +14,8 @@
   <!-- MapLibre GL JS CSS & JS -->
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/loglevel@1.9.2/dist/loglevel.min.js"></script>
 
   <!-- Google Fonts Imports -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,14 +27,13 @@
 </head>
 
 <body>
-  <form id="settingsForm" class="settings-form">
+  <form id="settingsForm" class="settings-form" autocomplete="off">
     <div class="sidebar">
 	  <!-- Sidebar Header -->
       <div class="sidebar-header">
 		<!--
-		<img src="img/cartiva_logo_only2.png" width="150">
-		-->
-		        
+		<img src="img/logo.png" width="50">
+		-->        
 		<h1 id="appName">DUMMY_APPNAME</h1>
         <div class="subtitle" id="appDescription">DUMMY_APPDESCRIPTION</div>
       </div>
@@ -51,6 +52,7 @@
           </div>
           <div class="section-body">
             <div class="control-group">
+              <label class="visually-hidden" for="searchInput">Search location</label>
               <div class="location-search-row">
                 <input type="text" id="searchInput" value="" placeholder="Search city / location..." autocomplete="off" title="Type to query worldwide locations via Nominatim" role="combobox" aria-autocomplete="list" aria-controls="searchResults" aria-expanded="false">
                 <button type="button" id="searchBtn" class="location-search-btn" title="Search location" aria-label="Search location"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
@@ -73,6 +75,7 @@
           </div>
           <div class="section-body">
             <div class="control-group">
+              <label for="formatSelect">Paper format</label>
               <select id="formatSelect" autocomplete="off" title="Select standard print layout dimensions">
                 <option value="a2-portrait">A2 Portrait</option>
                 <option value="a2-landscape">A2 Landscape</option>
@@ -85,12 +88,17 @@
                 <option value="square-large">Square Large (420 mm)</option>
                 <option value="square-medium">Square Medium (297 mm)</option>
                 <option value="square-small">Square Small (210 mm)</option>
+                <option value="custom">Custom size</option>
               </select>
+            </div>
+            <div class="row custom-size-row" id="customSizeControls" hidden>
+              <div class="control-group"><label for="customWidthMm">Width (mm)</label><input type="number" id="customWidthMm" min="30" max="1000" value="210" title="Set the custom output width in millimeters"></div>
+              <div class="control-group"><label for="customHeightMm">Height (mm)</label><input type="number" id="customHeightMm" min="30" max="1000" value="297" title="Set the custom output height in millimeters"></div>
             </div>
             <div class="row">
               <div class="control-group">
-                <label>Export Type</label>
-                <select id="exportType" autocomplete="off">
+                <label for="exportType">Export type</label>
+                <select id="exportType" autocomplete="off" title="Select the export file format">
                   <option value="image/png">PNG</option>
                   <option value="image/jpeg">JPEG</option>
                   <option value="image/webp">WebP</option>
@@ -99,9 +107,23 @@
                 </select>
               </div>
               <div id="outputDimensions" class="output-dimensions">2480 × 3508 px</div>
+              <div class="control-group"><label for="exportQuality">Map quality</label>
+                <select id="exportQuality" autocomplete="off" title="Render above the final output size, then downsample for smoother lines">
+                  <option value="1">Standard (1x)</option>
+                  <option value="1.5" selected>High (1.5x)</option>
+                  <option value="2">Fine art (2x)</option>
+                </select>
+              </div>
+              <div class="control-group"><label for="printLineWeight">Print line weight</label>
+                <select id="printLineWeight" autocomplete="off" title="Adjust map line visibility for printed output">
+                  <option value="fine">Fine</option>
+                  <option value="standard" selected>Standard</option>
+                  <option value="bold">Bold</option>
+                </select>
+              </div>
               <div class="control-group">
-                <label>Print DPI</label>
-                <select id="exportDpi" autocomplete="off">
+                <label for="exportDpi">Print DPI</label>
+                <select id="exportDpi" autocomplete="off" title="Select the print resolution in dots per inch">
                   <option value="150">150 DPI</option>
                   <option value="300" selected>300 DPI</option>
                   <option value="600">600 DPI</option>
@@ -110,7 +132,7 @@
             </div>
           </div>
         </div>
-		
+
 		<!-- 3. Border -->
         <div class="section-block collapsed" title="Customize canvas outer framing border">
           <div class="section-header">
@@ -125,40 +147,40 @@
                 <label><input type="checkbox" id="borderCheckbox" checked autocomplete="off" title="Toggle canvas border visibility"> Enabled</label>
               </div>
               <div class="control-group border-ui-item control-fixed">
-                <label>Color</label>
+                <label for="borderColor">Color</label>
                 <div class="color-field-inline">
                   <input type="color" id="borderColor" value="#ffffff" autocomplete="off" title="Choose border frame color">
                 </div>
               </div>
               <div class="control-group border-ui-item control-fill">
-                <label>Width: <span id="borderWidthVal">16</span>px</label>
+                <label for="borderWidth">Width: <span id="borderWidthVal">16</span>px</label>
                 <input type="range" id="borderWidth" min="1" max="50" value="16" autocomplete="off" title="Adjust border thickness in pixels">
               </div>
             </div>
             <div class="control-group border-ui-item">
-              <label>Outer Radius: <span id="outerBorderRadiusVal">0</span>px</label>
+              <label for="outerBorderRadius">Outer radius: <span id="outerBorderRadiusVal">0</span>px</label>
               <input type="range" id="outerBorderRadius" min="0" max="100" value="0" autocomplete="off" title="Round the outside poster corners">
             </div>
             <div class="control-group border-ui-item">
-              <label>Inner Radius: <span id="innerBorderRadiusVal">0</span>px</label>
+              <label for="innerBorderRadius">Inner radius: <span id="innerBorderRadiusVal">0</span>px</label>
               <input type="range" id="innerBorderRadius" min="0" max="100" value="0" autocomplete="off" title="Round the inside map corners">
             </div>
           </div>
         </div>
 
-        <!-- 4. Overlay-Shapes -->
+        <!-- 4. Overlay shapes -->
         <div class="section-block collapsed" title="Mask the map inside a decorative shape">
           <div class="section-header">
             <span class="section-header-title">
               <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"></circle></svg>
-              4. Overlay-Shapes
+              4. Overlay shapes
             </span>
           </div>
           <div class="section-body">
             <div class="row row-centered">
               <div class="control-group control-fill">
-                <label>Shape</label>
-                <select id="shapeSelect" autocomplete="off">
+                <label for="shapeSelect">Shape</label>
+                <select id="shapeSelect" autocomplete="off" title="Select a decorative map mask shape">
                   <option value="none">None</option>
                   <option value="circle">Circle</option>
                   <option value="heart">Heart</option>
@@ -174,8 +196,8 @@
                 </select>
               </div>
               <div class="control-group control-fixed">
-                <label>Layer Color</label>
-                <input type="color" id="shapeColor" value="#ffffff" autocomplete="off">
+                <label for="shapeColor">Layer color</label>
+                <input type="color" id="shapeColor" value="#ffffff" autocomplete="off" title="Choose the color outside the map mask">
               </div>
             </div>
           </div>
@@ -191,6 +213,7 @@
           </div>
           <div class="section-body">
             <div class="control-group">
+              <label for="labelStyle">Layout</label>
               <select id="labelStyle" autocomplete="off" title="Select poster title layout template position">
                 <option value="none">None</option>
                 <optgroup label="Floating boxes">
@@ -223,8 +246,9 @@
                 </optgroup>
               </select>
             </div>
-            <!-- Label Font Selection -->
+            <!-- Label font selection -->
             <div class="control-group">
+              <label for="labelFontSelect">Font</label>
               <select id="labelFontSelect" autocomplete="off" title="Select font typeface for location title and coordinates">
                 <option value="'Segoe UI', system-ui, sans-serif">Default (Clean Sans-Serif)</option>
                 <option value="'Roboto', sans-serif">Roboto (Modern Bold)</option>
@@ -244,37 +268,37 @@
               </select>
             </div>
 
-            <!-- 3 Color Fields for 3 Text Lines and Background -->
+            <!-- Color fields for the three text lines and background -->
             <div class="row">
               <div class="control-group">
                 <div class="color-field-inline" title="Color for Line 1 (Location)">
-                  <input type="color" id="labelTextColor" value="#111827" autocomplete="off">
-                  <label class="visually-hidden">Line 1</label>
+                  <input type="color" id="labelTextColor" value="#111827" autocomplete="off" title="Choose the location text color">
+                  <label class="visually-hidden" for="labelTextColor">Location text color</label>
                 </div>
               </div>
               <div class="control-group">
                 <div class="color-field-inline" title="Color for Line 2 (Coordinates)">
-                  <input type="color" id="labelCoordColor" value="#4b5563" autocomplete="off">
-                  <label class="visually-hidden">Line 2</label>
+                  <input type="color" id="labelCoordColor" value="#4b5563" autocomplete="off" title="Choose the coordinate text color">
+                  <label class="visually-hidden" for="labelCoordColor">Coordinate text color</label>
                 </div>
               </div>
               <div class="control-group">
                 <div class="color-field-inline" title="Color for Line 3 (Country)">
-                  <input type="color" id="labelCountryColor" value="#111827" autocomplete="off">
-                  <label class="visually-hidden">Line 3</label>
+                  <input type="color" id="labelCountryColor" value="#111827" autocomplete="off" title="Choose the country text color">
+                  <label class="visually-hidden" for="labelCountryColor">Country text color</label>
                 </div>
               </div>
             </div>
             <div class="row layout-background-row">
               <div class="control-group layout-background-color">
                 <div class="color-field-inline" title="Choose title container background color">
-                  <input type="color" id="labelBgColor" value="#ffffff" autocomplete="off">
-                  <label class="label-left">Background Color</label>
+                  <input type="color" id="labelBgColor" value="#ffffff" autocomplete="off" title="Choose the label background color">
+                  <label class="label-left" for="labelBgColor">Background color</label>
                 </div>
               </div>
               <div id="contrastWarning" class="contrast-warning" role="status"></div>
               <div class="control-group layout-background-opacity">
-                <label>Opacity: <span><span id="opacityNum">100</span>%</span></label>
+                <label for="labelOpacity">Opacity: <span><span id="opacityNum">100</span>%</span></label>
                 <input type="range" id="labelOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust title container background opacity">
               </div>
             </div>
@@ -286,24 +310,24 @@
 		<!-- NAV: Section CONTENT -->
         <div class="sidebar-area-heading">Content</div>
 
-        <!-- 6. Colors-Presets -->
+        <!-- 6. Color presets -->
         <div class="section-block collapsed" title="Choose from pre-defined color presets">
           <div class="section-header">
             <span class="section-header-title">
               <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>
-              6. Color-Presets
+              6. Color presets
             </span>
           </div>
           <div class="section-body">
 
             <!-- Preset color selector with sorted names and padded sequence numbers -->
             <div class="control-group control-spaced">
-              <label>Color Palette Preset</label>
+              <label for="colorPresetSelect">Color palette preset</label>
               <select id="colorPresetSelect" autocomplete="off" title="Select a predefined color set for all items"></select>
             </div>
-            <button type="button" class="secondary-action-btn" id="randomPresetBtn">Generate Random preset</button>
+            <button type="button" class="secondary-action-btn" id="randomPresetBtn" title="Generate a random color preset">Generate random preset</button>
 
-            <button type="button" class="fine-tuning-toggle" id="fineTuningToggle" aria-expanded="false" aria-controls="fineTuningControls">
+            <button type="button" class="fine-tuning-toggle" id="fineTuningToggle" title="Show or hide individual map layer controls" aria-expanded="false" aria-controls="fineTuningControls">
               Show layer fine-tuning
             </button>
 
@@ -317,11 +341,11 @@
               <div class="row row-centered">
                 <div class="color-field-inline">
                   <input type="color" id="waterColor" value="#8ab4f8" autocomplete="off" title="Set water color">
-                  <label class="label-left">Water Color</label>
+                  <label class="label-left" for="waterColor">Water color</label>
                 </div>
               </div>
               <div class="control-group">
-                <label>Opacity: <span id="waterOpacityVal">100</span>%</label>
+                <label for="waterOpacity">Opacity: <span id="waterOpacityVal">100</span>%</label>
                 <input type="range" id="waterOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust water transparency">
               </div>
             </div>
@@ -335,15 +359,15 @@
               <div class="row">
                 <div class="color-field-inline">
                   <input type="color" id="forestColor" value="#b2d8b0" autocomplete="off" title="Set deep forest color">
-                  <label class="label-left">Forests</label>
+                  <label class="label-left" for="forestColor">Forests</label>
                 </div>
                 <div class="color-field-inline">
                   <input type="color" id="forestColorAccent" value="#c2e1c1" autocomplete="off" title="Set park color accent">
-                  <label class="label-left">Parks</label>
+                  <label class="label-left" for="forestColorAccent">Parks</label>
                 </div>
               </div>
               <div class="control-group">
-                <label>Opacity: <span id="forestOpacityVal">100</span>%</label>
+                <label for="forestOpacity">Opacity: <span id="forestOpacityVal">100</span>%</label>
                 <input type="range" id="forestOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust greenery layer opacity">
               </div>
             </div>
@@ -357,11 +381,11 @@
               <div class="row row-centered">
                 <div class="color-field-inline">
                   <input type="color" id="landColor" value="#f1f3f4" autocomplete="off" title="Set base land color">
-                  <label class="label-left">Base Land Color</label>
+                  <label class="label-left" for="landColor">Base land color</label>
                 </div>
               </div>
               <div class="control-group">
-                <label>Opacity: <span id="landOpacityVal">100</span>%</label>
+                <label for="landOpacity">Opacity: <span id="landOpacityVal">100</span>%</label>
                 <input type="range" id="landOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust background land opacity">
               </div>
             </div>
@@ -375,15 +399,15 @@
               <div class="row">
                 <div class="color-field-inline">
                   <input type="color" id="landCoverColor" value="#e6e8eb" autocomplete="off" title="Set urban land color">
-                  <label class="label-left">Urban</label>
+                  <label class="label-left" for="landCoverColor">Urban</label>
                 </div>
                 <div class="color-field-inline">
                   <input type="color" id="landCoverColorAccent" value="#dadde1" autocomplete="off" title="Set residential area color">
-                  <label class="label-left">Residential</label>
+                  <label class="label-left" for="landCoverColorAccent">Residential</label>
                 </div>
               </div>
               <div class="control-group">
-                <label>Opacity: <span id="landCoverOpacityVal">100</span>%</label>
+                <label for="landCoverOpacity">Opacity: <span id="landCoverOpacityVal">100</span>%</label>
                 <input type="range" id="landCoverOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust urban layer opacity">
               </div>
             </div>
@@ -397,11 +421,11 @@
               <div class="row row-centered">
                 <div class="color-field-inline">
                   <input type="color" id="roadColor" value="#374151" autocomplete="off" title="Set unified color for roads, streets, bridges, and traintracks">
-                  <label class="label-left">Color</label>
+                  <label class="label-left" for="roadColor">Color</label>
                 </div>
               </div>
               <div class="control-group">
-                <label>Opacity: <span id="roadOpacityVal">100</span>%</label>
+                <label for="roadOpacity">Opacity: <span id="roadOpacityVal">100</span>%</label>
                 <input type="range" id="roadOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust road network opacity">
               </div>
             </div>
@@ -415,11 +439,11 @@
               <div class="row row-centered">
                 <div class="color-field-inline">
                   <input type="color" id="boundaryColor" value="#9ca3af" autocomplete="off" title="Set country border line color">
-                  <label class="label-left">Color</label>
+                  <label class="label-left" for="boundaryColor">Color</label>
                 </div>
               </div>
               <div class="control-group">
-                <label>Opacity: <span id="boundaryOpacityVal">100</span>%</label>
+                <label for="boundaryOpacity">Opacity: <span id="boundaryOpacityVal">100</span>%</label>
                 <input type="range" id="boundaryOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust country border opacity">
               </div>
             </div>
@@ -434,11 +458,11 @@
               <div class="row row-centered">
                 <div class="color-field-inline">
                   <input type="color" id="buildingColor" value="#e8eaed" autocomplete="off" title="Set building fill color">
-                  <label class="label-left">Fill Color</label>
+                  <label class="label-left" for="buildingColor">Fill color</label>
                 </div>
                 <div class="color-field-inline">
                   <input type="color" id="buildingOutlineColor" value="#d1d5db" autocomplete="off" title="Set building outline border color">
-                  <label class="label-left">Border</label>
+                  <label class="label-left" for="buildingOutlineColor">Border</label>
                 </div>
               </div>
               
@@ -449,30 +473,26 @@
               </div>
 
               <div class="control-group">
-                <label>Opacity: <span id="buildingOpacityVal">100</span>%</label>
+                <label for="buildingOpacity">Opacity: <span id="buildingOpacityVal">100</span>%</label>
                 <input type="range" id="buildingOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust building layer opacity">
               </div>
             </div>
             </div>
 
-            <div class="layer-order-control">
-              <label>Layer order</label>
-              <div id="layerOrderList" class="layer-order-list" aria-label="Map layer order"></div>
-            </div>
-
           </div>
         </div>
 
-        <!-- 7. Object Names -->
+        <!-- 7. Object names -->
         <div class="section-block collapsed" title="Configure which object names are shown">
           <div class="section-header">
             <span class="section-header-title">
               <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg>
-              7. Object-Names
+              7. Object names
             </span>
           </div>
           <div class="section-body">
             <div class="control-group">
+              <label for="textFilter">Visible names</label>
               <select id="textFilter" autocomplete="off" title="Choose which map text labels to display">
                 <option value="all">All Names</option>
                 <option value="cities_only">City Names Only</option>
@@ -497,6 +517,7 @@
           </div>
           <div class="section-body">
             <div class="control-group">
+              <label for="filterPreset">Effect</label>
               <select id="filterPreset" autocomplete="off" title="Select a post-processing effect">
                 <option value="none">Default (None)</option>
                 <option value="grayscale">Grayscale</option>
@@ -524,11 +545,11 @@
             <div class="row row-centered">
               <div class="color-field-inline">
                 <input type="color" id="mountainColor" value="#64748b" autocomplete="off" title="Set the base color for mountain height shading">
-                <label class="label-left">Mountain color</label>
+                <label class="label-left" for="mountainColor">Mountain color</label>
               </div>
             </div>
             <div class="control-group">
-              <label>Relief strength: <span id="terrainExaggerationVal">100</span>%</label>
+              <label for="terrainExaggeration">Relief strength: <span id="terrainExaggerationVal">100</span>%</label>
               <input type="range" id="terrainExaggeration" min="20" max="300" value="100" autocomplete="off" title="Adjust the terrain height shading strength">
             </div>
             <div class="row annotation-options">
@@ -548,42 +569,55 @@
           </div>
           <div class="section-body">
             <div class="control-group">
-              <label>Custom Contrast: <span id="contrastNum">100</span>%</label>
+              <label for="contrastVal">Custom contrast: <span id="contrastNum">100</span>%</label>
               <input type="range" id="contrastVal" min="50" max="250" value="100" autocomplete="off" title="Adjust global contrast multiplier">
             </div>
             <div class="control-group">
-              <label>Brightness: <span id="brightnessNum">100</span>%</label>
+              <label for="brightnessVal">Brightness: <span id="brightnessNum">100</span>%</label>
               <input type="range" id="brightnessVal" min="50" max="150" value="100" autocomplete="off" title="Adjust global brightness">
             </div>
             <div class="control-group">
-              <label>Saturation: <span id="saturationNum">100</span>%</label>
+              <label for="saturationVal">Saturation: <span id="saturationNum">100</span>%</label>
               <input type="range" id="saturationVal" min="0" max="200" value="100" autocomplete="off" title="Adjust global color saturation">
             </div>
             <div class="row annotation-options">
               <label><input type="checkbox" id="scaleToggle" autocomplete="off" title="Show a distance scale on the map"> Scale</label>
               <label><input type="checkbox" id="northToggle" autocomplete="off" title="Show the direction of north when the map is rotated"> North</label>
             </div>
-            <button type="button" class="secondary-action-btn" id="randomizeDesignBtn">Randomize design</button>
+            <div class="misc-subsection">
+              <div class="misc-subsection-title">Print guides</div>
+              <div class="row">
+                <div class="control-group"><label for="bleedMm">Bleed (mm)</label><input type="number" id="bleedMm" min="0" max="25" step="0.5" value="0" title="Set the print bleed in millimeters"></div>
+                <div class="control-group"><label for="safeMm">Safe area (mm)</label><input type="number" id="safeMm" min="0" max="50" step="0.5" value="5" title="Set the print safe area in millimeters"></div>
+              </div>
+              <label class="check-row"><input type="checkbox" id="guidesToggle" title="Show or hide print guides in the preview"> Show guides in preview</label>
+              <div class="guide-note">Bleed extends beyond the trim edge. The safe area keeps labels away from the cut.</div>
+            </div>
+            <button type="button" class="secondary-action-btn" id="randomizeDesignBtn" title="Randomize the palette, label layout, and effects">Randomize design</button>
+            <button type="button" class="secondary-action-btn" id="geoJsonBtn" title="Import a GeoJSON overlay file">Import GeoJSON</button>
+            <input type="file" id="geoJsonInput" accept="application/geo+json,application/json,.geojson,.json" aria-label="Select a GeoJSON file" hidden>
           </div>
         </div>
+
       </div>
 	  <!-- /Sidebar-Content -->
 
-		<!-- Buttons: Save, Load, Download, save -->
-		<div class="project-actions" aria-label="Project actions">
-			<button type="button" class="secondary-action-btn" id="saveProjectBtn" title="Save the current design in this browser">Save project</button>
-			<button type="button" class="secondary-action-btn" id="downloadProjectBtn" title="Download the current design as JSON">Download project</button>
-			<button type="button" class="secondary-action-btn" id="loadProjectBtn" title="Load a project JSON file">Load project</button>	
-			<button type="button" class="secondary-action-btn" id="savePresetBtn" title="Save the current design as a reusable preset">Save preset</button>
-			<button type="button" class="secondary-action-btn" id="loadPresetBtn" title="Load a saved reusable preset">Load preset</button>
-			<input type="file" id="projectFileInput" accept="application/json,.json" hidden>
-		</div>
-		
-		<div class="sidebar-area-spacer"></div>
-		<div class="sidebar-area-spacer"></div>
-
       <!-- Export Button & Metadata Footer -->
       <div class="sidebar-footer">
+        <div class="history-actions" role="group" aria-label="History actions">
+          <button type="button" class="icon-action-btn" id="undoBtn" title="Undo" aria-label="Undo">↶</button>
+          <button type="button" class="icon-action-btn" id="redoBtn" title="Redo" aria-label="Redo">↷</button>
+          <span id="historyStatus" class="history-status">Ready</span>
+        </div>
+        <div class="project-actions" role="group" aria-label="Project actions">
+          <button type="button" class="secondary-action-btn" id="saveProjectBtn" title="Save the current design in this browser">Save project</button>
+          <button type="button" class="secondary-action-btn" id="downloadProjectBtn" title="Download the current design as JSON">Download project</button>
+          <button type="button" class="secondary-action-btn" id="loadProjectBtn" title="Load a project JSON file">Load project</button>
+          <button type="button" class="secondary-action-btn" id="savePresetBtn" title="Save the current design as a reusable preset">Save preset</button>
+          <button type="button" class="secondary-action-btn" id="loadPresetBtn" title="Load a saved reusable preset">Load preset</button>
+          <input type="file" id="projectFileInput" accept="application/json,.json" aria-label="Select a cartiva project file" hidden>
+        </div>
+        <div class="footer-action-separator" aria-hidden="true"></div>
         <button type="button" class="export-btn" id="exportBtn" title="Generate and download high-resolution poster image and configuration file">
           <span id="imageExportBtnLabel">Export image</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -597,8 +631,6 @@
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
 		</button>
 		
-    
-		
         <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
         <div class="footer-meta">
           <span id="appVersion"></span>
@@ -607,6 +639,7 @@
             GitHub
           </a>
         </div>
+        <div id="providerAttribution" class="provider-attribution" hidden></div>
       </div>
     </div>
 	<!-- / Export Buttons -->
@@ -625,7 +658,7 @@
       </svg>
     </button>
     <!-- Floating Zoom Controls (4 buttons + Magnifier toggle) -->
-    <div class="map-zoom-controls">
+    <div class="map-zoom-controls" role="group" aria-label="Map view controls">
       <button type="button" id="zoomInBigBtn" class="map-zoom-btn" title="Zoom In (Big Steps)" aria-label="Zoom in by two levels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path><path d="M18 3v6M15 6h6"></path></svg></button>
       <button type="button" id="zoomInFineBtn" class="map-zoom-btn" title="Zoom In (Fine Adjustment)" aria-label="Zoom in slightly"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
       <button type="button" id="zoomOutFineBtn" class="map-zoom-btn" title="Zoom Out (Fine Adjustment)" aria-label="Zoom out slightly"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
@@ -642,13 +675,15 @@
 	<!-- Preview-Container -->
     <div class="preview-container">
 	  <!-- Color preset arrow buttons -->
-      <div class="preset-navigation" aria-label="Color preset navigation">
+      <div class="preset-navigation" role="group" aria-label="Color preset navigation">
         <button type="button" id="previousPresetBtn" class="map-zoom-btn" title="Previous Color Preset" aria-label="Previous color preset">↑</button>
         <button type="button" id="nextPresetBtn" class="map-zoom-btn" title="Next Color Preset" aria-label="Next color preset">↓</button>
       </div>
 	  <!-- /Color preset arrow buttons -->
 	  
       <div id="mapFrame" class="map-frame ratio-a4-portrait">
+        <div class="print-guide bleed-guide" aria-hidden="true"></div>
+        <div class="print-guide safe-guide" aria-hidden="true"></div>
         <svg id="shapeMask" class="shape-mask" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <mask id="shapeCutoutMask">
@@ -678,21 +713,27 @@
   
   <!-- Loading cartiva javascript files -->
   <script src="js/core/service-config.js"></script>
-  <script src="js/core/state-store.js"></script>
+  <script src="js/core/runtime-state.js"></script>
   <script src="js/core/project-service.js"></script>
   <script src="js/core/resource-cache.js"></script>
   <script src="js/core/diagnostics.js"></script>
+  <script src="js/core/operations.js"></script>
   <script src="js/map/layer-registry.js"></script>
+  <script src="js/core/render-spec.js"></script>
+  <script src="js/export/shared.js"></script>
   <script src="js/map/style-adapter.js"></script>
   <script src="js/services/geocoder.js"></script>
   <script src="js/preset-data.js"></script>
   <script src="js/presets/preset-service.js"></script>
-  <script src="js/export/export-contract.js"></script>
   <script src="js/pdf-exporter.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/map.js"></script>
+  <script src="js/geojson.js"></script>
   <script src="js/location.js"></script>
+  <script src="js/ui/projects.js"></script>
   <script src="js/export.js"></script>
+  <script src="js/export/model-export.js"></script>
+  <script src="js/ui/shortcuts.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

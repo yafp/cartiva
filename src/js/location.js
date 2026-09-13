@@ -52,6 +52,7 @@
       setStatus('');
       syncStateFromControls();
       saveLastLocation();
+      CartivaDiagnostics.record('geocoder.selection', 'Location selected.', { name: item.display_name, center: [lon, lat] });
     }
 
     function renderSearchResults(data) {
@@ -67,10 +68,6 @@
         searchResults.appendChild(div);
       });
       setSearchResultsVisible(true);
-    }
-
-    async function fetchJson(url, signal) {
-      return CartivaGeocoding.requestJson(url, signal);
     }
 
     function updateCoordsDisplay() {
@@ -141,6 +138,7 @@
         try {
           showSearchMessage('Loading locations...');
           setStatus('Searching...');
+          CartivaDiagnostics.record('geocoder.search', 'Location search started.', { query });
           const cached = searchCache.get(query.toLowerCase());
           if (cached) {
             renderSearchResults(cached);
@@ -158,6 +156,7 @@
             return;
           }
           renderSearchResults(data);
+          CartivaDiagnostics.record('geocoder.search', 'Location search completed.', { query, resultCount: data.length });
           setStatus('');
         } catch (error) {
           if (error.name !== 'AbortError') {

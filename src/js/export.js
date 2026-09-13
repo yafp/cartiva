@@ -1,5 +1,5 @@
 // EXPORT STATE BUILDER
-// Constructs a comprehensive snapshot for high‑res export:
+// Constructs a comprehensive snapshot for high-resolution export:
 // - All settings from controls/state
 // - Map bounds and camera
 // - Overlay geometry and label metrics for precise placement
@@ -12,71 +12,21 @@
 
     function getExportState() {
       const labelModel = getLabelRenderModel(map);
-      const exportState = {
-        ...state,
-        format: readControl('formatSelect'),
-        exportType: readControl('exportType'),
-        exportDpi: Number(readControl('exportDpi')),
-        filterPreset: readControl('filterPreset'),
-        contrast: Number(readControl('contrastVal')),
-        brightness: Number(readControl('brightnessVal')),
-        saturation: Number(readControl('saturationVal')),
-        shape: readControl('shapeSelect'),
-        shapeColor: readControl('shapeColor'),
-        terrainEnabled: readControl('terrainToggle'),
-        mountainColor: readControl('mountainColor'),
-        terrainExaggeration: Number(readControl('terrainExaggeration')),
-        stlBuildingsEnabled: readControl('stlBuildingsToggle'),
-        stlRoadsEnabled: readControl('stlRoadsToggle'),
-        scaleEnabled: readControl('scaleToggle'),
-        northEnabled: readControl('northToggle'),
-        layerOrder: [...state.layerOrder],
-        borderEnabled: readControl('borderCheckbox'),
-        borderColor: readControl('borderColor'),
-        borderWidth: Number(readControl('borderWidth')),
-        outerBorderRadius: Number(readControl('outerBorderRadius')),
-        innerBorderRadius: Number(readControl('innerBorderRadius')),
-        labelStyle: readControl('labelStyle'),
-        labelOpacity: Number(readControl('labelOpacity')),
-        labelFont: readControl('labelFontSelect'),
-        labelTextColor: readControl('labelTextColor'),
-        labelCoordColor: readControl('labelCoordColor'),
-        labelCountryColor: readControl('labelCountryColor'),
-        labelBgColor: readControl('labelBgColor'),
-        textFilter: readControl('textFilter'),
-        city: $('cityName').textContent,
-        coordinates: $('cityCoords').textContent,
-        country: $('cityCountry').textContent,
-        center: map.getCenter().toArray(),
-        zoom: map.getZoom(),
-        bearing: map.getBearing(),
-        pitch: map.getPitch(),
+      return CartivaRenderSpec.create(state, {
+        dimensions: getTargetDimensions(state.format, state.exportDpi),
+        camera: {
+          center: map.getCenter().toArray(),
+          zoom: map.getZoom(),
+          bearing: map.getBearing(),
+          pitch: map.getPitch()
+        },
         bounds: map.getBounds().toArray(),
         previewMapSize: {
           width: map.getContainer().clientWidth,
           height: map.getContainer().clientHeight
         },
-        overlay: {
-          ...labelModel
-        },
-        layers: { ...state.layers }
-      };
-      return {
-        ...exportState,
-        request: CartivaExport.createRequest({
-          state: exportState,
-          dimensions: getTargetDimensions(exportState.format, exportState.exportDpi),
-          camera: {
-            center: exportState.center,
-            zoom: exportState.zoom,
-            bearing: exportState.bearing,
-            pitch: exportState.pitch
-          },
-          bounds: exportState.bounds,
-          overlay: exportState.overlay,
-          layers: exportState.layers
-        })
-      };
+        overlay: labelModel
+      });
     }
 
 
@@ -94,49 +44,6 @@
     const exportBtn = document.getElementById('exportBtn');
     const imageExportBtnLabel = document.getElementById('imageExportBtnLabel');
     const pdfExporter = CartivaPdfExporter.create();
-    function downloadBlob(blob, filename) {
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
-    }
-
-    function downloadExportMetadata(exportState, filename) {
-      const metadata = {
-        schemaVersion: 1,
-        exportedAt: new Date().toISOString(),
-        appVersion: window.CartivaApp?.version || 'unknown',
-        source: 'cartiva',
-        city: exportState.city,
-        coordinates: exportState.coordinates,
-        country: exportState.country,
-        camera: {
-          center: exportState.center,
-          zoom: exportState.zoom,
-          bearing: exportState.bearing,
-          pitch: exportState.pitch,
-          bounds: exportState.bounds
-        },
-        format: exportState.format,
-        exportDpi: exportState.exportDpi,
-        preset: exportState.preset,
-        layers: exportState.layers,
-        layerOrder: exportState.layerOrder,
-        effects: {
-          filterPreset: exportState.filterPreset,
-          contrast: exportState.contrast,
-          brightness: exportState.brightness,
-          saturation: exportState.saturation
-        },
-        providers: window.CartivaServices
-      };
-      downloadBlob(new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }), `${filename}.json`);
-    }
-
     function lngLatToTile(lng, lat, zoom) {
       const latitude = Math.max(-85.05112878, Math.min(85.05112878, lat));
       const scale = 2 ** zoom;
@@ -242,7 +149,7 @@
         if (!Number.isFinite(lng) || !Number.isFinite(lat) || lng < bounds.getWest() || lng > bounds.getEast() || lat < bounds.getSouth() || lat > bounds.getNorth()) return null;
         return [
           (lng - bounds.getWest()) / (bounds.getEast() - bounds.getWest()) * widthMm,
-          (bounds.getNorth() - lat) / (bounds.getNorth() - bounds.getSouth()) * depthMm
+          (lat - bounds.getSouth()) / (bounds.getNorth() - bounds.getSouth()) * depthMm
         ];
       };
       const addBuilding = ring => {
@@ -313,21 +220,45 @@
         const lines = feature.geometry?.type === 'LineString' ? [coordinates] : feature.geometry?.type === 'MultiLineString' ? coordinates : [];
         lines.forEach(line => line.slice(1).forEach((point, index) => addPathSegment(line[index], point, 'water', 0.45, 0.45)));
       });
+      cityFeatures.forest?.forEach(feature => {
+        const coordinates = feature.geometry?.coordinates;
+        if (feature.geometry?.type === 'Polygon') addSurface(coordinates[0], 'forest', 0.2);
+        if (feature.geometry?.type === 'MultiPolygon') coordinates.forEach(polygon => addSurface(polygon[0], 'forest', 0.2));
+      });
+      cityFeatures.landCover?.forEach(feature => {
+        const coordinates = feature.geometry?.coordinates;
+        if (feature.geometry?.type === 'Polygon') addSurface(coordinates[0], 'landCover', 0.25);
+        if (feature.geometry?.type === 'MultiPolygon') coordinates.forEach(polygon => addSurface(polygon[0], 'landCover', 0.25));
+      });
+      cityFeatures.boundary?.forEach(feature => {
+        const coordinates = feature.geometry?.coordinates;
+        const lines = feature.geometry?.type === 'LineString' ? [coordinates] : feature.geometry?.type === 'MultiLineString' ? coordinates : [];
+        lines.forEach(line => line.slice(1).forEach((point, index) => addPathSegment(line[index], point, 'boundary', 0.6, 0.18)));
+      });
       return { triangles, triangleMaterials };
     }
 
-    function createTerrainStl(mesh) {
+    function createTerrainStl(mesh, colors) {
       const triangleCount = mesh.triangles.length / 3;
       const buffer = new ArrayBuffer(84 + triangleCount * 50);
       const view = new DataView(buffer);
+      const header = new TextEncoder().encode('cartiva colored terrain STL');
+      new Uint8Array(buffer, 0, header.length).set(header);
       view.setUint32(80, triangleCount, true);
+      const colorAttribute = material => {
+        const hex = colors[material] || colors.terrain;
+        const red = Math.round(parseInt(hex.slice(1, 3), 16) * 31 / 255);
+        const green = Math.round(parseInt(hex.slice(3, 5), 16) * 31 / 255);
+        const blue = Math.round(parseInt(hex.slice(5, 7), 16) * 31 / 255);
+        return 0x8000 | (red << 10) | (green << 5) | blue;
+      };
       let offset = 84;
       for (let index = 0; index < mesh.triangles.length; index += 3) {
         offset += 12;
         mesh.triangles.slice(index, index + 3).forEach(vertex => {
           view.setFloat32(offset, vertex[0], true); view.setFloat32(offset + 4, vertex[1], true); view.setFloat32(offset + 8, vertex[2], true); offset += 12;
         });
-        view.setUint16(offset, 0, true); offset += 2;
+        view.setUint16(offset, colorAttribute(mesh.triangleMaterials[index / 3]), true); offset += 2;
       }
       return new Blob([buffer], { type: 'model/stl' });
     }
@@ -340,7 +271,7 @@
       }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
       const centerX = (bounds.minX + bounds.maxX) / 2;
       const centerY = (bounds.minY + bounds.maxY) / 2;
-      const angle = bearing * Math.PI / 180;
+      const angle = -bearing * Math.PI / 180;
       const cosine = Math.cos(angle);
       const sine = Math.sin(angle);
       return {
@@ -351,15 +282,6 @@
           z
         ])
       };
-    }
-
-    function crc32(bytes) {
-      let value = 0xffffffff;
-      for (const byte of bytes) {
-        value ^= byte;
-        for (let bit = 0; bit < 8; bit += 1) value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0);
-      }
-      return (value ^ 0xffffffff) >>> 0;
     }
 
     function createStoredZip(files) {
@@ -387,11 +309,11 @@
     }
 
     function createColoredThreeMf(mesh, colors) {
-      const materialIndex = { terrain: 0, building: 1, road: 2, water: 3 };
+      const materialIndex = { terrain: 0, forest: 1, landCover: 2, water: 3, boundary: 4, road: 5, building: 6 };
       const color = hex => `${hex.toUpperCase()}FF`;
       const vertices = mesh.triangles.map(vertex => `<vertex x="${vertex[0]}" y="${vertex[1]}" z="${vertex[2]}"/>`).join('');
       const triangles = mesh.triangleMaterials.map((material, index) => `<triangle v1="${index * 3}" v2="${index * 3 + 1}" v3="${index * 3 + 2}" pid="1" p1="${materialIndex[material]}"/>`).join('');
-      const model = `<?xml version="1.0" encoding="UTF-8"?><model xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" unit="millimeter" xml:lang="en-US"><resources><basematerials id="1"><base name="Terrain" displaycolor="${color(colors.terrain)}"/><base name="Buildings" displaycolor="${color(colors.building)}"/><base name="Streets" displaycolor="${color(colors.road)}"/><base name="Water" displaycolor="${color(colors.water)}"/></basematerials><object id="2" type="model" pid="1" pindex="0"><mesh><vertices>${vertices}</vertices><triangles>${triangles}</triangles></mesh></object></resources><build><item objectid="2"/></build></model>`;
+      const model = `<?xml version="1.0" encoding="UTF-8"?><model xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" unit="millimeter" xml:lang="en-US"><resources><basematerials id="1"><base name="Land" displaycolor="${color(colors.terrain)}"/><base name="Nature" displaycolor="${color(colors.forest)}"/><base name="Urban areas" displaycolor="${color(colors.landCover)}"/><base name="Water" displaycolor="${color(colors.water)}"/><base name="Boundaries" displaycolor="${color(colors.boundary)}"/><base name="Streets" displaycolor="${color(colors.road)}"/><base name="Buildings" displaycolor="${color(colors.building)}"/></basematerials><object id="2" type="model" pid="1" pindex="0"><mesh><vertices>${vertices}</vertices><triangles>${triangles}</triangles></mesh></object></resources><build><item objectid="2"/></build></model>`;
       return createStoredZip([
         { name: '[Content_Types].xml', content: '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>' },
         { name: '_rels/.rels', content: '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>' },
@@ -416,6 +338,17 @@
         const x = borderWidth + width * 0.045, y = borderWidth + width * 0.055;
         context.translate(x, y); context.rotate(-exportState.bearing * Math.PI / 180); context.textAlign = 'center'; context.fillText('N', 0, -12); context.beginPath(); context.moveTo(0, -8); context.lineTo(-7, 13); context.lineTo(0, 8); context.lineTo(7, 13); context.closePath(); context.fill();
       }
+      if (exportState.guidesEnabled) {
+        const bleed = Math.max(0, Number(exportState.bleedMm || 0)) * width / Math.max(1, Number(exportState.customWidthMm || 210));
+        const safe = Math.max(0, Number(exportState.safeMm || 0)) * width / Math.max(1, Number(exportState.customWidthMm || 210));
+        context.save();
+        context.setLineDash([10, 8]);
+        context.strokeStyle = '#b45309';
+        context.strokeRect(bleed, bleed, width - bleed * 2, height - bleed * 2);
+        context.strokeStyle = '#059669';
+        context.strokeRect(safe, safe, width - safe * 2, height - safe * 2);
+        context.restore();
+      }
       context.restore();
     }
 
@@ -424,16 +357,67 @@
       const escape = value => String(value).replace(/[&<>"]/g, character => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'
       })[character]);
-      const textX = canvas.width / 2;
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}">
-  <title>${exportState.city} map poster</title>
+  <title>${escape(exportState.city)} map poster (raster-backed SVG)</title>
   <image width="100%" height="100%" href="${dataUrl}"/>
-  <g text-anchor="middle" font-family="sans-serif">
-    <text x="${textX}" y="${canvas.height - 105}" font-size="34" font-weight="800" fill="${exportState.labelTextColor}">${escape(exportState.city)}</text>
-    <text x="${textX}" y="${canvas.height - 65}" font-size="16" font-weight="600" fill="${exportState.labelCoordColor}">${escape(exportState.coordinates)}</text>
-    <text x="${textX}" y="${canvas.height - 30}" font-size="18" font-weight="700" fill="${exportState.labelCountryColor}">${escape(exportState.country)}</text>
-  </g>
 </svg>`;
+    }
+
+    function validateExportSize(width, height) {
+      const pixels = width * height;
+      const maxPixels = 160000000;
+      const maxSide = 16384;
+      if (!Number.isFinite(pixels) || width < 1 || height < 1) throw new Error('Invalid export dimensions.');
+      if (width > maxSide || height > maxSide || pixels > maxPixels) {
+        throw new Error(`Export is too large for this browser (${width} × ${height}, ${(pixels / 1000000).toFixed(1)} MP). Choose a smaller DPI or paper size.`);
+      }
+    }
+
+    async function addPngResolutionMetadata(blob, dpi) {
+      if (blob.type !== 'image/png' || !Number.isFinite(dpi)) return blob;
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      if (bytes.length < 33 || bytes[12] !== 73 || bytes[13] !== 72 || bytes[14] !== 68 || bytes[15] !== 82) return blob;
+      const pixelsPerMeter = Math.round(dpi / 0.0254);
+      const data = new Uint8Array(9);
+      const view = new DataView(data.buffer);
+      view.setUint32(0, pixelsPerMeter);
+      view.setUint32(4, pixelsPerMeter);
+      data[8] = 1;
+      const type = new TextEncoder().encode('pHYs');
+      const crcInput = new Uint8Array(type.length + data.length);
+      crcInput.set(type); crcInput.set(data, type.length);
+      const chunk = new Uint8Array(4 + 4 + data.length + 4);
+      const chunkView = new DataView(chunk.buffer);
+      chunkView.setUint32(0, data.length);
+      chunk.set(type, 4); chunk.set(data, 8);
+      chunkView.setUint32(17, crc32(crcInput));
+      return new Blob([bytes.slice(0, 33), chunk, bytes.slice(33)], { type: 'image/png' });
+    }
+
+    function applyExportLineWeight(targetMap, exportState) {
+      const multipliers = { fine: 0.78, standard: 1, bold: 1.28 };
+      const multiplier = multipliers[exportState.printLineWeight] || 1;
+      if (multiplier === 1) return;
+      (targetMap.getStyle()?.layers || []).forEach(layer => {
+        if (layer.type !== 'line' || !['road', 'water', 'boundary'].includes(getLayerRole(layer))) return;
+        const current = targetMap.getPaintProperty(layer.id, 'line-width');
+        if (typeof current === 'number') targetMap.setPaintProperty(layer.id, 'line-width', current * multiplier);
+        else if (Array.isArray(current)) targetMap.setPaintProperty(layer.id, 'line-width', ['*', current, multiplier]);
+      });
+    }
+
+    function drawCanvasInTiles(context, source, x, y, width, height, tileSize = 2048) {
+      const scaleX = width / source.width;
+      const scaleY = height / source.height;
+      for (let sourceY = 0; sourceY < source.height; sourceY += tileSize) {
+        for (let sourceX = 0; sourceX < source.width; sourceX += tileSize) {
+          const tileWidth = Math.min(tileSize, source.width - sourceX);
+          const tileHeight = Math.min(tileSize, source.height - sourceY);
+          context.drawImage(source, sourceX, sourceY, tileWidth, tileHeight,
+            x + sourceX * scaleX, y + sourceY * scaleY,
+            tileWidth * scaleX, tileHeight * scaleY);
+        }
+      }
     }
 
     function waitForMapIdle(targetMap, timeoutMs = 30000) {
@@ -464,15 +448,10 @@
       const comparison = { longitudeDelta, latitudeDelta, expected, actual };
       CartivaDiagnostics.record('render.bounds', 'Preview/export bounds compared.', comparison);
       if (longitudeDelta > 0.01 || latitudeDelta > 0.01) {
-        console.warn('Preview/export geographic bounds differ.', comparison);
+        CartivaDiagnostics.record('render.bounds', 'Preview/export geographic bounds differ.', comparison, 'warn');
       }
       return comparison;
     }
-
-    function enhancePreviewDetail(targetMap) {
-      configureBuildingZoom(targetMap);
-    }
-
 
     async function createExportMap(width, height, exportState) {
       const container = document.createElement('div');
@@ -484,10 +463,14 @@
       // by the pixel scale so a 600 DPI viewport shows the same geography as
       // the much smaller preview viewport instead of zooming out in practice.
       const previewWidth = Math.max(1, exportState.previewMapSize.width);
-      const exportZoom = exportState.zoom + Math.log2(width / previewWidth);
+      const exportZoom = Math.min(
+        exportState.zoom + Math.log2(width / previewWidth),
+        Number(CartivaServices.maxExportZoom || 18)
+      );
       const exportMap = new maplibregl.Map({
         container,
         preserveDrawingBuffer: true,
+        pixelRatio: 1,
         attributionControl: false,
         interactive: false,
         style: MAP_STYLE_URL,
@@ -500,7 +483,13 @@
         exportMap.once('load', resolve);
         exportMap.once('error', event => reject(event.error || new Error('Export map failed to load.')));
       });
+      const geoJsonDefinition = globalThis.CartivaGeoJson?.definition?.();
+      if (geoJsonDefinition) {
+        exportMap.addSource('cartiva-user-geojson', geoJsonDefinition.source);
+        geoJsonDefinition.layers.forEach(layer => exportMap.addLayer(layer));
+      }
       configureMapForRender(exportMap, exportState);
+      applyExportLineWeight(exportMap, exportState);
       exportMap.resize();
       // Preserve the preview camera exactly. The preview and export dimensions
       // use the same aspect ratio, so center/zoom is more faithful than fitting
@@ -517,18 +506,35 @@
       return { exportMap, container };
     }
 
-    exportBtn.addEventListener('click', async () => {
-      exportBtn.disabled = true;
-      imageExportBtnLabel.textContent = 'Exporting...';
-      setStatus('1/5 Preparing export...');
-
-      try {
+    exportBtn.addEventListener('click', () => CartivaOperations.run({
+      area: 'image.export',
+      button: exportBtn,
+      label: imageExportBtnLabel,
+      busyLabel: 'Exporting...',
+      idleLabel: 'Export image',
+      startStatus: '1/5 Preparing export...',
+      errorPrefix: 'Export failed'
+    }, async cleanup => {
+      let exportMap;
+      let container;
+      cleanup(() => {
+        exportMap?.remove();
+        container?.remove();
+      });
         if (document.fonts) {
           await document.fonts.ready;
         }
 
         const exportState = createRenderSnapshot();
         const targetDims = getTargetDimensions(exportState.format, exportState.exportDpi);
+        CartivaDiagnostics.record('image.export', 'Image export started.', {
+          format: exportState.format,
+          type: exportState.exportType,
+          dpi: exportState.exportDpi,
+          quality: exportState.exportQuality,
+          dimensions: targetDims
+        });
+        validateExportSize(targetDims.width, targetDims.height, exportState);
         setStatus('2/5 Loading detailed map tiles...');
 
         const exportCanvas = document.createElement('canvas');
@@ -547,10 +553,13 @@
         const bWidth = exportState.borderEnabled ? exportState.borderWidth * scaleFactor : 0;
         const mapWidth = Math.max(1, Math.round(targetDims.width - (bWidth * 2)));
         const mapHeight = Math.max(1, Math.round(targetDims.height - (bWidth * 2)));
+        const qualityMultiplier = Math.max(1, Math.min(2, Number(exportState.exportQuality) || 1));
+        const renderMapWidth = Math.max(1, Math.round(mapWidth * qualityMultiplier));
         const previewAspect = exportState.previewMapSize.width / exportState.previewMapSize.height;
         // MapLibre's geographic crop depends on viewport aspect ratio. Render
         // the source map at the preview aspect to avoid extra latitude in export.
-        const sourceMapHeight = Math.max(1, Math.round(mapWidth / previewAspect));
+        const sourceMapHeight = Math.max(1, Math.round(renderMapWidth / previewAspect));
+        validateExportSize(renderMapWidth, sourceMapHeight, exportState);
 
         ctx.fillStyle = exportState.borderColor;
         ctx.fillRect(0, 0, targetDims.width, targetDims.height);
@@ -564,9 +573,11 @@
         const contrastSetting = exportState.contrast;
         ctx.filter = `${baseFilter} contrast(${contrastSetting}%) brightness(${exportState.brightness}%) saturate(${exportState.saturation}%)`.trim();
 
-      const { exportMap, container } = await createExportMap(mapWidth, sourceMapHeight, exportState);
+      ({ exportMap, container } = await createExportMap(renderMapWidth, sourceMapHeight, exportState));
       setStatus('3/5 Rendering map and layout...');
       const mapCanvas = exportMap.getCanvas();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       if (exportState.innerBorderRadius > 0 || exportState.shape !== 'none') {
         const innerRadius = exportState.innerBorderRadius * scaleFactor;
         ctx.save();
@@ -581,17 +592,9 @@
           ctx.translate(-bWidth, -bWidth);
         }
       }
-      ctx.drawImage(
-        mapCanvas, 
-        bWidth, 
-        bWidth, 
-        targetDims.width - (bWidth * 2), 
-        targetDims.height - (bWidth * 2)
-      );
+      drawCanvasInTiles(ctx, mapCanvas, bWidth, bWidth,
+        targetDims.width - (bWidth * 2), targetDims.height - (bWidth * 2));
       if (exportState.innerBorderRadius > 0 || exportState.shape !== 'none') ctx.restore();
-      exportMap.remove();
-      container.remove();
-
       ctx.filter = 'none';
 
       if (exportState.labelStyle !== 'none') {
@@ -735,14 +738,16 @@
           return;
         }
         if (mimeType === 'application/pdf') {
-          const jpegBlob = await new Promise((resolve, reject) => {
-            exportCanvas.toBlob(result => result ? resolve(result) : reject(new Error('JPEG encoding failed.')), 'image/jpeg', 0.92);
+          const pdfMimeType = globalThis.jspdf?.jsPDF ? 'image/png' : 'image/jpeg';
+          const pdfBlob = await new Promise((resolve, reject) => {
+            exportCanvas.toBlob(result => result ? resolve(result) : reject(new Error('PDF image encoding failed.')), pdfMimeType, pdfMimeType === 'image/jpeg' ? 1 : undefined);
           });
           const result = await pdfExporter.process('pdf', {
-            blob: jpegBlob,
+            blob: pdfBlob,
             filename: `${baseFilename}.pdf`,
             width: exportCanvas.width,
-            height: exportCanvas.height
+            height: exportCanvas.height,
+            dpi: exportState.exportDpi
           });
           downloadBlob(result.blob, result.filename);
           downloadExportMetadata(exportState, baseFilename);
@@ -750,127 +755,15 @@
           return;
         }
         const extension = mimeType.split('/')[1].replace('jpeg', 'jpg');
-        const blob = await new Promise((resolve, reject) => {
+        let blob = await new Promise((resolve, reject) => {
           exportCanvas.toBlob(result => {
             if (result) resolve(result);
             else reject(new Error(`${extension.toUpperCase()} encoding failed.`));
-          }, mimeType, 0.92);
+          }, mimeType, mimeType === 'image/jpeg' ? 1 : undefined);
         });
+        if (mimeType === 'image/png') blob = await addPngResolutionMetadata(blob, exportState.exportDpi);
         downloadBlob(blob, `${baseFilename}.${extension}`);
         downloadExportMetadata(exportState, baseFilename);
+        CartivaDiagnostics.record('image.export', 'Image export completed.', { filename: `${baseFilename}.${extension}`, bytes: blob.size });
         setStatus('5/5 Poster exported.');
-      } catch (error) {
-        console.error('Export failed', error);
-        const location = error.stack?.match(/cartiva(?:\.html)?:(\d+):(\d+)/)?.[0];
-        setStatus(`Export failed${location ? ` at ${location}` : ''}: ${error.message}`, true);
-      } finally {
-        imageExportBtnLabel.textContent = 'Export image';
-        exportBtn.disabled = false;
-      }
-    });
-
-    function getVisibleCityFeatures(includeBuildings, includeRoads) {
-      const layers = map.getStyle().layers || [];
-      const collect = role => {
-        const layerIds = layers.filter(layer => getLayerRole(layer) === role && ['fill', 'line'].includes(layer.type)).map(layer => layer.id);
-        if (!layerIds.length) return [];
-        const seen = new Set();
-        return map.queryRenderedFeatures({ layers: layerIds }).filter(feature => {
-          const key = `${feature.source || ''}:${feature.sourceLayer || ''}:${feature.id ?? JSON.stringify(feature.geometry)}`;
-          if (seen.has(key) || !feature.geometry?.coordinates) return false;
-          seen.add(key);
-          return true;
-        });
-      };
-      return {
-        buildings: includeBuildings ? collect('building').slice(0, 3000) : [],
-        roads: includeRoads ? collect('road').slice(0, 8000) : [],
-        water: collect('water').slice(0, 4000)
-      };
-    }
-
-    $('stlExportBtn').addEventListener('click', async () => {
-      const button = $('stlExportBtn');
-      button.disabled = true;
-      setStatus('Loading elevation data for 3D model...');
-      try {
-        syncStateFromControls();
-        const bounds = map.getBounds();
-        const cityFeatures = getVisibleCityFeatures(state.stlBuildingsEnabled, state.stlRoadsEnabled);
-        const grid = await getElevationGrid(bounds);
-        const mesh = rotateMeshToMapBearing(
-          createTerrainMesh(grid.heights, grid.size, bounds, state.terrainExaggeration, cityFeatures),
-          map.getBearing()
-        );
-        const model = createTerrainStl(mesh);
-        const name = `cartiva_${state.city.trim().replace(/\s+/g, '_')}_${getFileTimestamp()}.stl`;
-        downloadBlob(model, name);
-        downloadExportMetadata(createRenderSnapshot(), name.replace(/\.stl$/, ''));
-        setStatus('3D model exported.');
-      } catch (error) {
-        console.error('STL export failed', error);
-        setStatus(`3D model export failed: ${error.message}`, true);
-      } finally {
-        button.disabled = false;
-      }
-    });
-
-    $('threeMfExportBtn').addEventListener('click', async () => {
-      const button = $('threeMfExportBtn');
-      button.disabled = true;
-      setStatus('Loading elevation data for colored 3D model...');
-      try {
-        syncStateFromControls();
-        const bounds = map.getBounds();
-        const cityFeatures = getVisibleCityFeatures(state.stlBuildingsEnabled, state.stlRoadsEnabled);
-        const grid = await getElevationGrid(bounds);
-        const mesh = rotateMeshToMapBearing(
-          createTerrainMesh(grid.heights, grid.size, bounds, state.terrainExaggeration, cityFeatures),
-          map.getBearing()
-        );
-        const model = createColoredThreeMf(mesh, {
-          terrain: state.mountainColor,
-          building: state.layers.buildingColor,
-          road: state.layers.roadColor,
-          water: state.layers.waterColor
-        });
-        const name = `cartiva_${state.city.trim().replace(/\s+/g, '_')}_${getFileTimestamp()}.3mf`;
-        downloadBlob(model, name);
-        downloadExportMetadata(createRenderSnapshot(), name.replace(/\.3mf$/, ''));
-        setStatus('Colored 3D model exported.');
-      } catch (error) {
-        console.error('3MF export failed', error);
-        setStatus(`Colored 3D model export failed: ${error.message}`, true);
-      } finally {
-        button.disabled = false;
-      }
-    });
-
-
-// -----------------------------------------------------------------------------
-// KEYBOARD SHORTCUTS
-// +/-: fine zoom
-// Ctrl/Cmd+E: trigger export
-// /: focus search
-// 1–9: toggle accordion sections
-// -----------------------------------------------------------------------------
-    document.addEventListener('keydown', event => {
-      if (event.target.matches('input, select, textarea')) return;
-      if (event.key === '+' || event.key === '=') {
-        event.preventDefault();
-        map.zoomTo(map.getZoom() + 0.25, { duration: 150 });
-      } else if (event.key === '-') {
-        event.preventDefault();
-        map.zoomTo(map.getZoom() - 0.25, { duration: 150 });
-      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'e') {
-        event.preventDefault();
-        exportBtn.click();
-      } else if (event.key === '/') {
-        event.preventDefault();
-        searchInput.focus();
-      } else if (/^[1-9]$/.test(event.key)) {
-        event.preventDefault();
-        const block = sectionBlocks[Number(event.key) - 1];
-        block?.querySelector('.section-header').click();
-      }
-    });
+    }));

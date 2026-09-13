@@ -18,6 +18,7 @@
     const map = new maplibregl.Map({
       container: 'map',
       preserveDrawingBuffer: true,
+      pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       attributionControl: false,
       style: MAP_STYLE_URL,
       center: START_LOCATION.center,
@@ -25,6 +26,7 @@
       bearing: START_LOCATION.bearing || 0,
       pitch: START_LOCATION.pitch || 0
     });
+    window.CartivaMap = map;
     map.on('error', event => {
       const error = event.error || new Error('MapLibre reported an unknown error.');
       CartivaDiagnostics.report('map', error);
@@ -51,7 +53,7 @@
     map.on('moveend', () => {
       clearTimeout(terrainRefreshTimer);
       terrainRefreshTimer = setTimeout(() => {
-        if (state.terrainEnabled) updateTerrainColorization().catch(error => console.warn('Elevation colors could not be updated:', error));
+        if (state.terrainEnabled) updateTerrainColorization().catch(error => CartivaDiagnostics.report('terrain.color', error));
       }, 250);
     });
 
@@ -220,7 +222,6 @@
 // Update terrain colorization overlay when terrain is enabled.
 // -----------------------------------------------------------------------------
     // Global update triggers for initial map sync
-    let updateCallbacks = [];
     const MAP_DETAIL_POLICY = Object.freeze({
       buildings: Object.freeze({ minZoom: 0, maxZoom: 24 })
     });
@@ -252,15 +253,17 @@
       layers.forEach(layer => {
         const role = getLayerRole(layer);
         if (!role || role === 'terrain') return;
-        const prefix = role === 'landCover' ? 'landCover' : role;
-        const enabled = getMapStateLayerValue(mapState, `${prefix}Toggle`, true) !== false;
-        const opacity = Number(getMapStateLayerValue(mapState, `${prefix}Opacity`, 100)) / 100;
+        const definition = CartivaLayerRegistry.definitions.find(item => item.role === role);
+        if (!definition) return;
+        const enabled = getMapStateLayerValue(mapState, definition.toggleId, true) !== false;
+        const opacity = Number(getMapStateLayerValue(mapState, definition.opacityId, 100)) / 100;
         const isAccent = (role === 'forest' && /park|recreation|pitch/.test(layer.id.toLowerCase()))
           || (role === 'landCover' && /residential/.test(layer.id.toLowerCase()));
-        const color = getMapStateLayerValue(mapState, `${prefix}Color${isAccent ? 'Accent' : ''}`, null);
+        const colorId = isAccent && definition.accentColorId ? definition.accentColorId : definition.colorId;
+        const color = getMapStateLayerValue(mapState, colorId, null);
         const isBuilding = role === 'building';
-        const outlineEnabled = getMapStateLayerValue(mapState, 'buildingOutlineToggle', true) !== false && enabled;
-        const outlineColor = getMapStateLayerValue(mapState, 'buildingOutlineColor', color);
+        const outlineEnabled = getMapStateLayerValue(mapState, definition.outlineToggleId, true) !== false && enabled;
+        const outlineColor = getMapStateLayerValue(mapState, definition.outlineColorId, color);
 
         targetMap.setLayoutProperty(layer.id, 'visibility', isBuilding && layer.type === 'line'
           ? (outlineEnabled ? 'visible' : 'none')
@@ -290,7 +293,7 @@
     function configureMapForRender(targetMap, mapState = state) {
       configureTerrain(targetMap, mapState);
       applyMapState(targetMap, mapState);
-      applyLayerOrder(targetMap, mapState.layerOrder);
+      applyLayerOrder(targetMap);
     }
 
     let previewSyncToken = 0;
@@ -298,10 +301,10 @@
       const token = ++previewSyncToken;
       if (typeof waitForMapIdle !== 'function') return;
       waitForMapIdle(map, 10000).then(() => {
-        if (token !== previewSyncToken || !mapReady) return;
+        if (token !== previewSyncToken || !runtimeState.mapReady) return;
         configureMapForRender(map, state);
         map.triggerRepaint();
-      }).catch(error => console.warn('Preview detail synchronization failed:', error));
+      }).catch(error => CartivaDiagnostics.report('preview.sync', error));
     }
 
     function getLayerRole(layer) {
@@ -367,20 +370,18 @@
       if (targetMap.getSource(TERRAIN_COLOR_SOURCE_ID)) targetMap.removeSource(TERRAIN_COLOR_SOURCE_ID);
       targetMap.addSource(TERRAIN_COLOR_SOURCE_ID, { type: 'canvas', canvas, coordinates, animate: false });
       targetMap.addLayer({ id: TERRAIN_COLOR_LAYER_ID, type: 'raster', source: TERRAIN_COLOR_SOURCE_ID, paint: { 'raster-opacity': 0.72 } }, TERRAIN_LAYER_ID);
-      applyLayerOrder(targetMap, terrainState.layerOrder);
+      applyLayerOrder(targetMap);
     }
 
 
 // -----------------------------------------------------------------------------
-// LAYER ORDERING
-// Human-readable labels and controls to reorder layer roles.
-// Moves matching MapLibre layers in the render stack.
+// FIXED LAYER ORDERING
+// Moves matching MapLibre layers into the canonical cartographic stack.
 // -----------------------------------------------------------------------------
-    const LAYER_ORDER_LABELS = Object.freeze({ land: 'Land', terrain: 'Terrain', water: 'Water', forest: 'Nature', landCover: 'Urban', road: 'Roads', boundary: 'Borders', building: 'Buildings' });
-    function applyLayerOrder(targetMap = map, order = state.layerOrder) {
+    function applyLayerOrder(targetMap = map) {
       const layers = targetMap.getStyle()?.layers || [];
       const beforeId = layers.find(layer => layer.type === 'symbol')?.id;
-      order.forEach(role => {
+      FIXED_LAYER_ORDER.forEach(role => {
         const matchingIds = role === 'terrain'
           ? [TERRAIN_COLOR_LAYER_ID, TERRAIN_LAYER_ID]
           : layers.filter(layer => getLayerRole(layer) === role).map(layer => layer.id);
@@ -388,33 +389,6 @@
           if (targetMap.getLayer(id)) targetMap.moveLayer(id, beforeId);
         });
       });
-    }
-
-    function renderLayerOrderControls() {
-      const list = $('layerOrderList');
-      list.replaceChildren();
-      state.layerOrder.forEach((role, index) => {
-        const item = document.createElement('div');
-        item.className = 'layer-order-item';
-        const label = document.createElement('span');
-        label.textContent = LAYER_ORDER_LABELS[role];
-        const up = document.createElement('button');
-        up.type = 'button'; up.textContent = 'Up'; up.title = `Move ${label.textContent} earlier`; up.disabled = index === 0;
-        const down = document.createElement('button');
-        down.type = 'button'; down.textContent = 'Down'; down.title = `Move ${label.textContent} later`; down.disabled = index === state.layerOrder.length - 1;
-        up.addEventListener('click', () => moveLayerOrder(index, -1));
-        down.addEventListener('click', () => moveLayerOrder(index, 1));
-        item.append(label, up, down);
-        list.appendChild(item);
-      });
-    }
-
-    function moveLayerOrder(index, direction) {
-      const nextIndex = index + direction;
-      if (nextIndex < 0 || nextIndex >= state.layerOrder.length) return;
-      [state.layerOrder[index], state.layerOrder[nextIndex]] = [state.layerOrder[nextIndex], state.layerOrder[index]];
-      applyLayerOrder();
-      renderLayerOrderControls();
     }
 
 
@@ -433,7 +407,7 @@
     }
 
     function renderMapAnnotations() {
-      if (!mapReady) return;
+      if (!runtimeState.mapReady) return;
       const scale = $('mapScaleOverlay');
       const north = $('northOverlay');
       scale.style.display = state.scaleEnabled ? 'block' : 'none';
@@ -448,7 +422,7 @@
 
     function warnAboutUnsupportedLayers(targetMap) {
       const unsupported = CartivaLayerRegistry.getUnsupportedLayers(targetMap.getStyle().layers);
-      if (unsupported.length) console.warn('Unsupported CARTO layers were left unchanged:', unsupported);
+      if (unsupported.length) CartivaDiagnostics.record('map.layers', 'Unsupported map layers were left unchanged.', { unsupported }, 'warn');
     }
 
 
@@ -458,30 +432,9 @@
 // Handles main vs accent colors for forest/landCover.
 // -----------------------------------------------------------------------------
     // Color & Layer Controllers
-    function setupLayerControls(colorId, accentColorId, opacityId, opacityValId, toggleId, role) {
-      const colorInput = document.getElementById(colorId);
-      const accentColorInput = accentColorId ? document.getElementById(accentColorId) : null;
-      const opacityInput = document.getElementById(opacityId);
-      const opacityValSpan = document.getElementById(opacityValId);
-      const toggleInput = document.getElementById(toggleId);
-
-      function update() {
-        syncStateFromControls();
-        const layerState = state.layers;
-        layerState[colorId] = state[colorId] = readControl(colorId);
-        layerState[opacityId] = state[opacityId] = readControl(opacityId);
-        layerState[toggleId] = state[toggleId] = readControl(toggleId);
-        if (accentColorId) layerState[accentColorId] = state[accentColorId] = readControl(accentColorId);
-        if (opacityValSpan) opacityValSpan.textContent = layerState[opacityId];
-        applyMapState(map, state);
-      }
-
-      if (colorInput) colorInput.addEventListener('input', update);
-      if (accentColorInput) accentColorInput.addEventListener('input', update);
-      if (opacityInput) opacityInput.addEventListener('input', update);
-      if (toggleInput) toggleInput.addEventListener('change', update);
-
-      updateCallbacks.push(update);
+    function setupLayerControls(definition) {
+      const opacityValSpan = document.getElementById(definition.valueId);
+      if (opacityValSpan) opacityValSpan.textContent = state.layers[definition.opacityId];
     }
 
 
@@ -564,56 +517,10 @@
       updateStateFromControls();
     });
 
-    function setPresetToCustomIfManual() {
-      state.preset = null;
-    }
-
-    const buildingOutlineToggle = document.getElementById('buildingOutlineToggle');
-
-    
-
-
-
-// -----------------------------------------------------------------------------
-// BUILDING LAYER CONTROLS
-// Handle building fill color, opacity, visibility, and outline options.
-// -----------------------------------------------------------------------------
-    function setupBuildingControls() {
-      const fillInput = document.getElementById('buildingColor');
-      const opacityInput = document.getElementById('buildingOpacity');
-      const opacityValSpan = document.getElementById('buildingOpacityVal');
-      const toggleInput = document.getElementById('buildingToggle');
-      const outlineColorInput = document.getElementById('buildingOutlineColor');
-
-      function update() {
-        syncStateFromControls();
-        Object.assign(state.layers, {
-          buildingColor: readControl('buildingColor'),
-          buildingOpacity: readControl('buildingOpacity'),
-          buildingToggle: readControl('buildingToggle'),
-          buildingOutlineToggle: readControl('buildingOutlineToggle'),
-          buildingOutlineColor: readControl('buildingOutlineColor')
-        });
-        opacityValSpan.textContent = state.layers.buildingOpacity;
-        applyMapState(map, state);
-      }
-
-      fillInput.addEventListener('input', () => { setPresetToCustomIfManual(); update(); });
-      opacityInput.addEventListener('input', () => { setPresetToCustomIfManual(); update(); });
-      toggleInput.addEventListener('change', () => { setPresetToCustomIfManual(); update(); });
-      buildingOutlineToggle.addEventListener('change', () => { setPresetToCustomIfManual(); update(); });
-      outlineColorInput.addEventListener('input', () => { setPresetToCustomIfManual(); update(); });
-
-      updateCallbacks.push(update);
-    }
-
-    document.querySelectorAll('.layer-control-card input').forEach(input => {
-      input.addEventListener('input', setPresetToCustomIfManual);
-      input.addEventListener('change', setPresetToCustomIfManual);
-    });
-
     function triggerAllLayerUpdates() {
-      updateCallbacks.forEach(cb => cb());
+      syncStateFromControls();
+      CartivaLayerRegistry.definitions.forEach(setupLayerControls);
+      applyMapState(map, state);
     }
 
 
@@ -624,45 +531,26 @@
 // - Configure terrain and colorization
 // - Set up layer controls for water/forest/land/landCover/road/boundary
 // - Initialize building controls and apply default preset
-// - Apply layer order and render controls
+// - Apply the fixed layer order
 // -----------------------------------------------------------------------------
     map.on('load', () => {
-      mapReady = true;
+      runtimeState.mapReady = true;
+      CartivaDiagnostics.record('map', 'Map style loaded.', { center: map.getCenter().toArray(), zoom: map.getZoom() });
       configureTerrain(map);
-      updateTerrainColorization(map).catch(error => console.warn('Elevation colors could not be loaded:', error));
+      updateTerrainColorization(map).catch(error => CartivaDiagnostics.report('terrain.color', error));
       configureMapForRender(map, state);
-      enhancePreviewDetail(map);
+      configureBuildingZoom(map);
       applyTextFilters();
 
-      setupLayerControls('waterColor', null, 'waterOpacity', 'waterOpacityVal', 'waterToggle', 'water');
-      setupLayerControls('forestColor', 'forestColorAccent', 'forestOpacity', 'forestOpacityVal', 'forestToggle', 'forest');
-      setupLayerControls('landColor', null, 'landOpacity', 'landOpacityVal', 'landToggle', 'land');
-      setupLayerControls('landCoverColor', 'landCoverColorAccent', 'landCoverOpacity', 'landCoverOpacityVal', 'landCoverToggle', 'landCover');
-      setupLayerControls('roadColor', null, 'roadOpacity', 'roadOpacityVal', 'roadToggle', 'road');
-      setupLayerControls('boundaryColor', null, 'boundaryOpacity', 'boundaryOpacityVal', 'boundaryToggle', 'boundary');
-
-      setupBuildingControls();
+      CartivaLayerRegistry.definitions.forEach(setupLayerControls);
       applyColorPreset(DEFAULTS.preset);
       configureBuildingZoom(map);
       triggerAllLayerUpdates();
       applyTextFilters(map, readControl('textFilter'));
-      updateLabelStyle();
+      renderPreview();
       warnAboutUnsupportedLayers(map);
       applyLayerOrder();
-      renderLayerOrderControls();
       schedulePreviewRenderSync();
     });
-
-    ['terrainToggle', 'mountainColor', 'terrainExaggeration'].forEach(id => $(id).addEventListener('input', () => {
-      syncStateFromControls();
-      $('terrainExaggerationVal').textContent = state.terrainExaggeration;
-      configureTerrain(map);
-      updateTerrainColorization().catch(error => console.warn('Elevation colors could not be updated:', error));
-    }));
-    ['scaleToggle', 'northToggle'].forEach(id => $(id).addEventListener('change', () => {
-      syncStateFromControls();
-      renderMapAnnotations();
-    }));
-
 
 // -----------------------------------------------------------------------------

@@ -1,18 +1,30 @@
-// Optional diagnostics channel for service failures and render comparisons.
+// Structured diagnostics backed by loglevel, with a small in-memory history.
 (function attachDiagnostics(global) {
   const events = [];
-  function record(area, message, details = {}) {
-    const event = { time: new Date().toISOString(), area, message, details };
+  const logger = global.log?.getLogger ? global.log.getLogger('cartiva') : global.console;
+  const configuredLevel = global.localStorage?.getItem('cartiva.logLevel') || 'info';
+  logger.setDefaultLevel?.(configuredLevel);
+
+  function record(area, message, details = {}, level = 'info') {
+    const event = { time: new Date().toISOString(), level, area, message, details };
     events.push(event);
-    if (events.length > 100) events.shift();
+    if (events.length > 200) events.shift();
+    const write = typeof logger[level] === 'function' ? logger[level] : logger.info;
+    write?.call(logger, `[cartiva:${area}] ${message}`, details);
     return event;
   }
   function report(area, error, details = {}) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn(`[cartiva:${area}] ${message}`, details);
-    return record(area, message, details);
+    return record(area, message, { ...details, stack: error?.stack }, 'error');
   }
   function list() { return events.slice(); }
   function clear() { events.length = 0; }
-  global.CartivaDiagnostics = Object.freeze({ record, report, list, clear });
+  function setLevel(level) {
+    logger.setLevel?.(level);
+    global.localStorage?.setItem('cartiva.logLevel', level);
+    record('logging', `Log level changed to ${level}.`);
+  }
+  global.CartivaLog = logger;
+  global.CartivaDiagnostics = Object.freeze({ record, report, list, clear, setLevel });
+  record('application', 'Logging initialized.', { level: configuredLevel, framework: 'loglevel' });
 })(window);

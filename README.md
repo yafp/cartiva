@@ -29,12 +29,19 @@ Just use the demo linked above.
 - `src/js/preset-data.js` contains the palette catalog and normalized preset data.
 - `src/data/preset-catalog.json` contains the editable preset display catalog; the JS data module remains as a direct-file-compatible runtime fallback for palette values.
 - `src/js/app.js` is the small composition root loaded after the feature runtimes.
-- `src/js/ui.js` owns state initialization, controls, preview rendering, labels, and layout controls.
+- `src/js/ui.js` owns persistent design state, delegated form handling, preview rendering, labels, and layout controls.
+- `src/js/ui/projects.js` owns project, history, user preset, and GeoJSON actions.
+- `src/js/ui/shortcuts.js` owns global keyboard commands.
 - `src/js/map.js` owns MapLibre initialization, map layers, terrain, annotations, and map interactions.
 - `src/js/location.js` owns search, reverse geocoding, and location persistence.
-- `src/js/export.js` owns export state, raster/vector/3D output orchestration, and download actions.
+- `src/js/export.js` owns image rendering and the shared terrain/mesh algorithms.
+- `src/js/export/model-export.js` owns STL and 3MF export orchestration.
+- `src/js/export/shared.js` owns downloads, metadata, timestamps, and binary checksums.
 - `src/js/pdf-exporter.js` owns the PDF worker adapter.
-- `src/js/core/` contains state, project persistence, caching, diagnostics, and external service configuration.
+- `src/js/core/runtime-state.js` contains transient history, timers, controllers, and active operations that are never persisted.
+- `src/js/core/render-spec.js` creates the immutable render specification shared by preview, image, STL, and 3MF rendering.
+- `src/js/core/operations.js` provides consistent logging, status, control state, failure handling, and cleanup for asynchronous operations.
+- `src/js/core/` also contains project persistence, caching, diagnostics, and external service configuration.
 - `src/js/map/layer-registry.js` owns MapLibre style-layer role detection.
 - `src/js/map/style-adapter.js` normalizes provider layers into application roles.
 - `src/js/services/geocoder.js` owns the Nominatim network boundary.
@@ -44,22 +51,24 @@ Just use the demo linked above.
 
 ### Architecture boundaries
 
-The application uses a serializable state object as its shared domain model. UI controls update that state, while MapLibre, geocoding, preset data, and export encoding are accessed through dedicated boundaries. The feature files remain classic scripts loaded in dependency order so the app stays dependency-free and can still be opened directly from the `src/index.html` file.
+The application separates serializable project state from transient runtime state. UI controls update project state through one delegated form dispatcher, while MapLibre, geocoding, preset data, and export encoding are accessed through dedicated boundaries. Preview and all exporters consume one normalized render specification. The feature files remain classic scripts loaded in dependency order so the app stays dependency-free and can still be opened directly from the `src/index.html` file.
+
+Map layer controls are defined declaratively in `src/js/map/layer-registry.js`. The same definitions drive state synchronization, map styling, 3D feature limits, visibility, and materials.
 
 External provider URLs are centralized in `src/js/core/service-config.js`. This makes provider replacement, local testing, and future configuration injection possible without changing UI or rendering code.
 
 ### Maintenance features
 
-- `src/js/core/project-service.js` owns versioned project JSON, local browser persistence, and user presets. Use **Save project**, **Download project**, **Load project**, **Save preset**, and **Load preset** in the sidebar.
-- `src/js/core/resource-cache.js` provides bounded in-memory caching for geocoder and elevation requests. Repeated exports and location lookups avoid unnecessary network calls.
-- `src/js/core/diagnostics.js` records service failures and preview/export bounds comparisons. Export logs a warning if its geographic bounds differ from the preview beyond the configured tolerance.
-- `src/js/map/style-adapter.js` normalizes provider-specific MapLibre style layers into application roles. Provider layer naming changes should be handled there or in `layer-registry.js`.
-- Poster and 3D exports produce a JSON metadata sidecar containing the camera, bounds, format, DPI, layer settings, effects, provider URLs, and application version.
-- 3D polygon surfaces use ear-clipping triangulation for concave footprints, with clipped feature collection and bounded mesh sizes preserved by the existing export limits.
+PDF output preserves the selected physical paper size by converting image pixels to PDF points using the selected DPI. SVG output is raster-backed and preserves the exact poster render without duplicating labels.
+Export preflight supports A4 PNG output at 600 DPI while still rejecting dimensions above the browser-safe 16,384-pixel side and 160-megapixel limits. Temporary export maps are cleaned up after failures, and large map transfers use bounded tile compositing.
+Custom paper sizes, bleed/safe-area guides, undo/redo history, GeoJSON overlays, project migrations, and bounded preset storage are available in the sidebar. Provider details remain in export metadata but are not displayed in the interface.
+Quality profiles render the map at 1x, 1.5x, or 2x before downsampling with high-quality canvas filtering. Preview rendering is capped at 2x device pixel ratio, export zoom is provider-clamped, print line weights can be adjusted, PNG exports receive DPI metadata, and PDF prefers lossless PNG embedding when jsPDF is available.
+STL and 3MF terrain exports include visible water, nature, urban land cover, boundaries, roads, and buildings. 3MF uses standard material colors; STL writes the common 15-bit per-facet color extension for viewers that support colored STL files.
+Map layers use a fixed cartographic order so previews and all export formats remain predictable. Legacy project files with a custom `layerOrder` field still load, but the value is normalized to the canonical order.
 
 ### Reliability and accessibility
 
-The map reports non-fatal MapLibre errors through the status area and diagnostics channel. Geocoder and terrain failures are reported without preventing other features from working. Accordion headers expose keyboard focus, `Enter`/`Space` activation, and `aria-controls`; color inputs receive explicit accessible names.
+The app uses `loglevel` for structured lifecycle, map, geocoder, project, and export logging. The default level is `info`; call `CartivaDiagnostics.setLevel('debug')` in the browser console to persist a different level, and inspect recent structured entries with `CartivaDiagnostics.list()`. Map, geocoder, and terrain failures are reported without preventing other features from working. Accordion headers expose keyboard focus, `Enter`/`Space` activation, and `aria-controls`; color inputs receive explicit accessible names.
 
 ### Local development
 
@@ -70,6 +79,14 @@ python -m http.server 8080 --directory src
 ```
 
 Then open `http://localhost:8080`. No package installation or build step is required.
+
+Run the repository checks without installing Node.js:
+
+```powershell
+./scripts/Test-Cartiva.ps1
+```
+
+The validator checks script references, HTML IDs and labels, JSON parsing, duplicate classic-script function declarations, and English ASCII comments. `.editorconfig`, `jsconfig.json`, and the `Validate` GitHub Actions workflow keep these checks available in editors and continuous integration.
 
 
 
