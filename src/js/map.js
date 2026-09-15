@@ -39,6 +39,7 @@
     }
     map.on('move', updateZoomLevelDisplay);
     map.on('move', renderMapAnnotations);
+    map.on('movestart', () => globalThis.CartivaRefinedPreview?.hide());
     map.on('zoomend', () => {
       configureMapForRender(map, state);
       triggerAllLayerUpdates();
@@ -304,6 +305,7 @@
         if (token !== previewSyncToken || !runtimeState.mapReady) return;
         configureMapForRender(map, state);
         map.triggerRepaint();
+        globalThis.CartivaRefinedPreview?.schedule();
       }).catch(error => CartivaDiagnostics.report('preview.sync', error));
     }
 
@@ -504,12 +506,10 @@
     $('randomizeDesignBtn').addEventListener('click', () => {
       const presetNames = Object.keys(predefinedColorSets);
       const layoutNames = Array.from($('labelStyle').options, option => option.value);
-      const effectNames = Array.from($('filterPreset').options, option => option.value);
       const randomItem = items => items[Math.floor(Math.random() * items.length)];
 
       writeControl('colorPresetSelect', randomItem(presetNames));
       writeControl('labelStyle', randomItem(layoutNames));
-      writeControl('filterPreset', randomItem(effectNames));
       writeControl('contrastVal', 85 + Math.floor(Math.random() * 31));
       writeControl('brightnessVal', 90 + Math.floor(Math.random() * 21));
       writeControl('saturationVal', 80 + Math.floor(Math.random() * 61));

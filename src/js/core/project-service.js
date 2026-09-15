@@ -2,12 +2,11 @@
 (function attachProjectService(global) {
   const VERSION = 2;
   const STORAGE_KEY = 'cartiva.project.v2';
-  const PRESETS_KEY = 'cartiva.user-presets.v1';
   const PERSISTED_KEYS = Object.freeze([
     'preset', 'labelStyle', 'labelOpacity', 'labelFont', 'labelTextColor', 'labelCoordColor',
     'labelCountryColor', 'labelBgColor', 'textFilter', 'format', 'customWidthMm',
     'customHeightMm', 'bleedMm', 'safeMm', 'guidesEnabled', 'exportQuality',
-    'printLineWeight', 'exportType', 'exportDpi', 'filterPreset', 'contrast', 'brightness',
+    'printLineWeight', 'exportType', 'exportDpi', 'contrast', 'brightness',
     'saturation', 'shape', 'shapeColor', 'terrainEnabled', 'mountainColor',
     'terrainExaggeration', 'stlBuildingsEnabled', 'stlRoadsEnabled', 'scaleEnabled',
     'northEnabled', 'borderEnabled', 'borderColor', 'borderWidth', 'outerBorderRadius',
@@ -94,36 +93,8 @@
     return file.text().then(text => normalizeProject(JSON.parse(text)));
   }
 
-  function listPresets() {
-    try {
-      const presets = JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]');
-      return Array.isArray(presets) ? presets : [];
-    } catch (error) {
-      throw new Error(`Saved presets are invalid: ${error.message}`);
-    }
-  }
-
-  function savePreset(name, state) {
-    if (typeof name !== 'string' || name.trim().length < 1 || name.length > 80) throw new Error('Preset name must be between 1 and 80 characters.');
-    const presets = listPresets().filter(item => item.name !== name);
-    presets.push({ name, savedAt: new Date().toISOString(), state: normalizeProject({ state }).state });
-    try {
-      localStorage.setItem(PRESETS_KEY, JSON.stringify(presets.slice(-50)));
-    } catch (error) {
-      throw new Error(`Preset could not be saved: ${error.message}`);
-    }
-    global.CartivaDiagnostics?.record('preset.save', 'User preset saved.', { name, count: presets.length });
-    return presets;
-  }
-
-  function deletePreset(name) {
-    const presets = listPresets().filter(item => item.name !== name);
-    localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
-    return presets;
-  }
-
   global.CartivaProject = Object.freeze({
     VERSION, STORAGE_KEY, create: createProject, normalize: normalizeProject,
-    save, load, download, readFile, listPresets, savePreset, deletePreset
+    save, load, download, readFile
   });
 })(window);

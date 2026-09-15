@@ -152,6 +152,81 @@
           (lat - bounds.getSouth()) / (bounds.getNorth() - bounds.getSouth()) * depthMm
         ];
       };
+      const clipRingToModelBounds = ring => {
+        let points = ring.map(coordinate => {
+          const [lng, lat] = coordinate;
+          return [
+            (lng - bounds.getWest()) / (bounds.getEast() - bounds.getWest()) * widthMm,
+            (lat - bounds.getSouth()) / (bounds.getNorth() - bounds.getSouth()) * depthMm
+          ];
+        }).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+        if (points.length > 1 && points[0][0] === points.at(-1)[0] && points[0][1] === points.at(-1)[1]) points.pop();
+        const clip = (inside, intersect) => {
+          if (!points.length) return;
+          const output = [];
+          let previous = points.at(-1);
+          for (const current of points) {
+            const previousInside = inside(previous);
+            const currentInside = inside(current);
+            if (currentInside !== previousInside) output.push(intersect(previous, current));
+            if (currentInside) output.push(current);
+            previous = current;
+          }
+          points = output;
+        };
+        const verticalIntersection = (x, start, end) => {
+          const ratio = (x - start[0]) / (end[0] - start[0]);
+          return [x, start[1] + (end[1] - start[1]) * ratio];
+        };
+        const horizontalIntersection = (y, start, end) => {
+          const ratio = (y - start[1]) / (end[1] - start[1]);
+          return [start[0] + (end[0] - start[0]) * ratio, y];
+        };
+        clip(point => point[0] >= 0, (start, end) => verticalIntersection(0, start, end));
+        clip(point => point[0] <= widthMm, (start, end) => verticalIntersection(widthMm, start, end));
+        clip(point => point[1] >= 0, (start, end) => horizontalIntersection(0, start, end));
+        clip(point => point[1] <= depthMm, (start, end) => horizontalIntersection(depthMm, start, end));
+        return points;
+      };
+      const pointIsInsideRing = (point, ring) => {
+        let inside = false;
+        for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index, index += 1) {
+          const currentPoint = ring[index];
+          const previousPoint = ring[previous];
+          const crossesLatitude = (currentPoint[1] > point[1]) !== (previousPoint[1] > point[1]);
+          if (crossesLatitude) {
+            const crossingX = (previousPoint[0] - currentPoint[0]) * (point[1] - currentPoint[1]) / (previousPoint[1] - currentPoint[1]) + currentPoint[0];
+            if (point[0] < crossingX) inside = !inside;
+          }
+        }
+        return inside;
+      };
+      const waterPolygons = (cityFeatures.water || []).flatMap(feature => {
+        const coordinates = feature.geometry?.coordinates;
+        const rings = feature.geometry?.type === 'Polygon'
+          ? [coordinates?.[0]]
+          : feature.geometry?.type === 'MultiPolygon'
+            ? coordinates?.map(polygon => polygon[0])
+            : [];
+        return rings.filter(Boolean).map(clipRingToModelBounds).filter(ring => ring.length >= 3).map(ring => ({
+          ring,
+          minX: Math.min(...ring.map(point => point[0])),
+          maxX: Math.max(...ring.map(point => point[0])),
+          minY: Math.min(...ring.map(point => point[1])),
+          maxY: Math.max(...ring.map(point => point[1]))
+        }));
+      });
+      const terrainMaterialAt = vertices => {
+        const point = [
+          vertices.reduce((sum, vertex) => sum + vertex[0], 0) / vertices.length,
+          vertices.reduce((sum, vertex) => sum + vertex[1], 0) / vertices.length
+        ];
+        return waterPolygons.some(polygon =>
+          point[0] >= polygon.minX && point[0] <= polygon.maxX &&
+          point[1] >= polygon.minY && point[1] <= polygon.maxY &&
+          pointIsInsideRing(point, polygon.ring)
+        ) ? 'water' : 'terrain';
+      };
       const addBuilding = ring => {
         const points = ring.map(pointFromCoordinate);
         if (points.some(point => !point)) return;
@@ -168,9 +243,9 @@
         });
       };
       const addSurface = (ring, material, height) => {
-        const points = ring.map(pointFromCoordinate);
-        if (points.some(point => !point) || points.length < 4) return;
-        const top = points.slice(0, -1).map(([x, y]) => [x, y, terrainHeightAt(x, y) + height]);
+        const points = clipRingToModelBounds(ring);
+        if (points.length < 3) return;
+        const top = points.map(([x, y]) => [x, y, terrainHeightAt(x, y) + height]);
         if (top.length < 3) return;
         const trianglesForTop = triangulatePolygon(top);
         if (trianglesForTop) trianglesForTop.forEach(([a, b, c]) => add(top[a], top[b], top[c], material));
@@ -195,7 +270,8 @@
       };
       for (let row = 0; row < size - 1; row += 1) for (let column = 0; column < size - 1; column += 1) {
         const topLeft = vertexAt(row, column), topRight = vertexAt(row, column + 1), bottomLeft = vertexAt(row + 1, column), bottomRight = vertexAt(row + 1, column + 1);
-        add(topLeft, bottomLeft, topRight); add(topRight, bottomLeft, bottomRight);
+        add(topLeft, bottomLeft, topRight, terrainMaterialAt([topLeft, bottomLeft, topRight]));
+        add(topRight, bottomLeft, bottomRight, terrainMaterialAt([topRight, bottomLeft, bottomRight]));
         const baseTopLeft = vertexAt(row, column, true), baseTopRight = vertexAt(row, column + 1, true), baseBottomLeft = vertexAt(row + 1, column, true), baseBottomRight = vertexAt(row + 1, column + 1, true);
         add(baseTopRight, baseBottomLeft, baseTopLeft); add(baseBottomRight, baseBottomLeft, baseTopRight);
       }
@@ -506,6 +582,101 @@
       return { exportMap, container };
     }
 
+    const refinedMapPreview = document.getElementById('refinedMapPreview');
+    const REFINED_PREVIEW_MAX_SIDE = 3200;
+    const REFINED_PREVIEW_ZOOM_BOOST = 2;
+    const REFINED_PREVIEW_DELAY_MS = 600;
+    let refinedPreviewToken = 0;
+    let refinedPreviewUrl = '';
+    let refinedPreviewRendering = false;
+    let refinedPreviewPending = false;
+
+    function hideRefinedPreview() {
+      refinedPreviewToken += 1;
+      clearTimeout(runtimeState.timers.refinedPreview);
+      refinedMapPreview.classList.remove('ready');
+    }
+
+    async function renderRefinedPreview(token) {
+      if (token !== refinedPreviewToken || document.hidden || !runtimeState.mapReady) return;
+      if (refinedPreviewRendering) {
+        refinedPreviewPending = true;
+        return;
+      }
+      refinedPreviewRendering = true;
+      let refinedMap;
+      let container;
+      try {
+        const exportState = createRenderSnapshot();
+        const previewWidth = Math.max(1, exportState.previewMapSize.width);
+        const previewHeight = Math.max(1, exportState.previewMapSize.height);
+        const requestedScale = 2 ** REFINED_PREVIEW_ZOOM_BOOST;
+        const scale = Math.max(1, Math.min(requestedScale, REFINED_PREVIEW_MAX_SIDE / Math.max(previewWidth, previewHeight)));
+        const width = Math.round(previewWidth * scale);
+        const height = Math.round(previewHeight * scale);
+        ({ exportMap: refinedMap, container } = await createExportMap(width, height, exportState));
+        if (token !== refinedPreviewToken) return;
+        const buildingLayerIds = (refinedMap.getStyle()?.layers || [])
+          .filter(layer => getLayerRole(layer) === 'building')
+          .map(layer => layer.id);
+        const buildingFeatures = buildingLayerIds.length
+          ? refinedMap.queryRenderedFeatures({ layers: buildingLayerIds }).length
+          : 0;
+        const blob = await new Promise((resolve, reject) => {
+          refinedMap.getCanvas().toBlob(result => result ? resolve(result) : reject(new Error('Refined preview encoding failed.')), 'image/png');
+        });
+        if (token !== refinedPreviewToken) return;
+        const nextUrl = URL.createObjectURL(blob);
+        refinedMapPreview.onload = () => {
+          if (token !== refinedPreviewToken) {
+            URL.revokeObjectURL(nextUrl);
+            return;
+          }
+          if (refinedPreviewUrl) URL.revokeObjectURL(refinedPreviewUrl);
+          refinedPreviewUrl = nextUrl;
+          refinedMapPreview.classList.add('ready');
+          CartivaDiagnostics.record('preview.refine', 'High-fidelity preview rendered.', {
+            width,
+            height,
+            detailZoom: exportState.zoom + Math.log2(scale),
+            buildingFeatures
+          });
+        };
+        refinedMapPreview.src = nextUrl;
+      } catch (error) {
+        if (token === refinedPreviewToken) CartivaDiagnostics.report('preview.refine', error);
+      } finally {
+        refinedMap?.remove();
+        container?.remove();
+        refinedPreviewRendering = false;
+        if (refinedPreviewPending) {
+          refinedPreviewPending = false;
+          scheduleRefinedPreview();
+        }
+      }
+    }
+
+    function scheduleRefinedPreview() {
+      hideRefinedPreview();
+      if (document.hidden) return;
+      const token = refinedPreviewToken;
+      runtimeState.timers.refinedPreview = setTimeout(() => renderRefinedPreview(token), REFINED_PREVIEW_DELAY_MS);
+    }
+
+    globalThis.CartivaRefinedPreview = Object.freeze({
+      hide: hideRefinedPreview,
+      schedule: scheduleRefinedPreview
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) hideRefinedPreview();
+      else scheduleRefinedPreview();
+    });
+    globalThis.addEventListener('pagehide', () => {
+      hideRefinedPreview();
+      if (refinedPreviewUrl) URL.revokeObjectURL(refinedPreviewUrl);
+      refinedPreviewUrl = '';
+    });
+
     exportBtn.addEventListener('click', () => CartivaOperations.run({
       area: 'image.export',
       button: exportBtn,
@@ -513,7 +684,9 @@
       busyLabel: 'Exporting...',
       idleLabel: 'Export image',
       startStatus: '1/5 Preparing export...',
-      errorPrefix: 'Export failed'
+      successNotification: 'Poster export finished.',
+      errorPrefix: 'Export failed',
+      errorNotificationPrefix: 'Poster export failed'
     }, async cleanup => {
       let exportMap;
       let container;
@@ -568,10 +741,8 @@
           ctx.fillRect(bWidth, bWidth, mapWidth, mapHeight);
         }
 
-        const presetKey = exportState.filterPreset;
-        const baseFilter = filterPresets[presetKey] || '';
         const contrastSetting = exportState.contrast;
-        ctx.filter = `${baseFilter} contrast(${contrastSetting}%) brightness(${exportState.brightness}%) saturate(${exportState.saturation}%)`.trim();
+        ctx.filter = `contrast(${contrastSetting}%) brightness(${exportState.brightness}%) saturate(${exportState.saturation}%)`;
 
       ({ exportMap, container } = await createExportMap(renderMapWidth, sourceMapHeight, exportState));
       setStatus('3/5 Rendering map and layout...');

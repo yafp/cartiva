@@ -7,7 +7,7 @@
 const APP = {
   NAME: "cartiva",
   DESCRIPTION: "a small, self-contained creative cartography web-app",
-  VERSION: "2026.09.12.223328", // yyyy.mm.dd.HHMMSS
+  VERSION: "2026.09.15.161223", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
@@ -167,7 +167,6 @@ const DEFAULTS = Object.freeze({
       printLineWeight: 'standard',
       exportType: 'image/png',
       exportDpi: 300,
-      filterPreset: 'none',
       contrast: 100,
       brightness: 100,
       saturation: 100,
@@ -201,26 +200,6 @@ const DEFAULTS = Object.freeze({
       layers: {}
     };
     const runtimeState = CartivaRuntime;
-    runtimeState.history.snapshot = JSON.stringify(state);
-
-    function updateHistoryButtons() {
-      const history = runtimeState.history;
-      $('undoBtn')?.toggleAttribute('disabled', history.past.length === 0);
-      $('redoBtn')?.toggleAttribute('disabled', history.future.length === 0);
-      if ($('historyStatus')) $('historyStatus').textContent = `${history.past.length} change${history.past.length === 1 ? '' : 's'}`;
-    }
-
-    function commitHistory() {
-      const history = runtimeState.history;
-      if (history.applying) return;
-      const next = JSON.stringify(state);
-      if (next === history.snapshot) return;
-      history.past.push(JSON.parse(history.snapshot));
-      if (history.past.length > 50) history.past.shift();
-      history.future.length = 0;
-      history.snapshot = next;
-      updateHistoryButtons();
-    }
 
 // -----------------------------------------------------------------------------
 // DOM CONTROL CACHE
@@ -311,7 +290,6 @@ const DEFAULTS = Object.freeze({
       state.labelCountryColor = readControl('labelCountryColor');
       state.labelBgColor = readControl('labelBgColor');
       state.textFilter = readControl('textFilter');
-      state.filterPreset = readControl('filterPreset');
       state.contrast = Number(readControl('contrastVal'));
       state.brightness = Number(readControl('brightnessVal'));
       state.saturation = Number(readControl('saturationVal'));
@@ -422,11 +400,13 @@ const DEFAULTS = Object.freeze({
 // -----------------------------------------------------------------------------
     function renderPreview() {
       if (!runtimeState.mapReady) return;
+      globalThis.CartivaRefinedPreview?.hide();
       const renderSpec = CartivaRenderSpec.create(state);
       contrastNum.textContent = renderSpec.contrast;
       brightnessNum.textContent = renderSpec.brightness;
       saturationNum.textContent = renderSpec.saturation;
-      mapEl.style.filter = `${filterPresets[renderSpec.filterPreset] || ''} contrast(${renderSpec.contrast}%) brightness(${renderSpec.brightness}%) saturate(${renderSpec.saturation}%)`.trim();
+      mapEl.style.filter = `contrast(${renderSpec.contrast}%) brightness(${renderSpec.brightness}%) saturate(${renderSpec.saturation}%)`;
+      $('refinedMapPreview').style.filter = mapEl.style.filter;
       opacityNum.textContent = renderSpec.labelOpacity;
       mapLabelOverlay.style.display = renderSpec.labelStyle === 'none' ? 'none' : 'block';
       if (renderSpec.labelStyle !== 'none') {
@@ -468,6 +448,7 @@ const DEFAULTS = Object.freeze({
       applyMapState(map, renderSpec);
       updateOutputDimensions();
       updateContrastWarning();
+      schedulePreviewRenderSync();
     }
 
 
@@ -477,7 +458,6 @@ const DEFAULTS = Object.freeze({
 // -----------------------------------------------------------------------------
     function updateStateFromControls() {
       syncStateFromControls();
-      commitHistory();
       renderPreview();
     }
 
@@ -579,7 +559,6 @@ const DEFAULTS = Object.freeze({
       writeControl('formatSelect', DEFAULTS.format);
       writeControl('exportType', DEFAULTS.exportType);
       writeControl('exportDpi', DEFAULTS.exportDpi);
-      writeControl('filterPreset', DEFAULTS.filterPreset);
       writeControl('contrastVal', DEFAULTS.contrast);
       writeControl('brightnessVal', DEFAULTS.brightness);
       writeControl('saturationVal', DEFAULTS.saturation);
@@ -657,22 +636,13 @@ const DEFAULTS = Object.freeze({
 
 // -----------------------------------------------------------------------------
 
-// LIVE FILTERS (PRESETS + CONTRAST/BRIGHTNESS/SATURATION)
-// Apply CSS filter chain to map element based on preset and sliders.
+// LIVE COLOR ADJUSTMENTS
+// Apply contrast, brightness, and saturation to the map element.
 // -----------------------------------------------------------------------------
-    // Live Effects Engine
     const mapEl = document.getElementById('map');
     const contrastNum = document.getElementById('contrastNum');
     const brightnessNum = document.getElementById('brightnessNum');
     const saturationNum = document.getElementById('saturationNum');
-
-    const filterPresets = {
-      'none': '',
-      'grayscale': 'grayscale(100%)',
-      'vintage': 'sepia(50%) contrast(90%) saturate(85%)',
-      'high-contrast': 'grayscale(100%) contrast(190%)',
-      'invert': 'invert(100%) hue-rotate(180deg)'
-    };
 
 // -----------------------------------------------------------------------------
 

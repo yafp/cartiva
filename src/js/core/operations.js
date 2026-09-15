@@ -1,5 +1,20 @@
 // Shared lifecycle for asynchronous user operations.
 (function attachOperations(global) {
+  function notify(message, type) {
+    if (!message || typeof global.Toastify !== 'function') return;
+    const toast = global.Toastify({
+      text: message,
+      duration: 4500,
+      close: true,
+      gravity: 'top',
+      position: 'right',
+      stopOnFocus: true,
+      style: { background: type === 'error' ? '#b91c1c' : '#047857' }
+    });
+    toast.showToast();
+    toast.toastElement?.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  }
+
   async function run(options, task) {
     const {
       area,
@@ -9,7 +24,9 @@
       idleLabel = null,
       startStatus = '',
       successStatus = '',
-      errorPrefix = 'Operation failed'
+      errorPrefix = 'Operation failed',
+      successNotification = '',
+      errorNotificationPrefix = ''
     } = options;
     const cleanups = [];
     const previousLabel = label?.textContent;
@@ -22,6 +39,7 @@
     try {
       const result = await task(cleanup => cleanups.push(cleanup));
       if (successStatus) global.setStatus?.(successStatus);
+      notify(successNotification, 'success');
       global.CartivaDiagnostics.record(area, 'Operation completed.', {
         durationMs: Math.round(performance.now() - startedAt)
       });
@@ -30,6 +48,7 @@
       if (error?.name !== 'AbortError') {
         global.CartivaDiagnostics.report(area, error);
         global.setStatus?.(`${errorPrefix}: ${error.message}`, true);
+        if (errorNotificationPrefix) notify(`${errorNotificationPrefix}: ${error.message}`, 'error');
       }
       return null;
     } finally {

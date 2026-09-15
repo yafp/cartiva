@@ -16,6 +16,8 @@
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/loglevel@1.9.2/dist/loglevel.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
 
   <!-- Google Fonts Imports -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -507,34 +509,12 @@
           </div>
         </div>
 
-        <!-- 8. Effects -->
-        <div class="section-block collapsed" title="Apply post-processing effects to the completed map">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c0-1.5 1-2.5 2.5-2.5 1.5 0 2.5 1 2.5 2.5 2.5 0 4.5-2 4.5-4.5 0-1-.5-2-1.5-2.5 1-.5 1.5-1.5 1.5-2.5 0-3-2.5-5.5-5.5-5.5Z"></path></svg>
-              8. Effects
-            </span>
-          </div>
-          <div class="section-body">
-            <div class="control-group">
-              <label for="filterPreset">Effect</label>
-              <select id="filterPreset" autocomplete="off" title="Select a post-processing effect">
-                <option value="none">Default (None)</option>
-                <option value="grayscale">Grayscale</option>
-                <option value="vintage">Vintage Sepia</option>
-                <option value="high-contrast">High Contrast B&W</option>
-                <option value="invert">Invert / Night Mode</option>
-              </select>
-            </div>
-          </div>
-        </div>
-		
-		<!-- 9. Terrain -->
+		<!-- 8. Terrain -->
         <div class="section-block collapsed" title="Add elevation relief and color it from the selected mountain color">
           <div class="section-header">
             <span class="section-header-title">
               <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 19 6-9 4 5 3-4 5 8"></path><path d="M3 19h18"></path></svg>
-              9. Terrain
+              8. Terrain
             </span>
           </div>
           <div class="section-body">
@@ -559,12 +539,12 @@
           </div>
         </div>
 
-        <!-- 10. Misc -->
+        <!-- 9. Misc -->
         <div class="section-block collapsed" title="Miscellaneous configuration options">
           <div class="section-header">
             <span class="section-header-title">
               <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z"></path></svg>
-              10. Misc
+              9. Misc
             </span>
           </div>
           <div class="section-body">
@@ -593,7 +573,7 @@
               <label class="check-row"><input type="checkbox" id="guidesToggle" title="Show or hide print guides in the preview"> Show guides in preview</label>
               <div class="guide-note">Bleed extends beyond the trim edge. The safe area keeps labels away from the cut.</div>
             </div>
-            <button type="button" class="secondary-action-btn" id="randomizeDesignBtn" title="Randomize the palette, label layout, and effects">Randomize design</button>
+            <button type="button" class="secondary-action-btn" id="randomizeDesignBtn" title="Randomize the palette, label layout, and color adjustments">Randomize design</button>
             <button type="button" class="secondary-action-btn" id="geoJsonBtn" title="Import a GeoJSON overlay file">Import GeoJSON</button>
             <input type="file" id="geoJsonInput" accept="application/geo+json,application/json,.geojson,.json" aria-label="Select a GeoJSON file" hidden>
           </div>
@@ -604,17 +584,10 @@
 
       <!-- Export Button & Metadata Footer -->
       <div class="sidebar-footer">
-        <div class="history-actions" role="group" aria-label="History actions">
-          <button type="button" class="icon-action-btn" id="undoBtn" title="Undo" aria-label="Undo">↶</button>
-          <button type="button" class="icon-action-btn" id="redoBtn" title="Redo" aria-label="Redo">↷</button>
-          <span id="historyStatus" class="history-status">Ready</span>
-        </div>
         <div class="project-actions" role="group" aria-label="Project actions">
           <button type="button" class="secondary-action-btn" id="saveProjectBtn" title="Save the current design in this browser">Save project</button>
           <button type="button" class="secondary-action-btn" id="downloadProjectBtn" title="Download the current design as JSON">Download project</button>
           <button type="button" class="secondary-action-btn" id="loadProjectBtn" title="Load a project JSON file">Load project</button>
-          <button type="button" class="secondary-action-btn" id="savePresetBtn" title="Save the current design as a reusable preset">Save preset</button>
-          <button type="button" class="secondary-action-btn" id="loadPresetBtn" title="Load a saved reusable preset">Load preset</button>
           <input type="file" id="projectFileInput" accept="application/json,.json" aria-label="Select a cartiva project file" hidden>
         </div>
         <div class="footer-action-separator" aria-hidden="true"></div>
@@ -657,30 +630,34 @@
         <path d="m8.6 13.5 6.8 4"></path>
       </svg>
     </button>
-    <!-- Floating Zoom Controls (4 buttons + Magnifier toggle) -->
-    <div class="map-zoom-controls" role="group" aria-label="Map view controls">
-      <button type="button" id="zoomInBigBtn" class="map-zoom-btn" title="Zoom In (Big Steps)" aria-label="Zoom in by two levels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path><path d="M18 3v6M15 6h6"></path></svg></button>
-      <button type="button" id="zoomInFineBtn" class="map-zoom-btn" title="Zoom In (Fine Adjustment)" aria-label="Zoom in slightly"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
-      <button type="button" id="zoomOutFineBtn" class="map-zoom-btn" title="Zoom Out (Fine Adjustment)" aria-label="Zoom out slightly"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
-      <button type="button" id="zoomOutBigBtn" class="map-zoom-btn" title="Zoom Out (Big Steps)" aria-label="Zoom out by two levels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="M15 18h6"></path></svg></button>
+    <!-- Floating map controls grouped by function. -->
+    <div class="map-zoom-controls" role="toolbar" aria-label="Map view controls">
+      <div class="map-control-group" role="group" aria-label="Zoom controls">
+        <button type="button" id="zoomInBigBtn" class="map-zoom-btn" title="Zoom In (Big Steps)" aria-label="Zoom in by two levels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path><path d="M18 3v6M15 6h6"></path></svg></button>
+        <button type="button" id="zoomInFineBtn" class="map-zoom-btn" title="Zoom In (Fine Adjustment)" aria-label="Zoom in slightly"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+        <button type="button" id="zoomOutFineBtn" class="map-zoom-btn" title="Zoom Out (Fine Adjustment)" aria-label="Zoom out slightly"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+        <button type="button" id="zoomOutBigBtn" class="map-zoom-btn" title="Zoom Out (Big Steps)" aria-label="Zoom out by two levels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="M15 18h6"></path></svg></button>
+        <div id="zoomLevelDisplay" class="zoom-level-display">13.00</div>
+      </div>
       <div class="map-control-separator" aria-hidden="true"></div>
-      <button type="button" id="rotateLeftBtn" class="map-zoom-btn" title="Rotate Map Left" aria-label="Rotate map left"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"></path><path d="M5.5 15a8 8 0 1 0 1-8.5L4 10"></path></svg></button>
-      <button type="button" id="resetBearingBtn" class="map-zoom-btn" title="Reset Map Orientation" aria-label="Reset map orientation"><svg viewBox="0 0 24 24"><path d="M12 3 8 12l4-2 4 2-4-9Z"></path><circle cx="12" cy="12" r="9"></circle></svg></button>
-      <button type="button" id="rotateRightBtn" class="map-zoom-btn" title="Rotate Map Right" aria-label="Rotate map right"><svg viewBox="0 0 24 24"><path d="M20 4v6h-6"></path><path d="M18.5 15a8 8 0 1 1-1-8.5L20 10"></path></svg></button>
+      <div class="map-control-group" role="group" aria-label="Rotation controls">
+        <button type="button" id="rotateLeftBtn" class="map-zoom-btn" title="Rotate Map Left" aria-label="Rotate map left"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"></path><path d="M5.5 15a8 8 0 1 0 1-8.5L4 10"></path></svg></button>
+        <button type="button" id="resetBearingBtn" class="map-zoom-btn" title="Reset Map Orientation" aria-label="Reset map orientation"><svg viewBox="0 0 24 24"><path d="M12 3 8 12l4-2 4 2-4-9Z"></path><circle cx="12" cy="12" r="9"></circle></svg></button>
+        <button type="button" id="rotateRightBtn" class="map-zoom-btn" title="Rotate Map Right" aria-label="Rotate map right"><svg viewBox="0 0 24 24"><path d="M20 4v6h-6"></path><path d="M18.5 15a8 8 0 1 1-1-8.5L20 10"></path></svg></button>
+      </div>
       <div class="map-control-separator" aria-hidden="true"></div>
-      <button type="button" id="magnifierBtn" class="map-zoom-btn" title="Toggle Live Magnifier Lens" aria-label="Toggle live magnifier"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
-      <div id="zoomLevelDisplay" class="zoom-level-display">13.00</div>
+      <div class="map-control-group" role="group" aria-label="Preview tools">
+        <button type="button" id="magnifierBtn" class="map-zoom-btn" title="Toggle Live Magnifier Lens" aria-label="Toggle live magnifier"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
+      </div>
+      <div class="map-control-separator" aria-hidden="true"></div>
+      <div class="map-control-group" role="group" aria-label="Color preset navigation">
+        <button type="button" id="previousPresetBtn" class="map-zoom-btn" title="Previous Color Preset" aria-label="Previous color preset">↑</button>
+        <button type="button" id="nextPresetBtn" class="map-zoom-btn" title="Next Color Preset" aria-label="Next color preset">↓</button>
+      </div>
     </div>
 
 	<!-- Preview-Container -->
     <div class="preview-container">
-	  <!-- Color preset arrow buttons -->
-      <div class="preset-navigation" role="group" aria-label="Color preset navigation">
-        <button type="button" id="previousPresetBtn" class="map-zoom-btn" title="Previous Color Preset" aria-label="Previous color preset">↑</button>
-        <button type="button" id="nextPresetBtn" class="map-zoom-btn" title="Next Color Preset" aria-label="Next color preset">↓</button>
-      </div>
-	  <!-- /Color preset arrow buttons -->
-	  
       <div id="mapFrame" class="map-frame ratio-a4-portrait">
         <div class="print-guide bleed-guide" aria-hidden="true"></div>
         <div class="print-guide safe-guide" aria-hidden="true"></div>
@@ -694,6 +671,7 @@
           <rect id="shapeMaskColor" width="100" height="100" mask="url(#shapeCutoutMask)"></rect>
         </svg>
         <div id="map"></div>
+        <img id="refinedMapPreview" class="refined-map-preview" alt="" aria-hidden="true">
       
       <!-- Live Magnifying Glass Lens -->
       <canvas id="mapMagnifierLens" class="map-magnifier-lens" width="280" height="280" aria-hidden="true"></canvas>

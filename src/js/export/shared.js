@@ -46,7 +46,6 @@ function downloadExportMetadata(renderSpec, filename) {
     layers: renderSpec.layers,
     layerOrder: renderSpec.layerOrder,
     effects: {
-      filterPreset: renderSpec.filterPreset,
       contrast: renderSpec.contrast,
       brightness: renderSpec.brightness,
       saturation: renderSpec.saturation

@@ -1,4 +1,4 @@
-// Global keyboard shortcuts for map navigation, exports, and history.
+// Global keyboard shortcuts for map navigation and exports.
 document.addEventListener('keydown', event => {
   if (event.target.matches('input, select, textarea')) return;
   if (event.key === '+' || event.key === '=') {
@@ -10,12 +10,6 @@ document.addEventListener('keydown', event => {
   } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'e') {
     event.preventDefault();
     exportBtn.click();
-  } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
-    event.preventDefault();
-    document.getElementById('undoBtn')?.click();
-  } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
-    event.preventDefault();
-    document.getElementById('redoBtn')?.click();
   } else if (event.key === '/') {
     event.preventDefault();
     searchInput.focus();

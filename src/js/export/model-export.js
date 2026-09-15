@@ -6,7 +6,7 @@ function getVisibleCityFeatures(renderSpec) {
     if (!layerIds.length) return [];
     const seen = new Set();
     return map.queryRenderedFeatures({ layers: layerIds }).filter(feature => {
-      const key = `${feature.source || ''}:${feature.sourceLayer || ''}:${feature.id ?? JSON.stringify(feature.geometry)}`;
+      const key = `${feature.source || ''}:${feature.sourceLayer || ''}:${JSON.stringify(feature.geometry)}`;
       if (seen.has(key) || !feature.geometry?.coordinates) return false;
       seen.add(key);
       return true;
@@ -31,7 +31,9 @@ $('stlExportBtn').addEventListener('click', () => {
     button,
     startStatus: 'Loading elevation data for 3D model...',
     successStatus: '3D model exported.',
-    errorPrefix: '3D model export failed'
+    successNotification: 'STL export finished.',
+    errorPrefix: '3D model export failed',
+    errorNotificationPrefix: 'STL export failed'
   }, async () => {
     const renderSpec = createRenderSnapshot();
     const bounds = map.getBounds();
@@ -57,7 +59,9 @@ $('threeMfExportBtn').addEventListener('click', () => {
     button,
     startStatus: 'Loading elevation data for colored 3D model...',
     successStatus: 'Colored 3D model exported.',
-    errorPrefix: 'Colored 3D model export failed'
+    successNotification: '3MF export finished.',
+    errorPrefix: 'Colored 3D model export failed',
+    errorNotificationPrefix: '3MF export failed'
   }, async () => {
     const renderSpec = createRenderSnapshot();
     const bounds = map.getBounds();
