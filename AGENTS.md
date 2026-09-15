@@ -30,8 +30,9 @@ The idea is to use
   - Orange = Warning context
   - Green = OK/Success context
   - White, black, gray = normal UI elements
+- Display notifications to the user on relevant steps (but only there - do not spam)
 - Should be useable on different devices with different browsers & resolutions (platform-independant)
-- If a process takes more time - user should be informed a
+- If a process takes more time - user should be informed
 
 
 ## File Organization
