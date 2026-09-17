@@ -2,9 +2,9 @@
 (function attachLayerRegistry(global) {
   const roleMap = Object.freeze({
     water: ['water', 'waterway'],
-    forest: ['park', 'landcover', 'landuse'],
+    forest: ['park', 'landcover'],
     land: ['background'],
-    landCover: ['residential', 'commercial', 'industrial'],
+    landCover: ['landuse', 'residential', 'commercial', 'industrial'],
     road: ['road', 'bridge', 'tunnel', 'railway', 'rail', 'transportation', 'aeroway'],
     boundary: ['boundary'],
     building: ['building']

@@ -27,4 +27,26 @@
   global.CartivaLog = logger;
   global.CartivaDiagnostics = Object.freeze({ record, report, list, clear, setLevel });
   record('application', 'Logging initialized.', { level: configuredLevel, framework: 'loglevel' });
+
+  const interactiveSelector = [
+    'button', 'a[href]', 'input:not([type="hidden"])', 'select', 'textarea',
+    '[role="button"]', '[role="option"]', '[role="link"]', '#map'
+  ].join(',');
+  document.addEventListener('click', event => {
+    if (!(event.target instanceof Element)) return;
+    const element = event.target.closest(interactiveSelector);
+    if (!element) return;
+    const label = element.getAttribute('aria-label')
+      || element.getAttribute('title')
+      || element.labels?.[0]?.textContent
+      || element.textContent
+      || element.id
+      || element.tagName.toLowerCase();
+    record('interaction.click', 'User activated an interactive element.', {
+      id: element.id || null,
+      element: element.tagName.toLowerCase(),
+      type: element.getAttribute('type') || null,
+      label: label.replace(/\s+/g, ' ').trim().slice(0, 120)
+    });
+  }, { capture: true });
 })(window);

@@ -685,7 +685,14 @@
         <div id="mapScaleOverlay" class="map-scale-overlay" aria-hidden="true"><span></span></div>
         <div id="northOverlay" class="north-overlay" aria-hidden="true"><span>N</span><svg viewBox="0 0 24 24"><path d="M12 2 7 17l5-3 5 3L12 2Z"></path></svg></div>
       </div>
-      <div class="preview-detail-note">The preview might contain less detail than the generated image (for example, buildings may be hidden).</div>
+      <div class="preview-detail-note">The preview might differ in detail from the final exported image.</div>
+	  
+	  <!-- preview map state indicator -->
+	  <div id="previewStateIndicator" class="preview-state-indicator limited" role="status" aria-live="polite" aria-label="Limited preview" title="Limited preview">
+          <svg class="preview-state-limited" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 4-4 4 4-4 4M4 20l11-11M5 4l15 15M3 3l4 1 1 4-2 2-4-4Z"></path></svg>
+          <svg class="preview-state-detailed" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
+      </div>
+	  
     </div>
   </div>
   

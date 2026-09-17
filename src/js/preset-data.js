@@ -852,7 +852,15 @@ window.CartivaPresetCatalog = [
     id: 'lilac-bay',
     name: 'Lilac Bay'
   },
-  { id: 'pebble-port', name: 'Pebble Port' }
+  { id: 'pebble-port', name: 'Pebble Port' },
+  {
+    id: 'kandinsky',
+    name: 'Kandinsky'
+  },
+  {
+    id: 'schwarzlicht',
+    name: 'Schwarzlicht'
+  }
 ];
 
 
@@ -884,6 +892,26 @@ window.CartivaPresetData = {
         boundaryColor: '#4b5563', boundaryOpacity: '100', boundaryToggle: true,
         buildingColor: '#374151', buildingOpacity: '100', buildingToggle: true,
         buildingOutlineToggle: true, buildingOutlineColor: '#6b7280'
+      },
+      'kandinsky': {
+        waterColor: '#4cc9f0', waterwayColor: '#0077b6', waterShadowColor: '#4361ee', waterOpacity: '100', waterToggle: true,
+        forestColor: '#2a9d8f', forestColorAccent: '#f4d35e', parkColor: '#f4d35e', natureReserveColor: '#43aa8b', grassColor: '#90be6d', woodColor: '#277da1', forestOpacity: '100', forestToggle: true,
+        landColor: '#f7e7c6', landOpacity: '100', landToggle: true,
+        landCoverColor: '#f2a65a', landCoverColorAccent: '#e76f51', residentialColor: '#e76f51', cemeteryColor: '#8ac926', stadiumColor: '#ffca3a', landCoverOpacity: '100', landCoverToggle: true,
+        roadColor: '#263238', roadCaseColor: '#f7e7c6', motorwayColor: '#e63946', trunkRoadColor: '#f77f00', primaryRoadColor: '#ffca3a', secondaryRoadColor: '#1982c4', minorRoadColor: '#6a4c93', serviceRoadColor: '#495057', pathColor: '#2a9d8f', railColor: '#8338ec', bridgeColor: '#ffffff', bridgeCaseColor: '#1d3557', tunnelColor: '#6c757d', tunnelCaseColor: '#212529', roadOpacity: '100', roadToggle: true,
+        boundaryColor: '#6a4c93', countryBoundaryColor: '#1d3557', stateBoundaryColor: '#8338ec', countyBoundaryColor: '#1982c4', boundaryOpacity: '100', boundaryToggle: true,
+        buildingColor: '#ffadad', buildingTopColor: '#ff6b6b', buildingOpacity: '100', buildingToggle: true,
+        buildingOutlineToggle: true, buildingOutlineColor: '#1d3557'
+      },
+      'schwarzlicht': {
+        waterColor: '#00d5ff', waterwayColor: '#6dfcff', waterShadowColor: '#191970', waterOpacity: '100', waterToggle: true,
+        forestColor: '#00c46a', forestColorAccent: '#00ff9c', parkColor: '#00ff9c', natureReserveColor: '#16f7d2', grassColor: '#35ff7d', woodColor: '#008f5a', forestOpacity: '100', forestToggle: true,
+        landColor: '#090012', landOpacity: '100', landToggle: true,
+        landCoverColor: '#140022', landCoverColorAccent: '#2b1648', residentialColor: '#2b1648', cemeteryColor: '#8cff66', stadiumColor: '#ffea00', landCoverOpacity: '100', landCoverToggle: true,
+        roadColor: '#ffffff', roadCaseColor: '#24003d', motorwayColor: '#ff2fd6', motorwayCaseColor: '#ff00aa', trunkRoadColor: '#ff7a00', primaryRoadColor: '#fff000', secondaryRoadColor: '#00f0ff', minorRoadColor: '#ffffff', serviceRoadColor: '#9bfffc', pathColor: '#73ff66', railColor: '#ff66ff', bridgeColor: '#ffffff', bridgeCaseColor: '#ffcc00', tunnelColor: '#6b5cff', tunnelCaseColor: '#270045', roadOpacity: '100', roadToggle: true,
+        boundaryColor: '#5ffcff', countryBoundaryColor: '#ffffff', stateBoundaryColor: '#ff4fd8', countyBoundaryColor: '#5ffcff', boundaryOpacity: '100', boundaryToggle: true,
+        buildingColor: '#19002f', buildingTopColor: '#ff4fd8', buildingOpacity: '95', buildingToggle: true,
+        buildingOutlineToggle: true, buildingOutlineColor: '#ffffff'
       },
       'blueprint': {
         waterColor: '#1d4ed8', waterOpacity: '100', waterToggle: true,

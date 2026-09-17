@@ -7,7 +7,7 @@
 const APP = {
   NAME: "cartiva",
   DESCRIPTION: "a small, self-contained creative cartography web-app",
-  VERSION: "2026.09.15.161223", // yyyy.mm.dd.HHMMSS
+  VERSION: "2026.09.17.085239", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
@@ -510,7 +510,10 @@ const DEFAULTS = Object.freeze({
       const continuous = control.matches('input[type="range"], input[type="color"], input[type="number"]');
       if ((continuous && event.type !== 'input') || (!continuous && event.type !== 'change')) return;
 
-      if (control.closest('.layer-control-card')) state.preset = null;
+      if (control.closest('.layer-control-card')) {
+        state.preset = null;
+        state.layers = {};
+      }
       updateStateFromControls();
 
       const layerDefinition = CartivaLayerRegistry.definitions.find(definition =>

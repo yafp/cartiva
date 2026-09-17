@@ -583,6 +583,7 @@
     }
 
     const refinedMapPreview = document.getElementById('refinedMapPreview');
+    const previewStateIndicator = document.getElementById('previewStateIndicator');
     const REFINED_PREVIEW_MAX_SIDE = 3200;
     const REFINED_PREVIEW_ZOOM_BOOST = 2;
     const REFINED_PREVIEW_DELAY_MS = 600;
@@ -591,10 +592,19 @@
     let refinedPreviewRendering = false;
     let refinedPreviewPending = false;
 
+    function setRefinedPreviewState(detailed) {
+      const label = detailed ? 'Detailed preview loaded' : 'Limited preview';
+      previewStateIndicator.classList.toggle('detailed', detailed);
+      previewStateIndicator.classList.toggle('limited', !detailed);
+      previewStateIndicator.setAttribute('aria-label', label);
+      previewStateIndicator.title = label;
+    }
+
     function hideRefinedPreview() {
       refinedPreviewToken += 1;
       clearTimeout(runtimeState.timers.refinedPreview);
       refinedMapPreview.classList.remove('ready');
+      setRefinedPreviewState(false);
     }
 
     async function renderRefinedPreview(token) {
@@ -635,6 +645,7 @@
           if (refinedPreviewUrl) URL.revokeObjectURL(refinedPreviewUrl);
           refinedPreviewUrl = nextUrl;
           refinedMapPreview.classList.add('ready');
+          setRefinedPreviewState(true);
           CartivaDiagnostics.record('preview.refine', 'High-fidelity preview rendered.', {
             width,
             height,

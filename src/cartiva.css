@@ -110,6 +110,12 @@ button.export-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
 #map { width: 100%; height: 100%; transition: filter .2s ease; }
 .refined-map-preview { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; object-fit: fill; pointer-events: none; opacity: 0; transition: opacity .18s ease; }
 .refined-map-preview.ready { opacity: 1; }
+.preview-state-indicator { position: absolute; right: 10px; bottom: 10px; z-index: 9; width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.8); border-radius: 50%; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.28); pointer-events: none; }
+.preview-state-indicator.limited { background: #d97706; }
+.preview-state-indicator.detailed { background: #059669; }
+.preview-state-indicator svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.preview-state-indicator .preview-state-detailed, .preview-state-indicator.detailed .preview-state-limited { display: none; }
+.preview-state-indicator.detailed .preview-state-detailed { display: block; }
 .shape-mask { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; display: none; }
 .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-attrib { display: none !important; }
 .map-label-overlay { position: absolute; text-align: center; z-index: 5; pointer-events: none; backdrop-filter: blur(2px); transition: all .2s ease; }

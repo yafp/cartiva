@@ -846,5 +846,13 @@
   {
     "id": "pebble-port",
     "name": "Pebble Port"
+  },
+  {
+    "id": "kandinsky",
+    "name": "Kandinsky"
+  },
+  {
+    "id": "schwarzlicht",
+    "name": "Schwarzlicht"
   }
 ]

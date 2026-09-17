@@ -231,6 +231,63 @@
       return mapState.layers?.[key] ?? mapState[key] ?? fallback;
     }
 
+    function getDetailedLayerColor(mapState, layer, role, fallback) {
+      const id = layer.id.toLowerCase();
+      const color = key => getMapStateLayerValue(mapState, key, null);
+      if (role === 'water') {
+        if (id === 'waterway') return color('waterwayColor') || fallback;
+        if (id === 'water_shadow') return color('waterShadowColor') || fallback;
+      }
+      if (role === 'forest') {
+        if (id === 'park_national_park') return color('parkColor') || fallback;
+        if (id === 'park_nature_reserve') return color('natureReserveColor') || fallback;
+        if (id === 'landcover' && (color('woodColor') || color('grassColor'))) {
+          return ['case',
+            ['==', ['get', 'class'], 'wood'], color('woodColor') || fallback,
+            ['==', ['get', 'class'], 'grass'], color('grassColor') || fallback,
+            ['==', ['get', 'subclass'], 'recreation_ground'], color('grassColor') || fallback,
+            fallback
+          ];
+        }
+      }
+      if (role === 'landCover') {
+        if (id === 'landuse_residential') return color('residentialColor') || fallback;
+        if (id === 'landuse' && (color('cemeteryColor') || color('stadiumColor'))) {
+          return ['match', ['get', 'class'],
+            'cemetery', color('cemeteryColor') || fallback,
+            'stadium', color('stadiumColor') || fallback,
+            fallback
+          ];
+        }
+      }
+      if (role === 'road') {
+        const isCase = id.includes('_case');
+        const hierarchy = [
+          [/mot/, 'motorwayColor', 'motorwayCaseColor'],
+          [/trunk/, 'trunkRoadColor', 'trunkRoadCaseColor'],
+          [/_pri_/, 'primaryRoadColor', 'primaryRoadCaseColor'],
+          [/_sec_/, 'secondaryRoadColor', 'secondaryRoadCaseColor'],
+          [/minor/, 'minorRoadColor', 'minorRoadCaseColor'],
+          [/service/, 'serviceRoadColor', 'serviceRoadCaseColor'],
+          [/path|track/, 'pathColor', 'pathCaseColor'],
+          [/rail/, 'railColor', 'railCaseColor'],
+          [/runway/, 'runwayColor', 'runwayCaseColor'],
+          [/taxiway/, 'taxiwayColor', 'taxiwayCaseColor']
+        ].find(([pattern]) => pattern.test(id));
+        const hierarchyColor = hierarchy ? color(isCase ? hierarchy[2] : hierarchy[1]) : null;
+        if (id.startsWith('bridge_')) return color(isCase ? 'bridgeCaseColor' : 'bridgeColor') || hierarchyColor || fallback;
+        if (id.startsWith('tunnel_')) return color(isCase ? 'tunnelCaseColor' : 'tunnelColor') || hierarchyColor || fallback;
+        return hierarchyColor || (isCase ? color('roadCaseColor') : color('roadFillColor')) || fallback;
+      }
+      if (role === 'boundary') {
+        if (id.includes('country')) return color('countryBoundaryColor') || fallback;
+        if (id.includes('state')) return color('stateBoundaryColor') || fallback;
+        if (id.includes('county')) return color('countyBoundaryColor') || fallback;
+      }
+      if (role === 'building' && id === 'building-top') return color('buildingTopColor') || fallback;
+      return fallback;
+    }
+
     function configureBuildingZoom(targetMap, mapState = state) {
       const layers = targetMap.getStyle()?.layers || [];
       const enabled = getMapStateLayerValue(mapState, 'buildingToggle', true) !== false;
@@ -261,7 +318,7 @@
         const isAccent = (role === 'forest' && /park|recreation|pitch/.test(layer.id.toLowerCase()))
           || (role === 'landCover' && /residential/.test(layer.id.toLowerCase()));
         const colorId = isAccent && definition.accentColorId ? definition.accentColorId : definition.colorId;
-        const color = getMapStateLayerValue(mapState, colorId, null);
+        const color = getDetailedLayerColor(mapState, layer, role, getMapStateLayerValue(mapState, colorId, null));
         const isBuilding = role === 'building';
         const outlineEnabled = getMapStateLayerValue(mapState, definition.outlineToggleId, true) !== false && enabled;
         const outlineColor = getMapStateLayerValue(mapState, definition.outlineColorId, color);
@@ -468,8 +525,7 @@
       state.layers = { ...set };
 
       triggerAllLayerUpdates();
-      syncStateFromControls();
-      applyTextFilters(map, state.textFilter);
+      renderPreview();
     }
 
     colorPresetSelect.addEventListener('change', (e) => {
@@ -498,6 +554,7 @@
         ? blueWater[Math.floor(Math.random() * blueWater.length)]
         : randomHex());
       $('colorPresetSelect').selectedIndex = -1;
+      state.layers = {};
       syncStateFromControls();
       triggerAllLayerUpdates();
       renderPreview();
