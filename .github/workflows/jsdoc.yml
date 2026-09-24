@@ -1,0 +1,34 @@
+name: JSDoc
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/js/**'
+
+permissions:
+  contents: write
+
+jobs:
+  generate-jsdoc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate JavaScript documentation
+        run: npx --yes jsdoc@4 src/js --recurse --destination docs/js
+      - name: Commit generated documentation
+        run: |
+          if [ -z "$(git status --porcelain -- docs/js)" ]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/js
+          git commit -m "docs: update generated JSDoc"
+          git push
