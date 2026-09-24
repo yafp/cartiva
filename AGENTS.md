@@ -4,8 +4,7 @@ CARTIVA is a web-based project which offers the user an easy way to
 - Select a location on a map
 - Zoom in/zoom out to select the proper spot in detail
 - Define a series of settings to change the colors, borders etc
-- Export a graphic file in high-resolution / high-quality
-which can be used for printing in big-scale.
+- Export the map as high-resolution / high-quality graphic file which can be used for printing in big-scale.
 
 CARTIVA is designed to be easily useable as more or less 1 file (.html) for the user plus the css,js part.
 User should be able to use it without a particular web-server or similar.

@@ -32,24 +32,8 @@
     "name": "Autumn Rust"
   },
   {
-    "id": "azure-archipelago",
-    "name": "Azure Archipelago"
-  },
-  {
-    "id": "azure-badlands",
-    "name": "Azure Badlands"
-  },
-  {
     "id": "azure-delta",
     "name": "Azure Delta"
-  },
-  {
-    "id": "azure-estuary",
-    "name": "Azure Estuary"
-  },
-  {
-    "id": "azure-highlands",
-    "name": "Azure Highlands"
   },
   {
     "id": "baroque",
@@ -78,10 +62,6 @@
   {
     "id": "burnished-estuary",
     "name": "Burnished Estuary"
-  },
-  {
-    "id": "burnished-highlands",
-    "name": "Burnished Highlands"
   },
   {
     "id": "canyon",
@@ -140,10 +120,6 @@
     "name": "Coral Reef"
   },
   {
-    "id": "cosmic",
-    "name": "Cosmic Dust"
-  },
-  {
     "id": "crimson",
     "name": "Crimson Night"
   },
@@ -160,44 +136,12 @@
     "name": "Deep Archipelago"
   },
   {
-    "id": "deep-badlands",
-    "name": "Deep Badlands"
-  },
-  {
     "id": "deep-delta",
     "name": "Deep Delta"
   },
   {
-    "id": "deep-estuary",
-    "name": "Deep Estuary"
-  },
-  {
-    "id": "deep-highlands",
-    "name": "Deep Highlands"
-  },
-  {
     "id": "desert",
     "name": "Desert Sand"
-  },
-  {
-    "id": "dusk",
-    "name": "Dusk Horizon"
-  },
-  {
-    "id": "electric-archipelago",
-    "name": "Electric Archipelago"
-  },
-  {
-    "id": "electric-badlands",
-    "name": "Electric Badlands"
-  },
-  {
-    "id": "electric-delta",
-    "name": "Electric Delta"
-  },
-  {
-    "id": "electric-estuary",
-    "name": "Electric Estuary"
   },
   {
     "id": "electric-highlands",
@@ -240,24 +184,8 @@
     "name": "Glacier Blue"
   },
   {
-    "id": "golden-archipelago",
-    "name": "Golden Archipelago"
-  },
-  {
-    "id": "golden-badlands",
-    "name": "Golden Badlands"
-  },
-  {
-    "id": "golden-delta",
-    "name": "Golden Delta"
-  },
-  {
     "id": "golden-estuary",
     "name": "Golden Estuary"
-  },
-  {
-    "id": "golden-highlands",
-    "name": "Golden Highlands"
   },
   {
     "id": "granite",
@@ -272,26 +200,6 @@
     "name": "Hazelnut Earth"
   },
   {
-    "id": "hidden-archipelago",
-    "name": "Hidden Archipelago"
-  },
-  {
-    "id": "hidden-badlands",
-    "name": "Hidden Badlands"
-  },
-  {
-    "id": "hidden-delta",
-    "name": "Hidden Delta"
-  },
-  {
-    "id": "hidden-estuary",
-    "name": "Hidden Estuary"
-  },
-  {
-    "id": "hidden-highlands",
-    "name": "Hidden Highlands"
-  },
-  {
     "id": "honey",
     "name": "Honey Amber"
   },
@@ -304,44 +212,8 @@
     "name": "Indigo Night"
   },
   {
-    "id": "ivory-archipelago",
-    "name": "Ivory Archipelago"
-  },
-  {
-    "id": "ivory-badlands",
-    "name": "Ivory Badlands"
-  },
-  {
-    "id": "ivory-delta",
-    "name": "Ivory Delta"
-  },
-  {
-    "id": "ivory-estuary",
-    "name": "Ivory Estuary"
-  },
-  {
-    "id": "ivory-highlands",
-    "name": "Ivory Highlands"
-  },
-  {
-    "id": "jade-archipelago",
-    "name": "Jade Archipelago"
-  },
-  {
-    "id": "jade-badlands",
-    "name": "Jade Badlands"
-  },
-  {
     "id": "jade-delta",
     "name": "Jade Delta"
-  },
-  {
-    "id": "jade-estuary",
-    "name": "Jade Estuary"
-  },
-  {
-    "id": "jade-highlands",
-    "name": "Jade Highlands"
   },
   {
     "id": "jungle",
@@ -357,27 +229,11 @@
   },
   {
     "id": "positron",
-    "name": "Light Positron (Default)"
-  },
-  {
-    "id": "lunar-archipelago",
-    "name": "Lunar Archipelago"
-  },
-  {
-    "id": "lunar-badlands",
-    "name": "Lunar Badlands"
+    "name": "Light Positron"
   },
   {
     "id": "lunar-delta",
     "name": "Lunar Delta"
-  },
-  {
-    "id": "lunar-estuary",
-    "name": "Lunar Estuary"
-  },
-  {
-    "id": "lunar-highlands",
-    "name": "Lunar Highlands"
   },
   {
     "id": "magma",
@@ -394,26 +250,6 @@
   {
     "id": "minimalgrey",
     "name": "Minimal Grey"
-  },
-  {
-    "id": "misty-archipelago",
-    "name": "Misty Archipelago"
-  },
-  {
-    "id": "misty-badlands",
-    "name": "Misty Badlands"
-  },
-  {
-    "id": "misty-delta",
-    "name": "Misty Delta"
-  },
-  {
-    "id": "misty-estuary",
-    "name": "Misty Estuary"
-  },
-  {
-    "id": "misty-highlands",
-    "name": "Misty Highlands"
   },
   {
     "id": "mocha",
@@ -436,22 +272,6 @@
     "name": "Opal Archipelago"
   },
   {
-    "id": "opal-badlands",
-    "name": "Opal Badlands"
-  },
-  {
-    "id": "opal-delta",
-    "name": "Opal Delta"
-  },
-  {
-    "id": "opal-estuary",
-    "name": "Opal Estuary"
-  },
-  {
-    "id": "opal-highlands",
-    "name": "Opal Highlands"
-  },
-  {
     "id": "orchid",
     "name": "Orchid Bloom"
   },
@@ -472,44 +292,12 @@
     "name": "Polar Archipelago"
   },
   {
-    "id": "polar-badlands",
-    "name": "Polar Badlands"
-  },
-  {
-    "id": "polar-delta",
-    "name": "Polar Delta"
-  },
-  {
-    "id": "polar-estuary",
-    "name": "Polar Estuary"
-  },
-  {
-    "id": "polar-highlands",
-    "name": "Polar Highlands"
-  },
-  {
     "id": "monochrome",
     "name": "Pure Monochrome"
   },
   {
     "id": "quartz",
     "name": "Quartz Crystal"
-  },
-  {
-    "id": "quiet-archipelago",
-    "name": "Quiet Archipelago"
-  },
-  {
-    "id": "quiet-badlands",
-    "name": "Quiet Badlands"
-  },
-  {
-    "id": "quiet-delta",
-    "name": "Quiet Delta"
-  },
-  {
-    "id": "quiet-estuary",
-    "name": "Quiet Estuary"
   },
   {
     "id": "quiet-highlands",
@@ -520,44 +308,8 @@
     "name": "Radiant Archipelago"
   },
   {
-    "id": "radiant-badlands",
-    "name": "Radiant Badlands"
-  },
-  {
-    "id": "radiant-delta",
-    "name": "Radiant Delta"
-  },
-  {
-    "id": "radiant-estuary",
-    "name": "Radiant Estuary"
-  },
-  {
-    "id": "radiant-highlands",
-    "name": "Radiant Highlands"
-  },
-  {
     "id": "redwood",
     "name": "Redwood Timber"
-  },
-  {
-    "id": "silver-archipelago",
-    "name": "Silver Archipelago"
-  },
-  {
-    "id": "silver-badlands",
-    "name": "Silver Badlands"
-  },
-  {
-    "id": "silver-delta",
-    "name": "Silver Delta"
-  },
-  {
-    "id": "silver-estuary",
-    "name": "Silver Estuary"
-  },
-  {
-    "id": "silver-highlands",
-    "name": "Silver Highlands"
   },
   {
     "id": "slate",
@@ -580,48 +332,12 @@
     "name": "Synthwave 80s"
   },
   {
-    "id": "tropical-archipelago",
-    "name": "Tropical Archipelago"
-  },
-  {
-    "id": "tropical-badlands",
-    "name": "Tropical Badlands"
-  },
-  {
-    "id": "tropical-delta",
-    "name": "Tropical Delta"
-  },
-  {
-    "id": "tropical-estuary",
-    "name": "Tropical Estuary"
-  },
-  {
-    "id": "tropical-highlands",
-    "name": "Tropical Highlands"
-  },
-  {
     "id": "tundra",
     "name": "Tundra Frost"
   },
   {
-    "id": "velvet-archipelago",
-    "name": "Velvet Archipelago"
-  },
-  {
-    "id": "velvet-badlands",
-    "name": "Velvet Badlands"
-  },
-  {
     "id": "velvet-delta",
     "name": "Velvet Delta"
-  },
-  {
-    "id": "velvet-estuary",
-    "name": "Velvet Estuary"
-  },
-  {
-    "id": "velvet-highlands",
-    "name": "Velvet Highlands"
   },
   {
     "id": "warmvintage",
@@ -630,22 +346,6 @@
   {
     "id": "wild-archipelago",
     "name": "Wild Archipelago"
-  },
-  {
-    "id": "wild-badlands",
-    "name": "Wild Badlands"
-  },
-  {
-    "id": "wild-delta",
-    "name": "Wild Delta"
-  },
-  {
-    "id": "wild-estuary",
-    "name": "Wild Estuary"
-  },
-  {
-    "id": "wild-highlands",
-    "name": "Wild Highlands"
   },
   {
     "id": "aero-blue",
@@ -854,5 +554,9 @@
   {
     "id": "schwarzlicht",
     "name": "Schwarzlicht"
+  },
+  {
+    "id": "testei",
+    "name": "testei"
   }
 ]
