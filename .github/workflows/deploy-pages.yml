@@ -1,3 +1,5 @@
+# About: This action ensures that the latest github release gets pushed to github-pages https://yafp.github.io/cartiva/ - to act as demo
+#
 name: Deploy Release to GitHub Pages
 
 on:
