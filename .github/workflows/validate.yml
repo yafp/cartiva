@@ -1,3 +1,5 @@
+# About: This action ensures that the Test-cartiva.ps1 scripts gets executed as a test on each commit
+#
 name: Validate
 
 on:
