@@ -168,3 +168,4 @@ button.export-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
 .map-label-coords { font-size: .7rem; font-weight: 600; letter-spacing: .05em; margin-top: 3px; opacity: .85; }
 .map-label-country { font-size: .75rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; margin-top: 3px; opacity: .9; }
 .export-map-container { position: fixed; left: -100000px; top: 0; pointer-events: none; }
+#exportDialog {position: fixed; inset: 0; margin: auto; width: min(600px, 90vw); max-height: 90vh; }
