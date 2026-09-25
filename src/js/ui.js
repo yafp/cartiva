@@ -97,6 +97,26 @@ function getRandomStarterCity() {
 
 const START_LOCATION = getStoredLocation() || getRandomStarterCity();
 
+
+/**
+* Saves the current map location and camera state to local storage.
+*
+* Stores:
+* - City name
+* - Country name
+* - Map center coordinates (longitude, latitude)
+* - Zoom level
+* - Bearing
+* - Pitch
+*
+* This information can later be used to restore the user's last viewed
+* location and map perspective.
+*
+* @function saveLastLocation
+* @throws {Error} Any storage-related errors are caught and reported via
+* CartivaDiagnostics.
+* @returns {void}
+*/
 function saveLastLocation() {
   try {
     const center = map.getCenter();
