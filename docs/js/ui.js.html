@@ -1,4 +1,32 @@
-// =============================================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: ui.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: ui.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// =============================================================================
 // cartiva - app.js
 // =============================================================================
 
@@ -7,7 +35,7 @@
 const APP = {
   NAME: "cartiva",
   DESCRIPTION: "a small, self-contained creative cartography web-app",
-  VERSION: "2026.09.24.211510", // yyyy.mm.dd.HHMMSS
+  VERSION: "2026.09.17.085239", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
@@ -45,7 +73,7 @@ if (appGithubLink) {
 
 
 // -----------------------------------------------------------------------------
-// START LOCATION & PERSISTENCE
+// START LOCATION &amp; PERSISTENCE
 // First-time visitors receive a random, curated larger city with prominent
 // river, lake, harbor, or coastal geography. Returning visitors resume the
 // last successfully used map location stored in this browser.
@@ -74,8 +102,8 @@ function getStoredLocation() {
   try {
     const value = JSON.parse(localStorage.getItem(LAST_LOCATION_STORAGE_KEY));
     const validCenter = Array.isArray(value?.center)
-      && value.center.length === 2
-      && value.center.every(Number.isFinite);
+      &amp;&amp; value.center.length === 2
+      &amp;&amp; value.center.every(Number.isFinite);
     if (!validCenter || !Number.isFinite(value?.zoom)) return null;
     return {
       city: String(value.city || 'MAP LOCATION').toUpperCase(),
@@ -149,9 +177,9 @@ const shareData = {
 // Feature detection keeps the control invisible on unsupported browsers.
 // canShare is used when available to verify this exact payload.
 const sharingSupported = typeof navigator.share === 'function'
-  && (typeof navigator.canShare !== 'function' || navigator.canShare(shareData));
+  &amp;&amp; (typeof navigator.canShare !== 'function' || navigator.canShare(shareData));
 
-if (shareBtn && sharingSupported) {
+if (shareBtn &amp;&amp; sharingSupported) {
   shareBtn.hidden = false;
   shareBtn.addEventListener('click', async () => {
     try {
@@ -192,8 +220,6 @@ const DEFAULTS = Object.freeze({
       saturation: 100,
       shape: 'none',
       shapeColor: '#ffffff',
-      shapeScale: 100,
-      includeExportMetadata: false,
       terrainEnabled: false,
       mountainColor: '#64748b',
       terrainExaggeration: 100,
@@ -317,8 +343,6 @@ const DEFAULTS = Object.freeze({
       state.saturation = Number(readControl('saturationVal'));
       state.shape = readControl('shapeSelect');
       state.shapeColor = readControl('shapeColor');
-      state.shapeScale = Number(readControl('shapeScale'));
-      state.includeExportMetadata = readControl('includeExportMetadata');
       state.terrainEnabled = readControl('terrainToggle');
       state.mountainColor = readControl('mountainColor');
       state.terrainExaggeration = Number(readControl('terrainExaggeration'));
@@ -381,21 +405,19 @@ const DEFAULTS = Object.freeze({
 
     function updateOutputDimensions() {
       const dimensions = getTargetDimensions();
-      const label = `${dimensions.width} × ${dimensions.height} px`;
-      $('outputDimensions').textContent = label;
-      $('exportDialogDimensions').textContent = label;
+      $('outputDimensions').textContent = `${dimensions.width} × ${dimensions.height} px`;
     }
 
 
 // -----------------------------------------------------------------------------
-// CONTRAST & ACCESSIBILITY
+// CONTRAST &amp; ACCESSIBILITY
 // relativeLuminance: WCAG-style luminance calculation for a hex color.
 // updateContrastWarning: compute text/background contrast and show warning.
 // -----------------------------------------------------------------------------
     function relativeLuminance(hex) {
       const channels = [1, 3, 5].map(index => {
         const value = parseInt(hex.slice(index, index + 2), 16) / 255;
-        return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+        return value &lt;= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
       });
       return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
     }
@@ -408,7 +430,7 @@ const DEFAULTS = Object.freeze({
       });
       const minimum = Math.min(...ratios);
       const warning = $('contrastWarning');
-      const passes = minimum >= 4.5 || state.labelStyle === 'none' || state.labelOpacity < 50;
+      const passes = minimum >= 4.5 || state.labelStyle === 'none' || state.labelOpacity &lt; 50;
       warning.textContent = passes
         ? `Text contrast: ${minimum.toFixed(1)}:1`
         : `Low text contrast: ${minimum.toFixed(1)}:1 (aim for 4.5:1)`;
@@ -431,7 +453,6 @@ const DEFAULTS = Object.freeze({
       contrastNum.textContent = renderSpec.contrast;
       brightnessNum.textContent = renderSpec.brightness;
       saturationNum.textContent = renderSpec.saturation;
-      $('shapeScaleVal').textContent = renderSpec.shapeScale;
       mapEl.style.filter = `contrast(${renderSpec.contrast}%) brightness(${renderSpec.brightness}%) saturate(${renderSpec.saturation}%)`;
       $('refinedMapPreview').style.filter = mapEl.style.filter;
       opacityNum.textContent = renderSpec.labelOpacity;
@@ -495,14 +516,10 @@ const DEFAULTS = Object.freeze({
 // getShapeSvgPath: SVG path strings for various shapes (100 x 100 viewBox).
 // renderShapeMask: show/hide and configure the SVG shape mask overlay.
 // -----------------------------------------------------------------------------
-    function getShapePath(shape, width, height, scalePercent = 100) {
+    function getShapePath(shape, width, height) {
       const svgPath = getShapeSvgPath(shape);
       const path = new Path2D(svgPath);
-      const scale = Math.max(0.25, Math.min(1, Number(scalePercent) / 100));
-      const transform = new DOMMatrix([
-        width / 100 * scale, 0, 0, height / 100 * scale,
-        width / 2 * (1 - scale), height / 2 * (1 - scale)
-      ]);
+      const transform = new DOMMatrix().scale(width / 100, height / 100);
       return new Path2D(path, transform);
     }
 
@@ -529,8 +546,6 @@ const DEFAULTS = Object.freeze({
       }
       mask.style.display = 'block';
       $('shapeCutoutPath').setAttribute('d', getShapeSvgPath(renderSpec.shape));
-      const scale = Math.max(0.25, Math.min(1, Number(renderSpec.shapeScale) / 100));
-      $('shapeCutoutPath').setAttribute('transform', `translate(50 50) scale(${scale}) translate(-50 -50)`);
       $('shapeMaskColor').setAttribute('fill', renderSpec.shapeColor);
     }
 
@@ -541,7 +556,7 @@ const DEFAULTS = Object.freeze({
       if (!(control instanceof HTMLInputElement || control instanceof HTMLSelectElement)) return;
       if (delegatedControlExclusions.has(control.id)) return;
       const continuous = control.matches('input[type="range"], input[type="color"], input[type="number"]');
-      if ((continuous && event.type !== 'input') || (!continuous && event.type !== 'change')) return;
+      if ((continuous &amp;&amp; event.type !== 'input') || (!continuous &amp;&amp; event.type !== 'change')) return;
 
       if (control.closest('.layer-control-card')) {
         state.preset = null;
@@ -598,8 +613,6 @@ const DEFAULTS = Object.freeze({
       writeControl('contrastVal', DEFAULTS.contrast);
       writeControl('brightnessVal', DEFAULTS.brightness);
       writeControl('saturationVal', DEFAULTS.saturation);
-      writeControl('shapeScale', DEFAULTS.shapeScale);
-      writeControl('includeExportMetadata', DEFAULTS.includeExportMetadata);
       writeControl('terrainToggle', DEFAULTS.terrainEnabled);
       writeControl('mountainColor', DEFAULTS.mountainColor);
       writeControl('terrainExaggeration', DEFAULTS.terrainExaggeration);
@@ -684,11 +697,11 @@ const DEFAULTS = Object.freeze({
 
 // -----------------------------------------------------------------------------
 
-// LABEL OVERLAY & FONT STYLING
+// LABEL OVERLAY &amp; FONT STYLING
 // Controls for label position/style, font, and separate colors
 // for city name, coordinates, and country.
 // -----------------------------------------------------------------------------
-    // Text Label Overlay & Font Styling (with 3 separate color fields)
+    // Text Label Overlay &amp; Font Styling (with 3 separate color fields)
     const mapLabelOverlay = document.getElementById('mapLabelOverlay');
     const opacityNum = document.getElementById('opacityNum');
 
@@ -721,11 +734,11 @@ const DEFAULTS = Object.freeze({
     }
 
 // -----------------------------------------------------------------------------
-// BORDER & ASPECT RATIO
+// BORDER &amp; ASPECT RATIO
 // Toggle border, choose color/width, and adjust inner/outer radii.
 // Format select changes aspect ratio and resizes map.
 // -----------------------------------------------------------------------------
-    // Border & Aspect Ratio Controls
+    // Border &amp; Aspect Ratio Controls
     const borderWidthVal = document.getElementById('borderWidthVal');
     const borderUiItems = document.querySelectorAll('.border-ui-item');
 
@@ -736,3 +749,26 @@ const DEFAULTS = Object.freeze({
       }
     });
     $('customSizeControls').hidden = readControl('formatSelect') !== 'custom';
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#saveLastLocation">saveLastLocation</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Fri Sep 25 2026 13:19:42 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
