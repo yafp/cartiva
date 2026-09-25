@@ -7,7 +7,7 @@
 const APP = {
   NAME: "cartiva",
   DESCRIPTION: "a small, self-contained creative cartography web-app",
-  VERSION: "2026.09.17.085239", // yyyy.mm.dd.HHMMSS
+  VERSION: "2026.09.24.211510", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
@@ -172,6 +172,8 @@ const DEFAULTS = Object.freeze({
       saturation: 100,
       shape: 'none',
       shapeColor: '#ffffff',
+      shapeScale: 100,
+      includeExportMetadata: false,
       terrainEnabled: false,
       mountainColor: '#64748b',
       terrainExaggeration: 100,
@@ -295,6 +297,8 @@ const DEFAULTS = Object.freeze({
       state.saturation = Number(readControl('saturationVal'));
       state.shape = readControl('shapeSelect');
       state.shapeColor = readControl('shapeColor');
+      state.shapeScale = Number(readControl('shapeScale'));
+      state.includeExportMetadata = readControl('includeExportMetadata');
       state.terrainEnabled = readControl('terrainToggle');
       state.mountainColor = readControl('mountainColor');
       state.terrainExaggeration = Number(readControl('terrainExaggeration'));
@@ -357,7 +361,9 @@ const DEFAULTS = Object.freeze({
 
     function updateOutputDimensions() {
       const dimensions = getTargetDimensions();
-      $('outputDimensions').textContent = `${dimensions.width} × ${dimensions.height} px`;
+      const label = `${dimensions.width} × ${dimensions.height} px`;
+      $('outputDimensions').textContent = label;
+      $('exportDialogDimensions').textContent = label;
     }
 
 
@@ -405,6 +411,7 @@ const DEFAULTS = Object.freeze({
       contrastNum.textContent = renderSpec.contrast;
       brightnessNum.textContent = renderSpec.brightness;
       saturationNum.textContent = renderSpec.saturation;
+      $('shapeScaleVal').textContent = renderSpec.shapeScale;
       mapEl.style.filter = `contrast(${renderSpec.contrast}%) brightness(${renderSpec.brightness}%) saturate(${renderSpec.saturation}%)`;
       $('refinedMapPreview').style.filter = mapEl.style.filter;
       opacityNum.textContent = renderSpec.labelOpacity;
@@ -468,10 +475,14 @@ const DEFAULTS = Object.freeze({
 // getShapeSvgPath: SVG path strings for various shapes (100 x 100 viewBox).
 // renderShapeMask: show/hide and configure the SVG shape mask overlay.
 // -----------------------------------------------------------------------------
-    function getShapePath(shape, width, height) {
+    function getShapePath(shape, width, height, scalePercent = 100) {
       const svgPath = getShapeSvgPath(shape);
       const path = new Path2D(svgPath);
-      const transform = new DOMMatrix().scale(width / 100, height / 100);
+      const scale = Math.max(0.25, Math.min(1, Number(scalePercent) / 100));
+      const transform = new DOMMatrix([
+        width / 100 * scale, 0, 0, height / 100 * scale,
+        width / 2 * (1 - scale), height / 2 * (1 - scale)
+      ]);
       return new Path2D(path, transform);
     }
 
@@ -498,6 +509,8 @@ const DEFAULTS = Object.freeze({
       }
       mask.style.display = 'block';
       $('shapeCutoutPath').setAttribute('d', getShapeSvgPath(renderSpec.shape));
+      const scale = Math.max(0.25, Math.min(1, Number(renderSpec.shapeScale) / 100));
+      $('shapeCutoutPath').setAttribute('transform', `translate(50 50) scale(${scale}) translate(-50 -50)`);
       $('shapeMaskColor').setAttribute('fill', renderSpec.shapeColor);
     }
 
@@ -565,6 +578,8 @@ const DEFAULTS = Object.freeze({
       writeControl('contrastVal', DEFAULTS.contrast);
       writeControl('brightnessVal', DEFAULTS.brightness);
       writeControl('saturationVal', DEFAULTS.saturation);
+      writeControl('shapeScale', DEFAULTS.shapeScale);
+      writeControl('includeExportMetadata', DEFAULTS.includeExportMetadata);
       writeControl('terrainToggle', DEFAULTS.terrainEnabled);
       writeControl('mountainColor', DEFAULTS.mountainColor);
       writeControl('terrainExaggeration', DEFAULTS.terrainExaggeration);

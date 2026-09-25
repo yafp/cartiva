@@ -5,6 +5,46 @@
     'waterOpacity', 'forestOpacity', 'landOpacity', 'landCoverOpacity',
     'roadOpacity', 'boundaryOpacity', 'buildingOpacity'
   ]);
+  const detailColorFallbacks = Object.freeze({
+    waterwayColor: 'waterColor',
+    waterShadowColor: 'waterColor',
+    parkColor: 'forestColor',
+    natureReserveColor: 'forestColor',
+    grassColor: 'forestColorAccent',
+    woodColor: 'forestColor',
+    residentialColor: 'landCoverColor',
+    cemeteryColor: 'landCoverColorAccent',
+    stadiumColor: 'landCoverColorAccent',
+    roadCaseColor: 'landColor',
+    motorwayColor: 'roadColor',
+    motorwayCaseColor: 'roadCaseColor',
+    trunkRoadColor: 'roadColor',
+    primaryRoadColor: 'roadColor',
+    secondaryRoadColor: 'roadColor',
+    minorRoadColor: 'roadColor',
+    serviceRoadColor: 'roadColor',
+    pathColor: 'roadColor',
+    railColor: 'roadColor',
+    bridgeColor: 'roadColor',
+    bridgeCaseColor: 'roadCaseColor',
+    tunnelColor: 'roadColor',
+    tunnelCaseColor: 'roadCaseColor',
+    countryBoundaryColor: 'boundaryColor',
+    stateBoundaryColor: 'boundaryColor',
+    countyBoundaryColor: 'boundaryColor',
+    buildingTopColor: 'buildingColor'
+  });
+
+  function completePreset(values) {
+    const completed = { ...values };
+    for (const [key, fallbackKey] of Object.entries(detailColorFallbacks)) {
+      completed[key] = completed[key] || completed[fallbackKey];
+    }
+    const requiredKeys = [...global.CartivaLayerRegistry.controlIds, ...Object.keys(detailColorFallbacks)];
+    const missingKeys = requiredKeys.filter(key => completed[key] === undefined);
+    if (missingKeys.length) throw new Error(`Preset is missing required values: ${missingKeys.join(', ')}.`);
+    return completed;
+  }
 
   function validatePreset(id, values) {
     if (!values || typeof values !== 'object') throw new Error(`Preset ${id} is not an object.`);
@@ -23,8 +63,9 @@
     const entries = new Map();
     catalog.forEach(entry => {
       if (!entry?.id || entries.has(entry.id)) throw new Error(`Invalid or duplicate preset id: ${entry?.id}`);
-      validatePreset(entry.id, presets[entry.id]);
-      entries.set(entry.id, Object.freeze({ ...entry, values: Object.freeze({ ...presets[entry.id] }) }));
+      const values = completePreset(presets[entry.id]);
+      validatePreset(entry.id, values);
+      entries.set(entry.id, Object.freeze({ ...entry, values: Object.freeze(values) }));
     });
 
     return Object.freeze({

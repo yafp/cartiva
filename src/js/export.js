@@ -43,6 +43,24 @@
     // High-Res Export Engine & Download Handlers
     const exportBtn = document.getElementById('exportBtn');
     const imageExportBtnLabel = document.getElementById('imageExportBtnLabel');
+    const exportDialog = document.getElementById('exportDialog');
+    const exportConfirmBtn = document.getElementById('exportConfirmBtn');
+    const exportCancelBtn = document.getElementById('exportCancelBtn');
+    const exportDialogCloseBtn = document.getElementById('exportDialogCloseBtn');
+
+    exportBtn.addEventListener('click', () => {
+      updateOutputDimensions();
+      setStatus('');
+      exportDialog.showModal();
+    });
+    [exportCancelBtn, exportDialogCloseBtn].forEach(button => {
+      button.addEventListener('click', () => {
+        if (!runtimeState.operations['image.export']) exportDialog.close();
+      });
+    });
+    exportDialog.addEventListener('cancel', event => {
+      if (runtimeState.operations['image.export']) event.preventDefault();
+    });
     const pdfExporter = CartivaPdfExporter.create();
     function lngLatToTile(lng, lat, zoom) {
       const latitude = Math.max(-85.05112878, Math.min(85.05112878, lat));
@@ -688,14 +706,17 @@
       refinedPreviewUrl = '';
     });
 
-    exportBtn.addEventListener('click', () => CartivaOperations.run({
+    async function runImageExport() {
+      exportCancelBtn.disabled = true;
+      exportDialogCloseBtn.disabled = true;
+      const result = await CartivaOperations.run({
       area: 'image.export',
-      button: exportBtn,
-      label: imageExportBtnLabel,
-      busyLabel: 'Exporting...',
-      idleLabel: 'Export image',
+      button: exportConfirmBtn,
       startStatus: '1/5 Preparing export...',
-      successNotification: 'Poster export finished.',
+      successNotification: exportResult => ({
+        message: `Image exported: ${exportResult.filename}`,
+        icon: 'image'
+      }),
       errorPrefix: 'Export failed',
       errorNotificationPrefix: 'Poster export failed'
     }, async cleanup => {
@@ -768,7 +789,7 @@
           ctx.roundRect(bWidth, bWidth, mapWidth, mapHeight, innerRadius);
           ctx.clip();
         } else {
-          const shapePath = getShapePath(exportState.shape, mapWidth, mapHeight);
+          const shapePath = getShapePath(exportState.shape, mapWidth, mapHeight, exportState.shapeScale);
           ctx.translate(bWidth, bWidth);
           ctx.clip(shapePath);
           ctx.translate(-bWidth, -bWidth);
@@ -914,10 +935,11 @@
         const baseFilename = `cartiva_${exportState.city.trim().replace(/\s+/g, '_')}_${exportState.exportDpi}dpi_${getFileTimestamp()}`;
         setStatus('4/5 Encoding output...');
         if (mimeType === 'image/svg+xml') {
-          downloadBlob(new Blob([canvasToSvg(exportCanvas, exportState)], { type: mimeType }), `${baseFilename}.svg`);
-          downloadExportMetadata(exportState, baseFilename);
+          const filename = `${baseFilename}.svg`;
+          downloadBlob(new Blob([canvasToSvg(exportCanvas, exportState)], { type: mimeType }), filename);
+          if (exportState.includeExportMetadata) downloadExportMetadata(exportState, baseFilename);
           setStatus('5/5 Poster exported.');
-          return;
+          return { filename };
         }
         if (mimeType === 'application/pdf') {
           const pdfMimeType = globalThis.jspdf?.jsPDF ? 'image/png' : 'image/jpeg';
@@ -932,9 +954,9 @@
             dpi: exportState.exportDpi
           });
           downloadBlob(result.blob, result.filename);
-          downloadExportMetadata(exportState, baseFilename);
+          if (exportState.includeExportMetadata) downloadExportMetadata(exportState, baseFilename);
           setStatus('5/5 Poster exported.');
-          return;
+          return { filename: result.filename };
         }
         const extension = mimeType.split('/')[1].replace('jpeg', 'jpg');
         let blob = await new Promise((resolve, reject) => {
@@ -944,8 +966,21 @@
           }, mimeType, mimeType === 'image/jpeg' ? 1 : undefined);
         });
         if (mimeType === 'image/png') blob = await addPngResolutionMetadata(blob, exportState.exportDpi);
-        downloadBlob(blob, `${baseFilename}.${extension}`);
-        downloadExportMetadata(exportState, baseFilename);
-        CartivaDiagnostics.record('image.export', 'Image export completed.', { filename: `${baseFilename}.${extension}`, bytes: blob.size });
+        const filename = `${baseFilename}.${extension}`;
+        downloadBlob(blob, filename);
+        if (exportState.includeExportMetadata) downloadExportMetadata(exportState, baseFilename);
+        CartivaDiagnostics.record('image.export', 'Image export completed.', { filename, bytes: blob.size });
         setStatus('5/5 Poster exported.');
-    }));
+        return { filename };
+      });
+      exportCancelBtn.disabled = false;
+      exportDialogCloseBtn.disabled = false;
+      if (result) {
+        exportDialog.close();
+        setTimeout(() => {
+          if (statusMessage.textContent === '5/5 Poster exported.') setStatus('');
+        }, 7000);
+      }
+    }
+
+    exportConfirmBtn.addEventListener('click', runImageExport);

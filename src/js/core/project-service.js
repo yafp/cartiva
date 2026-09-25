@@ -7,7 +7,7 @@
     'labelCountryColor', 'labelBgColor', 'textFilter', 'format', 'customWidthMm',
     'customHeightMm', 'bleedMm', 'safeMm', 'guidesEnabled', 'exportQuality',
     'printLineWeight', 'exportType', 'exportDpi', 'contrast', 'brightness',
-    'saturation', 'shape', 'shapeColor', 'terrainEnabled', 'mountainColor',
+    'saturation', 'shape', 'shapeColor', 'shapeScale', 'includeExportMetadata', 'terrainEnabled', 'mountainColor',
     'terrainExaggeration', 'stlBuildingsEnabled', 'stlRoadsEnabled', 'scaleEnabled',
     'northEnabled', 'borderEnabled', 'borderColor', 'borderWidth', 'outerBorderRadius',
     'innerBorderRadius', 'layerOrder', 'center', 'zoom', 'bearing', 'pitch', 'city',

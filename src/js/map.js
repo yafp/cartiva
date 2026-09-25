@@ -33,9 +33,12 @@
       if (typeof setStatus === 'function') setStatus(`Map service issue: ${error.message}`, true);
     });
     const zoomLevelDisplay = $('zoomLevelDisplay');
+    const rotationLevelDisplay = $('rotationLevelDisplay');
     function updateZoomLevelDisplay() {
       state.zoom = map.getZoom();
       zoomLevelDisplay.textContent = state.zoom.toFixed(2);
+      const bearing = Math.round(map.getBearing());
+      rotationLevelDisplay.textContent = `${bearing === 0 ? 0 : bearing}°`;
     }
     map.on('move', updateZoomLevelDisplay);
     map.on('move', renderMapAnnotations);
@@ -537,6 +540,10 @@
       const current = Math.max(0, colorPresetSelect.selectedIndex);
       colorPresetSelect.selectedIndex = (current + offset + count) % count;
       applyColorPreset(colorPresetSelect.value);
+      const section = $('colorPresetsSection');
+      section.classList.remove('collapsed');
+      section.querySelector('.section-header').setAttribute('aria-expanded', 'true');
+      section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     $('previousPresetBtn').addEventListener('click', () => stepPreset(-1));
     $('nextPresetBtn').addEventListener('click', () => stepPreset(1));

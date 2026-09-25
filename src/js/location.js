@@ -26,6 +26,11 @@
     function setStatus(message, isError = false) {
       statusMessage.textContent = message;
       statusMessage.classList.toggle('error', isError);
+      const dialogProgress = document.getElementById('exportDialogProgress');
+      if (dialogProgress) {
+        dialogProgress.textContent = message;
+        dialogProgress.classList.toggle('error', isError);
+      }
     }
 
     function setSearchResultsVisible(visible) {
@@ -58,7 +63,11 @@
     function renderSearchResults(data) {
       searchResults.innerHTML = '';
       activeSearchIndex = -1;
-      data.forEach(item => {
+      const uniqueResults = [...new Map(data.map(item => [
+        item.display_name.trim().replace(/\s+/g, ' ').toLocaleLowerCase(),
+        item
+      ])).values()];
+      uniqueResults.forEach(item => {
         const div = document.createElement('div');
         div.className = 'search-item';
         div.setAttribute('role', 'option');

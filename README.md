@@ -73,6 +73,9 @@ Map layers use a fixed cartographic order so previews and all export formats rem
 The app uses `loglevel` for structured lifecycle, map, geocoder, project, and export logging. The default level is `info`; call `CartivaDiagnostics.setLevel('debug')` in the browser console to persist a different level, and inspect recent structured entries with `CartivaDiagnostics.list()`. Map, geocoder, and terrain failures are reported without preventing other features from working. Accordion headers expose keyboard focus, `Enter`/`Space` activation, and `aria-controls`; color inputs receive explicit accessible names.
 
 Export completion and failure messages use Toastify JS. Notifications are limited to image, STL, and 3MF export outcomes; progress remains in the sidebar status area.
+Image export settings are confirmed in a modal dialog. JSON export metadata is optional and can be enabled under `9. Misc`.
+
+JavaScript API documentation is generated into `docs/js` by the `JSDoc` GitHub Actions workflow after each source push.
 
 ### Local development
 
@@ -87,7 +90,7 @@ Then open `http://localhost:8080`. No package installation or build step is requ
 Run the repository checks without installing Node.js:
 
 ```powershell
-./scripts/Test-Cartiva.ps1
+./tests/Test-cartiva.ps1
 ```
 
 The validator checks script references, HTML IDs and labels, JSON parsing, duplicate classic-script function declarations, and English ASCII comments. `.editorconfig`, `jsconfig.json`, and the `Validate` GitHub Actions workflow keep these checks available in editors and continuous integration.

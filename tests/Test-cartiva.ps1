@@ -41,6 +41,18 @@ if ($duplicateIds.Count) {
   Add-Pass 'HTML IDs are unique'
 }
 
+$requiredFeatureIds = @(
+  'exportDialog', 'exportConfirmBtn', 'exportCancelBtn', 'exportDialogProgress',
+  'includeExportMetadata', 'shapeScale', 'shapeScaleVal', 'rotationLevelDisplay',
+  'colorPresetsSection'
+)
+$missingFeatureIds = @($requiredFeatureIds | Where-Object { $_ -notin $ids })
+if ($missingFeatureIds.Count) {
+  Add-Failure "Missing feature UI IDs: $($missingFeatureIds -join ', ')"
+} else {
+  Add-Pass 'Export, overlay, rotation, and preset UI surfaces exist'
+}
+
 $controls = [regex]::Matches($html, '<(?:input|select|textarea)\b[^>]*\bid="([^"]+)"[^>]*>')
 $forIds = [regex]::Matches($html, '<label\b[^>]*\bfor="([^"]+)"') | ForEach-Object { $_.Groups[1].Value }
 $wrappedIds = [regex]::Matches($html, '<label\b[^>]*>\s*<input\b[^>]*\bid="([^"]+)"') | ForEach-Object { $_.Groups[1].Value }
@@ -65,6 +77,15 @@ foreach ($jsonFile in $jsonFiles) {
 }
 if (-not ($failures | Where-Object { $_ -like 'Invalid JSON:*' })) {
   Add-Pass "All $($jsonFiles.Count) JSON files parse"
+}
+
+$jsdocWorkflow = Join-Path $ProjectRoot '.github/workflows/jsdoc.yml'
+if (-not (Test-Path $jsdocWorkflow -PathType Leaf)) {
+  Add-Failure 'Missing JSDoc workflow'
+} elseif ((Get-Content $jsdocWorkflow -Raw) -notmatch 'docs/js') {
+  Add-Failure 'JSDoc workflow does not target docs/js'
+} else {
+  Add-Pass 'JSDoc workflow targets docs/js'
 }
 
 $javascriptFiles = @(Get-ChildItem (Join-Path $srcRoot 'js') -Recurse -File -Filter *.js)

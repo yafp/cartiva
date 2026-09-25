@@ -1,17 +1,29 @@
 // Shared lifecycle for asynchronous user operations.
 (function attachOperations(global) {
-  function notify(message, type) {
-    if (!message || typeof global.Toastify !== 'function') return;
+  function notify(notification, type) {
+    if (!notification || typeof global.Toastify !== 'function') return;
+    const details = typeof notification === 'string' ? { message: notification } : notification;
     const toast = global.Toastify({
-      text: message,
+      text: details.message,
       duration: 4500,
       close: true,
       gravity: 'top',
       position: 'right',
       stopOnFocus: true,
-      style: { background: type === 'error' ? '#b91c1c' : '#047857' }
+      style: {
+        background: type === 'error' ? '#b91c1c' : '#047857',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+      }
     });
     toast.showToast();
+    if (details.icon === 'image' && toast.toastElement) {
+      const icon = document.createElement('span');
+      icon.textContent = '\u{1F5BC}\uFE0F';
+      icon.setAttribute('aria-hidden', 'true');
+      toast.toastElement.prepend(icon);
+    }
     toast.toastElement?.setAttribute('role', type === 'error' ? 'alert' : 'status');
   }
 
@@ -39,7 +51,7 @@
     try {
       const result = await task(cleanup => cleanups.push(cleanup));
       if (successStatus) global.setStatus?.(successStatus);
-      notify(successNotification, 'success');
+      notify(typeof successNotification === 'function' ? successNotification(result) : successNotification, 'success');
       global.CartivaDiagnostics.record(area, 'Operation completed.', {
         durationMs: Math.round(performance.now() - startedAt)
       });

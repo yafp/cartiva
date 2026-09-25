@@ -97,41 +97,7 @@
               <div class="control-group"><label for="customWidthMm">Width (mm)</label><input type="number" id="customWidthMm" min="30" max="1000" value="210" title="Set the custom output width in millimeters"></div>
               <div class="control-group"><label for="customHeightMm">Height (mm)</label><input type="number" id="customHeightMm" min="30" max="1000" value="297" title="Set the custom output height in millimeters"></div>
             </div>
-            <div class="row">
-              <div class="control-group">
-                <label for="exportType">Export type</label>
-                <select id="exportType" autocomplete="off" title="Select the export file format">
-                  <option value="image/png">PNG</option>
-                  <option value="image/jpeg">JPEG</option>
-                  <option value="image/webp">WebP</option>
-                  <option value="image/svg+xml">SVG</option>
-                  <option value="application/pdf">PDF</option>
-                </select>
-              </div>
-              <div id="outputDimensions" class="output-dimensions">2480 × 3508 px</div>
-              <div class="control-group"><label for="exportQuality">Map quality</label>
-                <select id="exportQuality" autocomplete="off" title="Render above the final output size, then downsample for smoother lines">
-                  <option value="1">Standard (1x)</option>
-                  <option value="1.5" selected>High (1.5x)</option>
-                  <option value="2">Fine art (2x)</option>
-                </select>
-              </div>
-              <div class="control-group"><label for="printLineWeight">Print line weight</label>
-                <select id="printLineWeight" autocomplete="off" title="Adjust map line visibility for printed output">
-                  <option value="fine">Fine</option>
-                  <option value="standard" selected>Standard</option>
-                  <option value="bold">Bold</option>
-                </select>
-              </div>
-              <div class="control-group">
-                <label for="exportDpi">Print DPI</label>
-                <select id="exportDpi" autocomplete="off" title="Select the print resolution in dots per inch">
-                  <option value="150">150 DPI</option>
-                  <option value="300" selected>300 DPI</option>
-                  <option value="600">600 DPI</option>
-                </select>
-              </div>
-            </div>
+            <div id="outputDimensions" class="output-dimensions">2480 × 3508 px</div>
           </div>
         </div>
 
@@ -201,6 +167,10 @@
                 <label for="shapeColor">Layer color</label>
                 <input type="color" id="shapeColor" value="#ffffff" autocomplete="off" title="Choose the color outside the map mask">
               </div>
+            </div>
+            <div class="control-group">
+              <label for="shapeScale">Scale: <span id="shapeScaleVal">100</span>%</label>
+              <input type="range" id="shapeScale" min="25" max="100" value="100" autocomplete="off" title="Adjust the overlay shape size">
             </div>
           </div>
         </div>
@@ -313,7 +283,7 @@
         <div class="sidebar-area-heading">Content</div>
 
         <!-- 6. Color presets -->
-        <div class="section-block collapsed" title="Choose from pre-defined color presets">
+        <div id="colorPresetsSection" class="section-block collapsed" title="Choose from pre-defined color presets">
           <div class="section-header">
             <span class="section-header-title">
               <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>
@@ -564,6 +534,7 @@
               <label><input type="checkbox" id="scaleToggle" autocomplete="off" title="Show a distance scale on the map"> Scale</label>
               <label><input type="checkbox" id="northToggle" autocomplete="off" title="Show the direction of north when the map is rotated"> North</label>
             </div>
+            <label class="check-row"><input type="checkbox" id="includeExportMetadata" autocomplete="off" title="Download a JSON metadata file alongside exported images"> Export JSON metadata with images</label>
             <div class="misc-subsection">
               <div class="misc-subsection-title">Print guides</div>
               <div class="row">
@@ -591,7 +562,7 @@
           <input type="file" id="projectFileInput" accept="application/json,.json" aria-label="Select a cartiva project file" hidden>
         </div>
         <div class="footer-action-separator" aria-hidden="true"></div>
-        <button type="button" class="export-btn" id="exportBtn" title="Generate and download high-resolution poster image and configuration file">
+        <button type="button" class="export-btn" id="exportBtn" title="Configure and download a high-resolution poster image">
           <span id="imageExportBtnLabel">Export image</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </button>
@@ -616,6 +587,55 @@
       </div>
     </div>
 	<!-- / Export Buttons -->
+
+    <dialog id="exportDialog" class="export-dialog" aria-labelledby="exportDialogTitle">
+      <div class="export-dialog-header">
+        <h2 id="exportDialogTitle">Export image</h2>
+        <button type="button" id="exportDialogCloseBtn" class="icon-btn" title="Cancel export" aria-label="Close export dialog">×</button>
+      </div>
+      <div class="export-dialog-body">
+        <div class="export-dialog-grid">
+          <div class="control-group">
+            <label for="exportType">Export type</label>
+            <select id="exportType" autocomplete="off" title="Select the export file format">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg">JPEG</option>
+              <option value="image/webp">WebP</option>
+              <option value="image/svg+xml">SVG</option>
+              <option value="application/pdf">PDF</option>
+            </select>
+          </div>
+          <div class="control-group"><label for="exportQuality">Map quality</label>
+            <select id="exportQuality" autocomplete="off" title="Render above the final output size, then downsample for smoother lines">
+              <option value="1">Standard (1x)</option>
+              <option value="1.5" selected>High (1.5x)</option>
+              <option value="2">Fine art (2x)</option>
+            </select>
+          </div>
+          <div class="control-group"><label for="printLineWeight">Print line weight</label>
+            <select id="printLineWeight" autocomplete="off" title="Adjust map line visibility for printed output">
+              <option value="fine">Fine</option>
+              <option value="standard" selected>Standard</option>
+              <option value="bold">Bold</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="exportDpi">Print DPI</label>
+            <select id="exportDpi" autocomplete="off" title="Select the print resolution in dots per inch">
+              <option value="150">150 DPI</option>
+              <option value="300" selected>300 DPI</option>
+              <option value="600">600 DPI</option>
+            </select>
+          </div>
+        </div>
+        <div id="exportDialogDimensions" class="export-dialog-summary">2480 × 3508 px</div>
+        <div id="exportDialogProgress" class="export-dialog-progress" role="status" aria-live="polite"></div>
+      </div>
+      <div class="export-dialog-actions">
+        <button type="button" id="exportCancelBtn" class="secondary-action-btn">Cancel</button>
+        <button type="button" id="exportConfirmBtn" class="export-btn">Export</button>
+      </div>
+    </dialog>
   </form>
 
   <!-- Main Viewport Area -->
@@ -633,10 +653,10 @@
     <!-- Floating map controls grouped by function. -->
     <div class="map-zoom-controls" role="toolbar" aria-label="Map view controls">
       <div class="map-control-group" role="group" aria-label="Zoom controls">
-        <button type="button" id="zoomInBigBtn" class="map-zoom-btn" title="Zoom In (Big Steps)" aria-label="Zoom in by two levels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path><path d="M18 3v6M15 6h6"></path></svg></button>
-        <button type="button" id="zoomInFineBtn" class="map-zoom-btn" title="Zoom In (Fine Adjustment)" aria-label="Zoom in slightly"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
-        <button type="button" id="zoomOutFineBtn" class="map-zoom-btn" title="Zoom Out (Fine Adjustment)" aria-label="Zoom out slightly"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
-        <button type="button" id="zoomOutBigBtn" class="map-zoom-btn" title="Zoom Out (Big Steps)" aria-label="Zoom out by two levels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="M15 18h6"></path></svg></button>
+        <button type="button" id="zoomInBigBtn" class="map-zoom-btn" title="Zoom In (Big Steps)" aria-label="Zoom in by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18"></path></svg></button>
+        <button type="button" id="zoomInFineBtn" class="map-zoom-btn" title="Zoom In (Fine Adjustment)" aria-label="Zoom in slightly"><svg class="zoom-icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v10M7 12h10"></path></svg></button>
+        <button type="button" id="zoomOutFineBtn" class="map-zoom-btn" title="Zoom Out (Fine Adjustment)" aria-label="Zoom out slightly"><svg class="zoom-icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 12h10"></path></svg></button>
+        <button type="button" id="zoomOutBigBtn" class="map-zoom-btn" title="Zoom Out (Big Steps)" aria-label="Zoom out by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18"></path></svg></button>
         <div id="zoomLevelDisplay" class="zoom-level-display">13.00</div>
       </div>
       <div class="map-control-separator" aria-hidden="true"></div>
@@ -644,6 +664,7 @@
         <button type="button" id="rotateLeftBtn" class="map-zoom-btn" title="Rotate Map Left" aria-label="Rotate map left"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"></path><path d="M5.5 15a8 8 0 1 0 1-8.5L4 10"></path></svg></button>
         <button type="button" id="resetBearingBtn" class="map-zoom-btn" title="Reset Map Orientation" aria-label="Reset map orientation"><svg viewBox="0 0 24 24"><path d="M12 3 8 12l4-2 4 2-4-9Z"></path><circle cx="12" cy="12" r="9"></circle></svg></button>
         <button type="button" id="rotateRightBtn" class="map-zoom-btn" title="Rotate Map Right" aria-label="Rotate map right"><svg viewBox="0 0 24 24"><path d="M20 4v6h-6"></path><path d="M18.5 15a8 8 0 1 1-1-8.5L20 10"></path></svg></button>
+        <div id="rotationLevelDisplay" class="zoom-level-display">0°</div>
       </div>
       <div class="map-control-separator" aria-hidden="true"></div>
       <div class="map-control-group" role="group" aria-label="Preview tools">

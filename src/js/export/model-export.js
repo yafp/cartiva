@@ -48,7 +48,7 @@ $('stlExportBtn').addEventListener('click', () => {
     CartivaDiagnostics.record('stl.export', 'STL mesh generated.', { triangles: mesh.triangleMaterials.length });
     const name = `cartiva_${renderSpec.city.trim().replace(/\s+/g, '_')}_${getFileTimestamp()}.stl`;
     downloadBlob(model, name);
-    downloadExportMetadata(renderSpec, name.replace(/\.stl$/, ''));
+    if (renderSpec.includeExportMetadata) downloadExportMetadata(renderSpec, name.replace(/\.stl$/, ''));
   });
 });
 
@@ -76,6 +76,6 @@ $('threeMfExportBtn').addEventListener('click', () => {
     CartivaDiagnostics.record('3mf.export', '3MF mesh generated.', { triangles: mesh.triangleMaterials.length });
     const name = `cartiva_${renderSpec.city.trim().replace(/\s+/g, '_')}_${getFileTimestamp()}.3mf`;
     downloadBlob(model, name);
-    downloadExportMetadata(renderSpec, name.replace(/\.3mf$/, ''));
+    if (renderSpec.includeExportMetadata) downloadExportMetadata(renderSpec, name.replace(/\.3mf$/, ''));
   });
 });
