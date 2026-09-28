@@ -8,32 +8,12 @@
     "name": "Amethyst Glow"
   },
   {
-    "id": "arctic-archipelago",
-    "name": "Arctic Archipelago"
-  },
-  {
     "id": "arctic-badlands",
     "name": "Arctic Badlands"
   },
   {
-    "id": "arctic-delta",
-    "name": "Arctic Delta"
-  },
-  {
-    "id": "arctic-estuary",
-    "name": "Arctic Estuary"
-  },
-  {
-    "id": "arctic-highlands",
-    "name": "Arctic Highlands"
-  },
-  {
     "id": "autumn",
     "name": "Autumn Rust"
-  },
-  {
-    "id": "azure-delta",
-    "name": "Azure Delta"
   },
   {
     "id": "baroque",
@@ -48,20 +28,8 @@
     "name": "Bordeaux Wine"
   },
   {
-    "id": "burnished-archipelago",
-    "name": "Burnished Archipelago"
-  },
-  {
-    "id": "burnished-badlands",
-    "name": "Burnished Badlands"
-  },
-  {
     "id": "burnished-delta",
     "name": "Burnished Delta"
-  },
-  {
-    "id": "burnished-estuary",
-    "name": "Burnished Estuary"
   },
   {
     "id": "canyon",
@@ -84,20 +52,8 @@
     "name": "Citrus Punch"
   },
   {
-    "id": "cloud-archipelago",
-    "name": "Cloud Archipelago"
-  },
-  {
-    "id": "cloud-badlands",
-    "name": "Cloud Badlands"
-  },
-  {
     "id": "cloud-delta",
     "name": "Cloud Delta"
-  },
-  {
-    "id": "cloud-estuary",
-    "name": "Cloud Estuary"
   },
   {
     "id": "cloud-highlands",
@@ -136,20 +92,12 @@
     "name": "Deep Archipelago"
   },
   {
-    "id": "deep-delta",
-    "name": "Deep Delta"
-  },
-  {
     "id": "desert",
     "name": "Desert Sand"
   },
   {
     "id": "electric-highlands",
     "name": "Electric Highlands"
-  },
-  {
-    "id": "elysian",
-    "name": "Elysian Fields"
   },
   {
     "id": "emerald",
@@ -184,10 +132,6 @@
     "name": "Glacier Blue"
   },
   {
-    "id": "golden-estuary",
-    "name": "Golden Estuary"
-  },
-  {
     "id": "granite",
     "name": "Granite Stone"
   },
@@ -212,10 +156,6 @@
     "name": "Indigo Night"
   },
   {
-    "id": "jade-delta",
-    "name": "Jade Delta"
-  },
-  {
     "id": "jungle",
     "name": "Jungle Safari"
   },
@@ -230,10 +170,6 @@
   {
     "id": "positron",
     "name": "Light Positron"
-  },
-  {
-    "id": "lunar-delta",
-    "name": "Lunar Delta"
   },
   {
     "id": "magma",
