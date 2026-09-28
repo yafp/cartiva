@@ -1,723 +1,757 @@
 <!--
 	=============================================================================
 	cartiva - index.html
- 	=============================================================================
+	=============================================================================
 	
 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>cartiva - a small, self-contained creative cartography web-app</title>
-  
-  <!-- MapLibre GL JS CSS & JS -->
-  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/loglevel@1.9.2/dist/loglevel.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>cartiva - a small, self-contained creative cartography web-app</title>
 
-  <!-- Google Fonts Imports -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Montserrat:wght@700;800&family=Pacifico&family=Playfair+Display:wght@700;800&family=Roboto:wght@700;900&family=Space+Mono:wght@700&family=Lora:wght@700&family=Oswald:wght@700&family=Merriweather:wght@700&family=Raleway:wght@700&family=Ubuntu:wght@700&family=Bebas+Neue&family=Abril+Fatface&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
-  
-  <!-- cartiva CSS -->
-  <link href="css/cartiva.css" rel="stylesheet">
+	<!-- MapLibre GL JS CSS & JS -->
+	<link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+	<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+	
+	<!-- JSPDF -->
+	<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+	
+	<!-- LogLevel -->
+	<script src="https://cdn.jsdelivr.net/npm/loglevel@1.9.2/dist/loglevel.min.js"></script>
+	
+	<!-- Toastify -->
+	<link href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+
+	<!-- Google Fonts Imports -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Montserrat:wght@700;800&family=Pacifico&family=Playfair+Display:wght@700;800&family=Roboto:wght@700;900&family=Space+Mono:wght@700&family=Lora:wght@700&family=Oswald:wght@700&family=Merriweather:wght@700&family=Raleway:wght@700&family=Ubuntu:wght@700&family=Bebas+Neue&family=Abril+Fatface&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+
+	<!-- cartiva CSS -->
+	<link href="css/cartiva.css" rel="stylesheet">
 </head>
 
 <body>
-  <form id="settingsForm" class="settings-form" autocomplete="off">
-    <div class="sidebar">
-	  <!-- Sidebar Header -->
-      <div class="sidebar-header">
-		<center><img src="img/cartiva_logo.png" height="70px"></center>
-        <!--
-		<h1 id="appName">DUMMY_APPNAME</h1>
-		-->
-        <div class="subtitle" id="appDescription">DUMMY_APPDESCRIPTION</div>
-      </div>
-	
-	  <!-- Sidebar-content -->
-      <div class="sidebar-content">
-	  
-		<!-- NAV: Section LOCATION -->
-		<div class="sidebar-area-heading">Location</div>
-		<div class="section-block overflow-visible " title="Search and center target geographic location">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-              1. Location
-            </span>
-          </div>
-          <div class="section-body">
-            <div class="control-group">
-              <label class="visually-hidden" for="searchInput">Search location</label>
-              <div class="location-search-row">
-                <input type="text" id="searchInput" value="" placeholder="Search city / location..." autocomplete="off" title="Type to query worldwide locations via Nominatim" role="combobox" aria-autocomplete="list" aria-controls="searchResults" aria-expanded="false">
-                <button type="button" id="searchBtn" class="location-search-btn" title="Search location" aria-label="Search location"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
-              </div>
-              <div id="searchResults" class="search-results" role="listbox" aria-label="Location suggestions"></div>
-            </div>
-          </div>
+	<form id="settingsForm" class="settings-form" autocomplete="off">
+		<!-- SIDEBAR -->
+		<div class="sidebar">
+			<!-- SIDEBAR-HEADER -->
+			<div class="sidebar-header">
+				<center><img src="img/cartiva_logo.png" height="60px"></center>
+				<!--
+				<h1 id="appName">DUMMY_APPNAME</h1>
+				-->
+				<center><div class="subtitle" id="appDescription">DUMMY_APPDESCRIPTION</div></center>
+			</div>
+			<!-- /SIDEBAR-HEADER -->
+
+			<!-- SIDEBAR-CONTENT -->
+			<div class="sidebar-content">
+				<!-- NAV: Section LOCATION -->
+				<div class="sidebar-area-heading">Location</div>
+				<div class="section-block overflow-visible " title="Search and center target geographic location">
+				<div class="section-header">
+					<span class="section-header-title">
+					<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+					1. Location
+					</span>
+				</div>
+				
+				<div class="section-body">
+					<div class="control-group">
+						<label class="visually-hidden" for="searchInput">Search location</label>
+						<div class="location-search-row">
+							<input type="text" id="searchInput" value="" placeholder="Search city / location..." autocomplete="off" title="Type to query worldwide locations via Nominatim" role="combobox" aria-autocomplete="list" aria-controls="searchResults" aria-expanded="false">
+							<button type="button" id="searchBtn" class="location-search-btn" title="Search location" aria-label="Search location"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
+						</div>
+						<div id="searchResults" class="search-results" role="listbox" aria-label="Location suggestions"></div>
+					</div>
+				</div>
+			</div>
+		
+			<!-- NAV: Section FORMAT -->
+			<div class="sidebar-area-heading">Format</div>
+			<!-- 2. Size -->
+			<div class="section-block collapsed" title="Configure output media dimensions and aspect ratio">
+				<div class="section-header">
+					<span class="section-header-title">
+					<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+					2. Size
+					</span>
+				</div>
+				<div class="section-body">
+					<div class="control-group">
+						<label for="formatSelect">Paper format</label>
+						<select id="formatSelect" autocomplete="off" title="Select standard print layout dimensions">
+							<option value="a2-portrait">A2 Portrait</option>
+							<option value="a2-landscape">A2 Landscape</option>
+							<option value="a3-portrait">A3 Portrait</option>
+							<option value="a3-landscape">A3 Landscape</option>
+							<option value="a4-portrait" selected>A4 Portrait</option>
+							<option value="a4-landscape">A4 Landscape</option>
+							<option value="a5-portrait">A5 Portrait</option>
+							<option value="a5-landscape">A5 Landscape</option>
+							<option value="square-large">Square Large (420 mm)</option>
+							<option value="square-medium">Square Medium (297 mm)</option>
+							<option value="square-small">Square Small (210 mm)</option>
+							<option value="custom">Custom size</option>
+						</select>
+					</div>
+					<div class="row custom-size-row" id="customSizeControls" hidden>
+						<div class="control-group"><label for="customWidthMm">Width (mm)</label><input type="number" id="customWidthMm" min="30" max="1000" value="210" title="Set the custom output width in millimeters"></div>
+						<div class="control-group"><label for="customHeightMm">Height (mm)</label><input type="number" id="customHeightMm" min="30" max="1000" value="297" title="Set the custom output height in millimeters"></div>
+					</div>
+					<div id="outputDimensions" class="output-dimensions">2480 × 3508 px</div>
+				</div>
+			</div>
+
+			<!-- 3. Border -->
+			<div class="section-block collapsed" title="Customize canvas outer framing border">
+				<div class="section-header">
+					<span class="section-header-title">
+					<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="10" height="10" rx="1" ry="1"></rect></svg>
+					3. Borders
+					</span>
+				</div>
+				<div class="section-body">
+					<div class="row">
+						<div class="control-group control-fixed">
+							<label><input type="checkbox" id="borderCheckbox" checked autocomplete="off" title="Toggle canvas border visibility"> Enabled</label>
+						</div>
+						<div class="control-group border-ui-item control-fixed">
+							<label for="borderColor">Color</label>
+							<div class="color-field-inline">
+								<input type="color" id="borderColor" value="#ffffff" autocomplete="off" title="Choose border frame color">
+							</div>
+						</div>
+						<div class="control-group border-ui-item control-fill">
+							<label for="borderWidth">Width: <span id="borderWidthVal">16</span>px</label>
+							<input type="range" id="borderWidth" min="1" max="50" value="16" autocomplete="off" title="Adjust border thickness in pixels">
+						</div>
+					</div>
+					<!-- ... -->
+					<div class="control-group border-ui-item">
+						<label for="outerBorderRadius">Outer radius: <span id="outerBorderRadiusVal">0</span>px</label>
+						<input type="range" id="outerBorderRadius" min="0" max="100" value="0" autocomplete="off" title="Round the outside poster corners">
+					</div>
+					<!-- ... -->
+					<div class="control-group border-ui-item">
+						<label for="innerBorderRadius">Inner radius: <span id="innerBorderRadiusVal">0</span>px</label>
+						<input type="range" id="innerBorderRadius" min="0" max="100" value="0" autocomplete="off" title="Round the inside map corners">
+					</div>
+				</div>
+			</div>
+
+			<!-- 4. Overlay shapes -->
+			<div class="section-block collapsed" title="Mask the map inside a decorative shape">
+				<div class="section-header">
+					<span class="section-header-title">
+						<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"></circle></svg>
+						4. Overlay shapes
+					</span>
+				</div>
+				<div class="section-body">
+					<div class="row row-centered">
+						<div class="control-group control-fill">
+							<label for="shapeSelect">Shape</label>
+							<select id="shapeSelect" autocomplete="off" title="Select a decorative map mask shape">
+								<option value="none">None</option>
+								<option value="circle">Circle</option>
+								<option value="heart">Heart</option>
+								<option value="star">Star</option>
+								<option value="house">House</option>
+								<option value="spiral">Spiral</option>
+								<option value="peace">Peace Sign</option>
+								<option value="smiley">Smiley</option>
+								<option value="diamond">Diamond</option>
+								<option value="hexagon">Hexagon</option>
+								<option value="cross">Cross</option>
+								<option value="cloud">Cloud</option>
+							</select>
+						</div>
+						<div class="control-group control-fixed">
+							<label for="shapeColor">Layer color</label>
+							<input type="color" id="shapeColor" value="#ffffff" autocomplete="off" title="Choose the color outside the map mask">
+						</div>
+					</div>
+					<div class="control-group">
+						<label for="shapeScale">Scale: <span id="shapeScaleVal">100</span>%</label>
+						<input type="range" id="shapeScale" min="25" max="100" value="100" autocomplete="off" title="Adjust the overlay shape size">
+					</div>
+				</div>
+			</div>
+
+
+
+
+			<!-- 5. Layout -->
+			<div class="section-block collapsed" title="Customize typography, text styling, and legend layouts">
+				<div class="section-header">
+					<span class="section-header-title">
+						<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path><path d="M6 6h10"></path><path d="M6 10h10"></path></svg>
+						5. Label layout
+					</span>
+				</div>
+				<div class="section-body">
+					<div class="control-group">
+						<label for="labelStyle">Layout</label>
+						<select id="labelStyle" autocomplete="off" title="Select poster title layout template position">
+							<option value="none">None</option>
+							<optgroup label="Floating boxes">
+								<option value="float-bottom-left">Bottom · Left</option>
+								<option value="float-bottom-center">Bottom · Center</option>
+								<option value="float-bottom-right">Bottom · Right</option>
+								<option value="float-top-left">Top · Left</option>
+								<option value="float-top-center">Top · Center</option>
+								<option value="float-top-right">Top · Right</option>
+							</optgroup>
+							<optgroup label="Corner boxes">
+								<option value="corner-bottom-left">Bottom · Left Corner</option>
+								<option value="corner-bottom-right" selected>Bottom · Right Corner</option>
+								<option value="corner-top-left">Top · Left Corner</option>
+								<option value="corner-top-right">Top · Right Corner</option>
+							</optgroup>
+							<optgroup label="Full-width banners">
+								<option value="banner-bottom-left">Bottom · Left Aligned</option>
+								<option value="banner-bottom-center">Bottom · Centered</option>
+								<option value="banner-bottom-right">Bottom · Right Aligned</option>
+								<option value="banner-top-left">Top · Left Aligned</option>
+								<option value="banner-top-center">Top · Centered</option>
+								<option value="banner-top-right">Top · Right Aligned</option>
+							</optgroup>
+							<optgroup label="Special layouts">
+								<option value="special-badge">Centered Badge</option>
+								<option value="special-deck">Modern Bottom Deck</option>
+								<option value="special-minimal">Minimal Transparent</option>
+								<option value="special-tag">Top Tag</option>
+							</optgroup>
+						</select>
+					</div>
+					<!-- Label font selection -->
+					<div class="control-group">
+						<label for="labelFontSelect">Font</label>
+						<select id="labelFontSelect" autocomplete="off" title="Select font typeface for location title and coordinates">
+							<option value="'Segoe UI', system-ui, sans-serif">Default (Clean Sans-Serif)</option>
+							<option value="'Roboto', sans-serif">Roboto (Modern Bold)</option>
+							<option value="'Playfair Display', serif">Playfair Display (Classic Serif)</option>
+							<option value="'Cinzel', serif">Cinzel (Roman Serif)</option>
+							<option value="'Space Mono', monospace">Space Mono (Tech Monospace)</option>
+							<option value="'Montserrat', sans-serif">Montserrat (Geometric Sans)</option>
+							<option value="'Pacifico', cursive">Pacifico (Cursive)</option>
+							<option value="'Lora', serif">Lora (Elegant Serif)</option>
+							<option value="'Oswald', sans-serif">Oswald (Condensed Sans)</option>
+							<option value="'Merriweather', serif">Merriweather (Traditional Serif)</option>
+							<option value="'Raleway', sans-serif">Raleway (Light Elegant Sans)</option>
+							<option value="'Ubuntu', sans-serif">Ubuntu (Friendly Sans)</option>
+							<option value="'Bebas Neue', cursive">Bebas Neue (Tall Display)</option>
+							<option value="'Abril Fatface', serif">Abril Fatface (Bold Display)</option>
+							<option value="'Dancing Script', cursive">Dancing Script (Handwritten)</option>
+						</select>
+					</div>
+
+					<!-- Color fields for the three text lines and background -->
+					<div class="row">
+						<div class="control-group">
+							<div class="color-field-inline" title="Color for Line 1 (Location)">
+								<input type="color" id="labelTextColor" value="#111827" autocomplete="off" title="Choose the location text color">
+								<label class="visually-hidden" for="labelTextColor">Location text color</label>
+							</div>
+						</div>
+						<div class="control-group">
+							<div class="color-field-inline" title="Color for Line 2 (Coordinates)">
+								<input type="color" id="labelCoordColor" value="#4b5563" autocomplete="off" title="Choose the coordinate text color">
+								<label class="visually-hidden" for="labelCoordColor">Coordinate text color</label>
+							</div>
+						</div>
+						<div class="control-group">
+							<div class="color-field-inline" title="Color for Line 3 (Country)">
+								<input type="color" id="labelCountryColor" value="#111827" autocomplete="off" title="Choose the country text color">
+								<label class="visually-hidden" for="labelCountryColor">Country text color</label>
+							</div>
+						</div>
+					</div>
+					<div class="row layout-background-row">
+						<div class="control-group layout-background-color">
+							<div class="color-field-inline" title="Choose title container background color">
+								<input type="color" id="labelBgColor" value="#ffffff" autocomplete="off" title="Choose the label background color">
+								<label class="label-left" for="labelBgColor">Background color</label>
+							</div>
+						</div>
+						<div id="contrastWarning" class="contrast-warning" role="status"></div>
+						<div class="control-group layout-background-opacity">
+							<label for="labelOpacity">Opacity: <span><span id="opacityNum">100</span>%</span></label>
+							<input type="range" id="labelOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust title container background opacity">
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- SPACER -->
+			<div class="sidebar-area-spacer"></div>
+		
+			<!-- NAV: Section CONTENT -->
+			<div class="sidebar-area-heading">Content</div>
+
+
+
+
+
+
+		<!-- 6. Color presets -->
+		<div id="colorPresetsSection" class="section-block collapsed" title="Choose from pre-defined color presets">
+		  <div class="section-header">
+			<span class="section-header-title">
+			  <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>
+			  6. Color presets
+			</span>
+		  </div>
+		  <div class="section-body">
+
+			<!-- Preset color selector with sorted names and padded sequence numbers -->
+			<div class="control-group control-spaced">
+			  <label for="colorPresetSelect">Color palette preset</label>
+			  <select id="colorPresetSelect" autocomplete="off" title="Select a predefined color set for all items"></select>
+			</div>
+			
+			<button type="button" class="fine-tuning-toggle" id="fineTuningToggle" title="Show or hide individual map layer controls" aria-expanded="false" aria-controls="fineTuningControls">
+			  Fine-tuning
+			  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
+			</button>
+
+			<div class="fine-tuning-controls" id="fineTuningControls" hidden>
+			<!-- Water -->
+			<div class="layer-control-card" title="Configure appearance of water bodies and lines">
+			  <div class="layer-title-bar">
+				<span>Water</span>
+				<label><input type="checkbox" id="waterToggle" checked autocomplete="off" title="Show or hide water features"> On</label>
+			  </div>
+			  <div class="row row-centered">
+				<div class="color-field-inline">
+				  <input type="color" id="waterColor" value="#8ab4f8" autocomplete="off" title="Set water color">
+				  <label class="label-left" for="waterColor">Water color</label>
+				</div>
+			  </div>
+			  <div class="control-group">
+				<label for="waterOpacity">Opacity: <span id="waterOpacityVal">100</span>%</label>
+				<input type="range" id="waterOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust water transparency">
+			  </div>
+			</div>
+
+			<!-- Greenery & Nature -->
+			<div class="layer-control-card" title="Configure parks, forests, and nature reserves">
+			  <div class="layer-title-bar">
+				<span>Greenery & Nature</span>
+				<label><input type="checkbox" id="forestToggle" checked autocomplete="off" title="Show or hide green spaces"> On</label>
+			  </div>
+			  <div class="row">
+				<div class="color-field-inline">
+				  <input type="color" id="forestColor" value="#b2d8b0" autocomplete="off" title="Set deep forest color">
+				  <label class="label-left" for="forestColor">Forests</label>
+				</div>
+				<div class="color-field-inline">
+				  <input type="color" id="forestColorAccent" value="#c2e1c1" autocomplete="off" title="Set park color accent">
+				  <label class="label-left" for="forestColorAccent">Parks</label>
+				</div>
+			  </div>
+			  <div class="control-group">
+				<label for="forestOpacity">Opacity: <span id="forestOpacityVal">100</span>%</label>
+				<input type="range" id="forestOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust greenery layer opacity">
+			  </div>
+			</div>
+
+			<!-- Land Background -->
+			<div class="layer-control-card" title="Configure base land background canvas color">
+			  <div class="layer-title-bar">
+				<span>Land Background</span>
+				<label><input type="checkbox" id="landToggle" checked autocomplete="off" title="Show or hide land background"> On</label>
+			  </div>
+			  <div class="row row-centered">
+				<div class="color-field-inline">
+				  <input type="color" id="landColor" value="#f1f3f4" autocomplete="off" title="Set base land color">
+				  <label class="label-left" for="landColor">Base land color</label>
+				</div>
+			  </div>
+			  <div class="control-group">
+				<label for="landOpacity">Opacity: <span id="landOpacityVal">100</span>%</label>
+				<input type="range" id="landOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust background land opacity">
+			  </div>
+			</div>
+
+			<!-- Land Cover / Urban Areas -->
+			<div class="layer-control-card" title="Configure urban and residential zoning areas">
+			  <div class="layer-title-bar">
+				<span>Land Cover / Urban Areas</span>
+				<label><input type="checkbox" id="landCoverToggle" checked autocomplete="off" title="Show or hide urban land cover"> On</label>
+			  </div>
+			  <div class="row">
+				<div class="color-field-inline">
+				  <input type="color" id="landCoverColor" value="#e6e8eb" autocomplete="off" title="Set urban land color">
+				  <label class="label-left" for="landCoverColor">Urban</label>
+				</div>
+				<div class="color-field-inline">
+				  <input type="color" id="landCoverColorAccent" value="#dadde1" autocomplete="off" title="Set residential area color">
+				  <label class="label-left" for="landCoverColorAccent">Residential</label>
+				</div>
+			  </div>
+			  <div class="control-group">
+				<label for="landCoverOpacity">Opacity: <span id="landCoverOpacityVal">100</span>%</label>
+				<input type="range" id="landCoverOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust urban layer opacity">
+			  </div>
+			</div>
+
+			<!-- Roads & Streets -->
+			<div class="layer-control-card" title="Configure road network, bridges, and traintracks">
+			  <div class="layer-title-bar">
+				<span>Roads & Streets</span>
+				<label><input type="checkbox" id="roadToggle" checked autocomplete="off" title="Show or hide road network"> On</label>
+			  </div>
+			  <div class="row row-centered">
+				<div class="color-field-inline">
+				  <input type="color" id="roadColor" value="#374151" autocomplete="off" title="Set unified color for roads, streets, bridges, and traintracks">
+				  <label class="label-left" for="roadColor">Color</label>
+				</div>
+			  </div>
+			  <div class="control-group">
+				<label for="roadOpacity">Opacity: <span id="roadOpacityVal">100</span>%</label>
+				<input type="range" id="roadOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust road network opacity">
+			  </div>
+			</div>
+
+			<!-- Country Borders -->
+			<div class="layer-control-card" title="Configure country and state administrative boundary lines">
+			  <div class="layer-title-bar">
+				<span>Country Borders</span>
+				<label><input type="checkbox" id="boundaryToggle" checked autocomplete="off" title="Show or hide country borders"> On</label>
+			  </div>
+			  <div class="row row-centered">
+				<div class="color-field-inline">
+				  <input type="color" id="boundaryColor" value="#9ca3af" autocomplete="off" title="Set country border line color">
+				  <label class="label-left" for="boundaryColor">Color</label>
+				</div>
+			  </div>
+			  <div class="control-group">
+				<label for="boundaryOpacity">Opacity: <span id="boundaryOpacityVal">100</span>%</label>
+				<input type="range" id="boundaryOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust country border opacity">
+			  </div>
+			</div>
+
+			<!-- Buildings -->
+			<div class="layer-control-card" title="Configure architectural footprints and building structures">
+			  <div class="layer-title-bar">
+				<span>Buildings</span>
+				<label><input type="checkbox" id="buildingToggle" checked autocomplete="off" title="Show or hide building footprints"> On</label>
+			  </div>
+			  
+			  <div class="row row-centered">
+				<div class="color-field-inline">
+				  <input type="color" id="buildingColor" value="#e8eaed" autocomplete="off" title="Set building fill color">
+				  <label class="label-left" for="buildingColor">Fill color</label>
+				</div>
+				<div class="color-field-inline">
+				  <input type="color" id="buildingOutlineColor" value="#d1d5db" autocomplete="off" title="Set building outline border color">
+				  <label class="label-left" for="buildingOutlineColor">Border</label>
+				</div>
+			  </div>
+			  
+			  <!-- Building Outline Toggle Header -->
+			  <div class="layer-title-bar layer-outline-title">
+				<span>Outline</span>
+				<label><input type="checkbox" id="buildingOutlineToggle" checked autocomplete="off" title="Enable or disable building outlines"> On</label>
+			  </div>
+
+			  <div class="control-group">
+				<label for="buildingOpacity">Opacity: <span id="buildingOpacityVal">100</span>%</label>
+				<input type="range" id="buildingOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust building layer opacity">
+			  </div>
+			</div>
+			</div>
+
+		  </div>
 		</div>
-		
-		
-		<!-- NAV: Section FORMAT -->
-        <div class="sidebar-area-heading">Format</div>
-        <!-- 2. Size -->
-        <div class="section-block collapsed" title="Configure output media dimensions and aspect ratio">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-              2. Size
-            </span>
-          </div>
-          <div class="section-body">
-            <div class="control-group">
-              <label for="formatSelect">Paper format</label>
-              <select id="formatSelect" autocomplete="off" title="Select standard print layout dimensions">
-                <option value="a2-portrait">A2 Portrait</option>
-                <option value="a2-landscape">A2 Landscape</option>
-                <option value="a3-portrait">A3 Portrait</option>
-                <option value="a3-landscape">A3 Landscape</option>
-                <option value="a4-portrait" selected>A4 Portrait</option>
-                <option value="a4-landscape">A4 Landscape</option>
-                <option value="a5-portrait">A5 Portrait</option>
-                <option value="a5-landscape">A5 Landscape</option>
-                <option value="square-large">Square Large (420 mm)</option>
-                <option value="square-medium">Square Medium (297 mm)</option>
-                <option value="square-small">Square Small (210 mm)</option>
-                <option value="custom">Custom size</option>
-              </select>
-            </div>
-            <div class="row custom-size-row" id="customSizeControls" hidden>
-              <div class="control-group"><label for="customWidthMm">Width (mm)</label><input type="number" id="customWidthMm" min="30" max="1000" value="210" title="Set the custom output width in millimeters"></div>
-              <div class="control-group"><label for="customHeightMm">Height (mm)</label><input type="number" id="customHeightMm" min="30" max="1000" value="297" title="Set the custom output height in millimeters"></div>
-            </div>
-            <div id="outputDimensions" class="output-dimensions">2480 × 3508 px</div>
-          </div>
-        </div>
 
-		<!-- 3. Border -->
-        <div class="section-block collapsed" title="Customize canvas outer framing border">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="10" height="10" rx="1" ry="1"></rect></svg>
-              3. Borders
-            </span>
-          </div>
-          <div class="section-body">
-            <div class="row">
-              <div class="control-group control-fixed">
-                <label><input type="checkbox" id="borderCheckbox" checked autocomplete="off" title="Toggle canvas border visibility"> Enabled</label>
-              </div>
-              <div class="control-group border-ui-item control-fixed">
-                <label for="borderColor">Color</label>
-                <div class="color-field-inline">
-                  <input type="color" id="borderColor" value="#ffffff" autocomplete="off" title="Choose border frame color">
-                </div>
-              </div>
-              <div class="control-group border-ui-item control-fill">
-                <label for="borderWidth">Width: <span id="borderWidthVal">16</span>px</label>
-                <input type="range" id="borderWidth" min="1" max="50" value="16" autocomplete="off" title="Adjust border thickness in pixels">
-              </div>
-            </div>
-            <div class="control-group border-ui-item">
-              <label for="outerBorderRadius">Outer radius: <span id="outerBorderRadiusVal">0</span>px</label>
-              <input type="range" id="outerBorderRadius" min="0" max="100" value="0" autocomplete="off" title="Round the outside poster corners">
-            </div>
-            <div class="control-group border-ui-item">
-              <label for="innerBorderRadius">Inner radius: <span id="innerBorderRadiusVal">0</span>px</label>
-              <input type="range" id="innerBorderRadius" min="0" max="100" value="0" autocomplete="off" title="Round the inside map corners">
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. Overlay shapes -->
-        <div class="section-block collapsed" title="Mask the map inside a decorative shape">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"></circle></svg>
-              4. Overlay shapes
-            </span>
-          </div>
-          <div class="section-body">
-            <div class="row row-centered">
-              <div class="control-group control-fill">
-                <label for="shapeSelect">Shape</label>
-                <select id="shapeSelect" autocomplete="off" title="Select a decorative map mask shape">
-                  <option value="none">None</option>
-                  <option value="circle">Circle</option>
-                  <option value="heart">Heart</option>
-                  <option value="star">Star</option>
-                  <option value="house">House</option>
-                  <option value="spiral">Spiral</option>
-                  <option value="peace">Peace Sign</option>
-                  <option value="smiley">Smiley</option>
-                  <option value="diamond">Diamond</option>
-                  <option value="hexagon">Hexagon</option>
-                  <option value="cross">Cross</option>
-                  <option value="cloud">Cloud</option>
-                </select>
-              </div>
-              <div class="control-group control-fixed">
-                <label for="shapeColor">Layer color</label>
-                <input type="color" id="shapeColor" value="#ffffff" autocomplete="off" title="Choose the color outside the map mask">
-              </div>
-            </div>
-            <div class="control-group">
-              <label for="shapeScale">Scale: <span id="shapeScaleVal">100</span>%</label>
-              <input type="range" id="shapeScale" min="25" max="100" value="100" autocomplete="off" title="Adjust the overlay shape size">
-            </div>
-          </div>
-        </div>
-
-        <!-- 5. Layout -->
-        <div class="section-block collapsed" title="Customize typography, text styling, and legend layouts">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path><path d="M6 6h10"></path><path d="M6 10h10"></path></svg>
-              5. Label layout
-            </span>
-          </div>
-          <div class="section-body">
-            <div class="control-group">
-              <label for="labelStyle">Layout</label>
-              <select id="labelStyle" autocomplete="off" title="Select poster title layout template position">
-                <option value="none">None</option>
-                <optgroup label="Floating boxes">
-                  <option value="float-bottom-left">Bottom · Left</option>
-                  <option value="float-bottom-center">Bottom · Center</option>
-                  <option value="float-bottom-right">Bottom · Right</option>
-                  <option value="float-top-left">Top · Left</option>
-                  <option value="float-top-center">Top · Center</option>
-                  <option value="float-top-right">Top · Right</option>
-                </optgroup>
-                <optgroup label="Corner boxes">
-                  <option value="corner-bottom-left">Bottom · Left Corner</option>
-                  <option value="corner-bottom-right" selected>Bottom · Right Corner</option>
-                  <option value="corner-top-left">Top · Left Corner</option>
-                  <option value="corner-top-right">Top · Right Corner</option>
-                </optgroup>
-                <optgroup label="Full-width banners">
-                  <option value="banner-bottom-left">Bottom · Left Aligned</option>
-                  <option value="banner-bottom-center">Bottom · Centered</option>
-                  <option value="banner-bottom-right">Bottom · Right Aligned</option>
-                  <option value="banner-top-left">Top · Left Aligned</option>
-                  <option value="banner-top-center">Top · Centered</option>
-                  <option value="banner-top-right">Top · Right Aligned</option>
-                </optgroup>
-                <optgroup label="Special layouts">
-                  <option value="special-badge">Centered Badge</option>
-                  <option value="special-deck">Modern Bottom Deck</option>
-                  <option value="special-minimal">Minimal Transparent</option>
-                  <option value="special-tag">Top Tag</option>
-                </optgroup>
-              </select>
-            </div>
-            <!-- Label font selection -->
-            <div class="control-group">
-              <label for="labelFontSelect">Font</label>
-              <select id="labelFontSelect" autocomplete="off" title="Select font typeface for location title and coordinates">
-                <option value="'Segoe UI', system-ui, sans-serif">Default (Clean Sans-Serif)</option>
-                <option value="'Roboto', sans-serif">Roboto (Modern Bold)</option>
-                <option value="'Playfair Display', serif">Playfair Display (Classic Serif)</option>
-                <option value="'Cinzel', serif">Cinzel (Roman Serif)</option>
-                <option value="'Space Mono', monospace">Space Mono (Tech Monospace)</option>
-                <option value="'Montserrat', sans-serif">Montserrat (Geometric Sans)</option>
-                <option value="'Pacifico', cursive">Pacifico (Cursive)</option>
-                <option value="'Lora', serif">Lora (Elegant Serif)</option>
-                <option value="'Oswald', sans-serif">Oswald (Condensed Sans)</option>
-                <option value="'Merriweather', serif">Merriweather (Traditional Serif)</option>
-                <option value="'Raleway', sans-serif">Raleway (Light Elegant Sans)</option>
-                <option value="'Ubuntu', sans-serif">Ubuntu (Friendly Sans)</option>
-                <option value="'Bebas Neue', cursive">Bebas Neue (Tall Display)</option>
-                <option value="'Abril Fatface', serif">Abril Fatface (Bold Display)</option>
-                <option value="'Dancing Script', cursive">Dancing Script (Handwritten)</option>
-              </select>
-            </div>
-
-            <!-- Color fields for the three text lines and background -->
-            <div class="row">
-              <div class="control-group">
-                <div class="color-field-inline" title="Color for Line 1 (Location)">
-                  <input type="color" id="labelTextColor" value="#111827" autocomplete="off" title="Choose the location text color">
-                  <label class="visually-hidden" for="labelTextColor">Location text color</label>
-                </div>
-              </div>
-              <div class="control-group">
-                <div class="color-field-inline" title="Color for Line 2 (Coordinates)">
-                  <input type="color" id="labelCoordColor" value="#4b5563" autocomplete="off" title="Choose the coordinate text color">
-                  <label class="visually-hidden" for="labelCoordColor">Coordinate text color</label>
-                </div>
-              </div>
-              <div class="control-group">
-                <div class="color-field-inline" title="Color for Line 3 (Country)">
-                  <input type="color" id="labelCountryColor" value="#111827" autocomplete="off" title="Choose the country text color">
-                  <label class="visually-hidden" for="labelCountryColor">Country text color</label>
-                </div>
-              </div>
-            </div>
-            <div class="row layout-background-row">
-              <div class="control-group layout-background-color">
-                <div class="color-field-inline" title="Choose title container background color">
-                  <input type="color" id="labelBgColor" value="#ffffff" autocomplete="off" title="Choose the label background color">
-                  <label class="label-left" for="labelBgColor">Background color</label>
-                </div>
-              </div>
-              <div id="contrastWarning" class="contrast-warning" role="status"></div>
-              <div class="control-group layout-background-opacity">
-                <label for="labelOpacity">Opacity: <span><span id="opacityNum">100</span>%</span></label>
-                <input type="range" id="labelOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust title container background opacity">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="sidebar-area-spacer"></div>
-		
-		<!-- NAV: Section CONTENT -->
-        <div class="sidebar-area-heading">Content</div>
-
-        <!-- 6. Color presets -->
-        <div id="colorPresetsSection" class="section-block collapsed" title="Choose from pre-defined color presets">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>
-              6. Color presets
-            </span>
-          </div>
-          <div class="section-body">
-
-            <!-- Preset color selector with sorted names and padded sequence numbers -->
-            <div class="control-group control-spaced">
-              <label for="colorPresetSelect">Color palette preset</label>
-              <select id="colorPresetSelect" autocomplete="off" title="Select a predefined color set for all items"></select>
-            </div>
-            <button type="button" class="secondary-action-btn" id="randomPresetBtn" title="Generate a random color preset">Generate random preset</button>
-
-            <button type="button" class="fine-tuning-toggle" id="fineTuningToggle" title="Show or hide individual map layer controls" aria-expanded="false" aria-controls="fineTuningControls">
-              Show layer fine-tuning
-            </button>
-
-            <div class="fine-tuning-controls" id="fineTuningControls" hidden>
-            <!-- Water -->
-            <div class="layer-control-card" title="Configure appearance of water bodies and lines">
-              <div class="layer-title-bar">
-                <span>Water</span>
-                <label><input type="checkbox" id="waterToggle" checked autocomplete="off" title="Show or hide water features"> On</label>
-              </div>
-              <div class="row row-centered">
-                <div class="color-field-inline">
-                  <input type="color" id="waterColor" value="#8ab4f8" autocomplete="off" title="Set water color">
-                  <label class="label-left" for="waterColor">Water color</label>
-                </div>
-              </div>
-              <div class="control-group">
-                <label for="waterOpacity">Opacity: <span id="waterOpacityVal">100</span>%</label>
-                <input type="range" id="waterOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust water transparency">
-              </div>
-            </div>
-
-            <!-- Greenery & Nature -->
-            <div class="layer-control-card" title="Configure parks, forests, and nature reserves">
-              <div class="layer-title-bar">
-                <span>Greenery & Nature</span>
-                <label><input type="checkbox" id="forestToggle" checked autocomplete="off" title="Show or hide green spaces"> On</label>
-              </div>
-              <div class="row">
-                <div class="color-field-inline">
-                  <input type="color" id="forestColor" value="#b2d8b0" autocomplete="off" title="Set deep forest color">
-                  <label class="label-left" for="forestColor">Forests</label>
-                </div>
-                <div class="color-field-inline">
-                  <input type="color" id="forestColorAccent" value="#c2e1c1" autocomplete="off" title="Set park color accent">
-                  <label class="label-left" for="forestColorAccent">Parks</label>
-                </div>
-              </div>
-              <div class="control-group">
-                <label for="forestOpacity">Opacity: <span id="forestOpacityVal">100</span>%</label>
-                <input type="range" id="forestOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust greenery layer opacity">
-              </div>
-            </div>
-
-            <!-- Land Background -->
-            <div class="layer-control-card" title="Configure base land background canvas color">
-              <div class="layer-title-bar">
-                <span>Land Background</span>
-                <label><input type="checkbox" id="landToggle" checked autocomplete="off" title="Show or hide land background"> On</label>
-              </div>
-              <div class="row row-centered">
-                <div class="color-field-inline">
-                  <input type="color" id="landColor" value="#f1f3f4" autocomplete="off" title="Set base land color">
-                  <label class="label-left" for="landColor">Base land color</label>
-                </div>
-              </div>
-              <div class="control-group">
-                <label for="landOpacity">Opacity: <span id="landOpacityVal">100</span>%</label>
-                <input type="range" id="landOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust background land opacity">
-              </div>
-            </div>
-
-            <!-- Land Cover / Urban Areas -->
-            <div class="layer-control-card" title="Configure urban and residential zoning areas">
-              <div class="layer-title-bar">
-                <span>Land Cover / Urban Areas</span>
-                <label><input type="checkbox" id="landCoverToggle" checked autocomplete="off" title="Show or hide urban land cover"> On</label>
-              </div>
-              <div class="row">
-                <div class="color-field-inline">
-                  <input type="color" id="landCoverColor" value="#e6e8eb" autocomplete="off" title="Set urban land color">
-                  <label class="label-left" for="landCoverColor">Urban</label>
-                </div>
-                <div class="color-field-inline">
-                  <input type="color" id="landCoverColorAccent" value="#dadde1" autocomplete="off" title="Set residential area color">
-                  <label class="label-left" for="landCoverColorAccent">Residential</label>
-                </div>
-              </div>
-              <div class="control-group">
-                <label for="landCoverOpacity">Opacity: <span id="landCoverOpacityVal">100</span>%</label>
-                <input type="range" id="landCoverOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust urban layer opacity">
-              </div>
-            </div>
-
-            <!-- Roads & Streets -->
-            <div class="layer-control-card" title="Configure road network, bridges, and traintracks">
-              <div class="layer-title-bar">
-                <span>Roads & Streets</span>
-                <label><input type="checkbox" id="roadToggle" checked autocomplete="off" title="Show or hide road network"> On</label>
-              </div>
-              <div class="row row-centered">
-                <div class="color-field-inline">
-                  <input type="color" id="roadColor" value="#374151" autocomplete="off" title="Set unified color for roads, streets, bridges, and traintracks">
-                  <label class="label-left" for="roadColor">Color</label>
-                </div>
-              </div>
-              <div class="control-group">
-                <label for="roadOpacity">Opacity: <span id="roadOpacityVal">100</span>%</label>
-                <input type="range" id="roadOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust road network opacity">
-              </div>
-            </div>
-
-            <!-- Country Borders -->
-            <div class="layer-control-card" title="Configure country and state administrative boundary lines">
-              <div class="layer-title-bar">
-                <span>Country Borders</span>
-                <label><input type="checkbox" id="boundaryToggle" checked autocomplete="off" title="Show or hide country borders"> On</label>
-              </div>
-              <div class="row row-centered">
-                <div class="color-field-inline">
-                  <input type="color" id="boundaryColor" value="#9ca3af" autocomplete="off" title="Set country border line color">
-                  <label class="label-left" for="boundaryColor">Color</label>
-                </div>
-              </div>
-              <div class="control-group">
-                <label for="boundaryOpacity">Opacity: <span id="boundaryOpacityVal">100</span>%</label>
-                <input type="range" id="boundaryOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust country border opacity">
-              </div>
-            </div>
-
-            <!-- Buildings -->
-            <div class="layer-control-card" title="Configure architectural footprints and building structures">
-              <div class="layer-title-bar">
-                <span>Buildings</span>
-                <label><input type="checkbox" id="buildingToggle" checked autocomplete="off" title="Show or hide building footprints"> On</label>
-              </div>
-              
-              <div class="row row-centered">
-                <div class="color-field-inline">
-                  <input type="color" id="buildingColor" value="#e8eaed" autocomplete="off" title="Set building fill color">
-                  <label class="label-left" for="buildingColor">Fill color</label>
-                </div>
-                <div class="color-field-inline">
-                  <input type="color" id="buildingOutlineColor" value="#d1d5db" autocomplete="off" title="Set building outline border color">
-                  <label class="label-left" for="buildingOutlineColor">Border</label>
-                </div>
-              </div>
-              
-              <!-- Building Outline Toggle Header -->
-              <div class="layer-title-bar layer-outline-title">
-                <span>Outline</span>
-                <label><input type="checkbox" id="buildingOutlineToggle" checked autocomplete="off" title="Enable or disable building outlines"> On</label>
-              </div>
-
-              <div class="control-group">
-                <label for="buildingOpacity">Opacity: <span id="buildingOpacityVal">100</span>%</label>
-                <input type="range" id="buildingOpacity" min="0" max="100" value="100" autocomplete="off" title="Adjust building layer opacity">
-              </div>
-            </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- 7. Object names -->
-        <div class="section-block collapsed" title="Configure which object names are shown">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg>
-              7. Object names
-            </span>
-          </div>
-          <div class="section-body">
-            <div class="control-group">
-              <label for="textFilter">Visible names</label>
-              <select id="textFilter" autocomplete="off" title="Choose which map text labels to display">
-                <option value="all">All Names</option>
-                <option value="cities_only">City Names Only</option>
-                <option value="streets_only">Street Names Only</option>
-                <option value="water_only">River & Waterway Names Only</option>
-                <option value="transit_only">Transit Names Only</option>
-                <option value="poi_only">Points of Interest Only</option>
-                <option value="natural_only">Natural Feature Names Only</option>
-                <option value="none" selected>None (Clean Map)</option>
-              </select>
-            </div>
-          </div>
-        </div>
+		<!-- 7. Object names -->
+		<div class="section-block collapsed" title="Configure which object names are shown">
+		  <div class="section-header">
+			<span class="section-header-title">
+			  <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg>
+			  7. Object names
+			</span>
+		  </div>
+		  <div class="section-body">
+			<div class="control-group">
+			  <label for="textFilter">Visible names</label>
+			  <select id="textFilter" autocomplete="off" title="Choose which map text labels to display">
+				<option value="all">All Names</option>
+				<option value="cities_only">City Names Only</option>
+				<option value="streets_only">Street Names Only</option>
+				<option value="water_only">River & Waterway Names Only</option>
+				<option value="transit_only">Transit Names Only</option>
+				<option value="poi_only">Points of Interest Only</option>
+				<option value="natural_only">Natural Feature Names Only</option>
+				<option value="none" selected>None (Clean Map)</option>
+			  </select>
+			</div>
+		  </div>
+		</div>
 
 		<!-- 8. Terrain -->
-        <div class="section-block collapsed" title="Add elevation relief and color it from the selected mountain color">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 19 6-9 4 5 3-4 5 8"></path><path d="M3 19h18"></path></svg>
-              8. Terrain
-            </span>
-          </div>
-          <div class="section-body">
-            <div class="layer-title-bar">
-              <span>Height shading</span>
-              <label><input type="checkbox" id="terrainToggle" autocomplete="off" title="Show terrain relief based on elevation data"> On</label>
-            </div>
-            <div class="row row-centered">
-              <div class="color-field-inline">
-                <input type="color" id="mountainColor" value="#64748b" autocomplete="off" title="Set the base color for mountain height shading">
-                <label class="label-left" for="mountainColor">Mountain color</label>
-              </div>
-            </div>
-            <div class="control-group">
-              <label for="terrainExaggeration">Relief strength: <span id="terrainExaggerationVal">100</span>%</label>
-              <input type="range" id="terrainExaggeration" min="20" max="300" value="100" autocomplete="off" title="Adjust the terrain height shading strength">
-            </div>
-            <div class="row annotation-options">
-              <label><input type="checkbox" id="stlBuildingsToggle" checked autocomplete="off" title="Include visible building footprints in the 3D model"> Buildings</label>
-              <label><input type="checkbox" id="stlRoadsToggle" checked autocomplete="off" title="Include visible streets in the 3D model"> Streets</label>
-            </div>
-          </div>
-        </div>
+		<div class="section-block collapsed" title="Add elevation relief and color it from the selected mountain color">
+		  <div class="section-header">
+			<span class="section-header-title">
+			  <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 19 6-9 4 5 3-4 5 8"></path><path d="M3 19h18"></path></svg>
+			  8. Terrain
+			</span>
+		  </div>
+		  <div class="section-body">
+			<div class="layer-title-bar">
+			  <span>Height shading</span>
+			  <label><input type="checkbox" id="terrainToggle" autocomplete="off" title="Show terrain relief based on elevation data"> On</label>
+			</div>
+			<div class="row row-centered">
+			  <div class="color-field-inline">
+				<input type="color" id="mountainColor" value="#64748b" autocomplete="off" title="Set the base color for mountain height shading">
+				<label class="label-left" for="mountainColor">Mountain color</label>
+			  </div>
+			</div>
+			<div class="control-group">
+			  <label for="terrainExaggeration">Relief strength: <span id="terrainExaggerationVal">100</span>%</label>
+			  <input type="range" id="terrainExaggeration" min="20" max="300" value="100" autocomplete="off" title="Adjust the terrain height shading strength">
+			</div>
+			<div class="row annotation-options">
+			  <label><input type="checkbox" id="stlBuildingsToggle" checked autocomplete="off" title="Include visible building footprints in the 3D model"> Buildings</label>
+			  <label><input type="checkbox" id="stlRoadsToggle" checked autocomplete="off" title="Include visible streets in the 3D model"> Streets</label>
+			</div>
+		  </div>
+		</div>
 
-        <!-- 9. Misc -->
-        <div class="section-block collapsed" title="Miscellaneous configuration options">
-          <div class="section-header">
-            <span class="section-header-title">
-              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z"></path></svg>
-              9. Misc
-            </span>
-          </div>
-          <div class="section-body">
-            <div class="control-group">
-              <label for="contrastVal">Custom contrast: <span id="contrastNum">100</span>%</label>
-              <input type="range" id="contrastVal" min="50" max="250" value="100" autocomplete="off" title="Adjust global contrast multiplier">
-            </div>
-            <div class="control-group">
-              <label for="brightnessVal">Brightness: <span id="brightnessNum">100</span>%</label>
-              <input type="range" id="brightnessVal" min="50" max="150" value="100" autocomplete="off" title="Adjust global brightness">
-            </div>
-            <div class="control-group">
-              <label for="saturationVal">Saturation: <span id="saturationNum">100</span>%</label>
-              <input type="range" id="saturationVal" min="0" max="200" value="100" autocomplete="off" title="Adjust global color saturation">
-            </div>
-            <div class="row annotation-options">
-              <label><input type="checkbox" id="scaleToggle" autocomplete="off" title="Show a distance scale on the map"> Scale</label>
-              <label><input type="checkbox" id="northToggle" autocomplete="off" title="Show the direction of north when the map is rotated"> North</label>
-            </div>
-            <label class="check-row"><input type="checkbox" id="includeExportMetadata" autocomplete="off" title="Download a JSON metadata file alongside exported images"> Export JSON metadata with images</label>
-            <div class="misc-subsection">
-              <div class="misc-subsection-title">Print guides</div>
-              <div class="row">
-                <div class="control-group"><label for="bleedMm">Bleed (mm)</label><input type="number" id="bleedMm" min="0" max="25" step="0.5" value="0" title="Set the print bleed in millimeters"></div>
-                <div class="control-group"><label for="safeMm">Safe area (mm)</label><input type="number" id="safeMm" min="0" max="50" step="0.5" value="5" title="Set the print safe area in millimeters"></div>
-              </div>
-              <label class="check-row"><input type="checkbox" id="guidesToggle" title="Show or hide print guides in the preview"> Show guides in preview</label>
-              <div class="guide-note">Bleed extends beyond the trim edge. The safe area keeps labels away from the cut.</div>
-            </div>
-            <button type="button" class="secondary-action-btn" id="randomizeDesignBtn" title="Randomize the palette, label layout, and color adjustments">Randomize design</button>
-            <button type="button" class="secondary-action-btn" id="geoJsonBtn" title="Import a GeoJSON overlay file">Import GeoJSON</button>
-            <input type="file" id="geoJsonInput" accept="application/geo+json,application/json,.geojson,.json" aria-label="Select a GeoJSON file" hidden>
-          </div>
-        </div>
+		<!-- 9. Misc -->
+		<div class="section-block collapsed" title="Miscellaneous configuration options">
+		  <div class="section-header">
+			<span class="section-header-title">
+			  <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z"></path></svg>
+			  9. Misc
+			</span>
+		  </div>
+		  <div class="section-body">
+			<div class="control-group">
+			  <label for="contrastVal">Custom contrast: <span id="contrastNum">100</span>%</label>
+			  <input type="range" id="contrastVal" min="50" max="250" value="100" autocomplete="off" title="Adjust global contrast multiplier">
+			</div>
+			<div class="control-group">
+			  <label for="brightnessVal">Brightness: <span id="brightnessNum">100</span>%</label>
+			  <input type="range" id="brightnessVal" min="50" max="150" value="100" autocomplete="off" title="Adjust global brightness">
+			</div>
+			<div class="control-group">
+			  <label for="saturationVal">Saturation: <span id="saturationNum">100</span>%</label>
+			  <input type="range" id="saturationVal" min="0" max="200" value="100" autocomplete="off" title="Adjust global color saturation">
+			</div>
+			<div class="row annotation-options">
+			  <label><input type="checkbox" id="scaleToggle" autocomplete="off" title="Show a distance scale on the map"> Scale</label>
+			  <label><input type="checkbox" id="northToggle" autocomplete="off" title="Show the direction of north when the map is rotated"> North</label>
+			</div>
+			<label class="check-row"><input type="checkbox" id="includeExportMetadata" autocomplete="off" title="Download a JSON metadata file alongside exported images"> Export JSON metadata with images</label>
+			<div class="misc-subsection">
+			  <div class="misc-subsection-title">Print guides</div>
+			  <div class="row">
+				<div class="control-group"><label for="bleedMm">Bleed (mm)</label><input type="number" id="bleedMm" min="0" max="25" step="0.5" value="0" title="Set the print bleed in millimeters"></div>
+				<div class="control-group"><label for="safeMm">Safe area (mm)</label><input type="number" id="safeMm" min="0" max="50" step="0.5" value="5" title="Set the print safe area in millimeters"></div>
+			  </div>
+			  <label class="check-row"><input type="checkbox" id="guidesToggle" title="Show or hide print guides in the preview"> Show guides in preview</label>
+			  <div class="guide-note">Bleed extends beyond the trim edge. The safe area keeps labels away from the cut.</div>
+			</div>
+			<button type="button" class="secondary-action-btn" id="randomizeDesignBtn" title="Randomize the palette, label layout, and color adjustments">Randomize design</button>
+			<button type="button" class="secondary-action-btn" id="randomPresetBtn" title="Generate a random color preset">Generate random preset</button>
+			<button type="button" class="secondary-action-btn" id="geoJsonBtn" title="Import a GeoJSON overlay file">Import GeoJSON</button>
+			<input type="file" id="geoJsonInput" accept="application/geo+json,application/json,.geojson,.json" aria-label="Select a GeoJSON file" hidden>
+		  </div>
+		</div>
 
-      </div>
-	  <!-- /Sidebar-Content -->
+	  </div>
+		<!-- /SIDEBAR-CONTENT -->
 
-      <!-- Export Button & Metadata Footer -->
-      <div class="sidebar-footer">
-        <div class="project-actions" role="group" aria-label="Project actions">
-          <button type="button" class="secondary-action-btn" id="saveProjectBtn" title="Save the current design in this browser">Save project</button>
-          <button type="button" class="secondary-action-btn" id="downloadProjectBtn" title="Download the current design as JSON">Download project</button>
-          <button type="button" class="secondary-action-btn" id="loadProjectBtn" title="Load a project JSON file">Load project</button>
-          <input type="file" id="projectFileInput" accept="application/json,.json" aria-label="Select a cartiva project file" hidden>
-        </div>
-        <div class="footer-action-separator" aria-hidden="true"></div>
-        <button type="button" class="export-btn" id="exportBtn" title="Configure and download a high-resolution poster image">
-          <span id="imageExportBtnLabel">Export image</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        </button>
-        <button type="button" class="secondary-action-btn" id="stlExportBtn" title="Generate an STL terrain model of the visible map area for 3D printing">
-            <span id="stlExportBtnLabel">Export 3D model (.stl)</span>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-		</button>
-        <button type="button" class="secondary-action-btn" id="threeMfExportBtn" title="Generate a colored 3MF terrain model using the selected map colors">
-            <span id="threeMfExportBtnLabel">Export 3D model (.3mf)</span>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-		</button>
-		
-        <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
-        <div class="footer-meta">
-          <span id="appVersion"></span>
-          <a href="" id="appGithubLink" target="_blank" rel="noopener noreferrer" title="View repository on GitHub">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-            GitHub
-          </a>
-        </div>
-        <div id="providerAttribution" class="provider-attribution" hidden></div>
-      </div>
-    </div>
-	<!-- / Export Buttons -->
+		<!-- SIDEBAR-FOOTER -->
+		<div class="sidebar-footer">
+			<!-- BUTTONS: PROJECT -->
+			<div class="project-actions" role="group" aria-label="Project actions">
+				<!--
+				<button type="button" class="secondary-action-btn" id="saveProjectBtn" title="Save the current design in this browser">Save project</button>
+				-->
+				<button type="button" class="secondary-action-btn" id="downloadProjectBtn" title="Download the current design as JSON">Save project</button>
+				<button type="button" class="secondary-action-btn" id="loadProjectBtn" title="Load a project JSON file">Load project</button>
+				<input type="file" id="projectFileInput" accept="application/json,.json" aria-label="Select a cartiva project file" hidden>
+			</div>
+			<!-- SEPARATOR --> 
+			<div class="footer-action-separator" aria-hidden="true"></div>
+			<!-- BUTTONS: EXPORT -->
+			<button type="button" class="export-btn" id="exportBtn" title="Configure and download a high-resolution poster image">
+				<span id="imageExportBtnLabel">Export image</span>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+			</button>
+			<!-- Export 3D .STL button -->
+			<button type="button" class="secondary-action-btn" id="stlExportBtn" title="Generate an STL terrain model of the visible map area for 3D printing">
+				<span id="stlExportBtnLabel">Export 3D model (.stl)</span>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+			</button>
+			<!-- Export 3D .3MF button -->
+			<button type="button" class="secondary-action-btn" id="threeMfExportBtn" title="Generate a colored 3MF terrain model using the selected map colors">
+				<span id="threeMfExportBtnLabel">Export 3D model (.3mf)</span>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+			</button>
+			<!-- STATUS-MESSAGE -->
+			<div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+			<!-- FOOTER -->
+			<div class="footer-meta">
+				<span id="appVersion"></span>
+				<a href="" id="appGithubLink" target="_blank" rel="noopener noreferrer" title="View repository on GitHub">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+					GitHub
+				</a>
+			</div>
+			<div id="providerAttribution" class="provider-attribution" hidden></div>
+		</div>
+	</div>
+	<!-- /	-->
 
-	<!-- Export image popup dialog -->
-    <dialog id="exportDialog" class="export-dialog" aria-labelledby="exportDialogTitle">
-      <div class="export-dialog-header">
-		<img src="img/cartiva_logo.png" height="70px">
-        <h2 id="exportDialogTitle">Export image</h2>
-        <button type="button" id="exportDialogCloseBtn" class="icon-btn" title="Cancel export" aria-label="Close export dialog">×</button>
-      </div>
-      <div class="export-dialog-body">
-        <div class="export-dialog-grid">
-          <div class="control-group">
-            <label for="exportType">Export type</label>
-            <select id="exportType" autocomplete="off" title="Select the export file format">
-              <option value="image/png">PNG</option>
-              <option value="image/jpeg">JPEG</option>
-              <option value="image/webp">WebP</option>
-              <option value="image/svg+xml">SVG</option>
-              <option value="application/pdf">PDF</option>
-            </select>
-          </div>
-          <div class="control-group"><label for="exportQuality">Map quality</label>
-            <select id="exportQuality" autocomplete="off" title="Render above the final output size, then downsample for smoother lines">
-              <option value="1">Standard (1x)</option>
-              <option value="1.5" selected>High (1.5x)</option>
-              <option value="2">Fine art (2x)</option>
-            </select>
-          </div>
-          <div class="control-group"><label for="printLineWeight">Print line weight</label>
-            <select id="printLineWeight" autocomplete="off" title="Adjust map line visibility for printed output">
-              <option value="fine">Fine</option>
-              <option value="standard" selected>Standard</option>
-              <option value="bold">Bold</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label for="exportDpi">Print DPI</label>
-            <select id="exportDpi" autocomplete="off" title="Select the print resolution in dots per inch">
-              <option value="150">150 DPI</option>
-              <option value="300" selected>300 DPI</option>
-              <option value="600">600 DPI</option>
-            </select>
-          </div>
-        </div>
-        <div id="exportDialogDimensions" class="export-dialog-summary">2480 × 3508 px</div>
-        <div id="exportDialogProgress" class="export-dialog-progress" role="status" aria-live="polite"></div>
-      </div>
-      <div class="export-dialog-actions">
-        <button type="button" id="exportCancelBtn" class="secondary-action-btn">Cancel</button>
-        <button type="button" id="exportConfirmBtn" class="export-btn">Export image/button>
-      </div>
-    </dialog>
-	<!-- /Export image popup dialog -->
-  </form>
+	<!-- POPUP: Export image -->
+	<dialog id="exportDialog" class="export-dialog" aria-labelledby="exportDialogTitle">
+		<div class="export-dialog-header">
+			<img src="img/cartiva_logo.png" height="70px">
+			<!--
+			<h2 id="exportDialogTitle">Export image</h2>
+			-->
+			<button type="button" id="exportDialogCloseBtn" class="icon-btn" title="Cancel export" aria-label="Close export dialog">×</button>
+		</div>
+		<div class="export-dialog-body">
+			<div class="export-dialog-grid">
+				<div class="control-group">
+					<label for="exportType">Export type</label>
+					<select id="exportType" autocomplete="off" title="Select the export file format">
+						<option value="image/png">PNG</option>
+						<option value="image/jpeg">JPEG</option>
+						<option value="image/webp">WebP</option>
+						<option value="image/svg+xml">SVG</option>
+						<option value="application/pdf">PDF</option>
+					</select>
+				</div>
+				<div class="control-group"><label for="exportQuality">Map quality</label>
+					<select id="exportQuality" autocomplete="off" title="Render above the final output size, then downsample for smoother lines">
+						<option value="1">Standard (1x)</option>
+						<option value="1.5" selected>High (1.5x)</option>
+						<option value="2">Fine art (2x)</option>
+					</select>
+				</div>
+				<!-- Print Line weight -->
+				<div class="control-group"><label for="printLineWeight">Print line weight</label>
+					<select id="printLineWeight" autocomplete="off" title="Adjust map line visibility for printed output">
+						<option value="fine">Fine</option>
+						<option value="standard" selected>Standard</option>
+						<option value="bold">Bold</option>
+					</select>
+				</div>
+				<!-- ... -->
+				<div class="control-group">
+					<label for="exportDpi">Print DPI</label>
+					<select id="exportDpi" autocomplete="off" title="Select the print resolution in dots per inch">
+						<option value="150">150 DPI</option>
+						<option value="300" selected>300 DPI</option>
+						<option value="600">600 DPI</option>
+					</select>
+				</div>
+			</div>
+			<div id="exportDialogDimensions" class="export-dialog-summary">2480 × 3508 px</div>
+			<div id="exportDialogProgress" class="export-dialog-progress" role="status" aria-live="polite"></div>
+		</div>
+		<div class="export-dialog-actions">
+			<button type="button" id="exportCancelBtn" class="secondary-action-btn">Cancel</button>
+			<button type="button" id="exportConfirmBtn" class="export-btn">Export image</button>
+		</div>
+	</dialog>
+	<!-- /POPUP - EXPORT IMAGE -->
+
+	</form>
 
   <!-- Main Viewport Area -->
   <div class="stage">
-    <!-- Native sharing is progressively enhanced and remains hidden when unsupported. -->
-    <button type="button" id="shareBtn" class="share-btn" title="Recommend cartiva" aria-label="Recommend cartiva" hidden>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="18" cy="5" r="3"></circle>
-        <circle cx="6" cy="12" r="3"></circle>
-        <circle cx="18" cy="19" r="3"></circle>
-        <path d="m8.6 10.5 6.8-4"></path>
-        <path d="m8.6 13.5 6.8 4"></path>
-      </svg>
-    </button>
-    <!-- Floating map controls grouped by function. -->
-    <div class="map-zoom-controls" role="toolbar" aria-label="Map view controls">
-      <div class="map-control-group" role="group" aria-label="Zoom controls">
-        <button type="button" id="zoomInBigBtn" class="map-zoom-btn" title="Zoom In (Big Steps)" aria-label="Zoom in by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18"></path></svg></button>
-        <button type="button" id="zoomInFineBtn" class="map-zoom-btn" title="Zoom In (Fine Adjustment)" aria-label="Zoom in slightly"><svg class="zoom-icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v10M7 12h10"></path></svg></button>
-        <button type="button" id="zoomOutFineBtn" class="map-zoom-btn" title="Zoom Out (Fine Adjustment)" aria-label="Zoom out slightly"><svg class="zoom-icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 12h10"></path></svg></button>
-        <button type="button" id="zoomOutBigBtn" class="map-zoom-btn" title="Zoom Out (Big Steps)" aria-label="Zoom out by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18"></path></svg></button>
-        <div id="zoomLevelDisplay" class="zoom-level-display">13.00</div>
-      </div>
-      <div class="map-control-separator" aria-hidden="true"></div>
-      <div class="map-control-group" role="group" aria-label="Rotation controls">
-        <button type="button" id="rotateLeftBtn" class="map-zoom-btn" title="Rotate Map Left" aria-label="Rotate map left"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"></path><path d="M5.5 15a8 8 0 1 0 1-8.5L4 10"></path></svg></button>
-        <button type="button" id="resetBearingBtn" class="map-zoom-btn" title="Reset Map Orientation" aria-label="Reset map orientation"><svg viewBox="0 0 24 24"><path d="M12 3 8 12l4-2 4 2-4-9Z"></path><circle cx="12" cy="12" r="9"></circle></svg></button>
-        <button type="button" id="rotateRightBtn" class="map-zoom-btn" title="Rotate Map Right" aria-label="Rotate map right"><svg viewBox="0 0 24 24"><path d="M20 4v6h-6"></path><path d="M18.5 15a8 8 0 1 1-1-8.5L20 10"></path></svg></button>
-        <div id="rotationLevelDisplay" class="zoom-level-display">0°</div>
-      </div>
-      <div class="map-control-separator" aria-hidden="true"></div>
-      <div class="map-control-group" role="group" aria-label="Preview tools">
-        <button type="button" id="magnifierBtn" class="map-zoom-btn" title="Toggle Live Magnifier Lens" aria-label="Toggle live magnifier"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
-      </div>
-      <div class="map-control-separator" aria-hidden="true"></div>
-      <div class="map-control-group" role="group" aria-label="Color preset navigation">
-        <button type="button" id="previousPresetBtn" class="map-zoom-btn" title="Previous Color Preset" aria-label="Previous color preset">↑</button>
-        <button type="button" id="nextPresetBtn" class="map-zoom-btn" title="Next Color Preset" aria-label="Next color preset">↓</button>
-      </div>
-    </div>
+	
+	<!-- RIGHT-SIDEBAR - Floating map controls grouped by function. -->
+	<div class="map-zoom-controls" role="toolbar" aria-label="Map view controls">
+		<!-- SECTION: SHARING -->
+		<div class="map-control-group" role="group" aria-label="Sharing">
+			<button type="button" id="shareBtn" class="share-btn" title="Recommend cartiva" aria-label="Recommend cartiva">
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 preview-icon"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></button>
+		</div>
+		<!-- SEPARATOR -->
+		<div class="map-control-separator" aria-hidden="true"></div>
+	
+		<!-- SECTION: ZOOM -->
+	  <div class="map-control-group" role="group" aria-label="Zoom controls">
+		<button type="button" id="zoomInBigBtn" class="map-zoom-btn" title="Zoom In (Big Steps)" aria-label="Zoom in by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18"></path></svg></button>
+		<button type="button" id="zoomInFineBtn" class="map-zoom-btn" title="Zoom In (Fine Adjustment)" aria-label="Zoom in slightly"><svg class="zoom-icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v10M7 12h10"></path></svg></button>
+		<button type="button" id="zoomOutFineBtn" class="map-zoom-btn" title="Zoom Out (Fine Adjustment)" aria-label="Zoom out slightly"><svg class="zoom-icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 12h10"></path></svg></button>
+		<button type="button" id="zoomOutBigBtn" class="map-zoom-btn" title="Zoom Out (Big Steps)" aria-label="Zoom out by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18"></path></svg></button>
+		<div id="zoomLevelDisplay" class="zoom-level-display">13.00</div>
+	  </div>
+	  <div class="map-control-separator" aria-hidden="true"></div>
+	  <div class="map-control-group" role="group" aria-label="Rotation controls">
+		<button type="button" id="rotateLeftBtn" class="map-zoom-btn" title="Rotate Map Left" aria-label="Rotate map left"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"></path><path d="M5.5 15a8 8 0 1 0 1-8.5L4 10"></path></svg></button>
+		<button type="button" id="resetBearingBtn" class="map-zoom-btn" title="Reset Map Orientation" aria-label="Reset map orientation"><svg viewBox="0 0 24 24"><path d="M12 3 8 12l4-2 4 2-4-9Z"></path><circle cx="12" cy="12" r="9"></circle></svg></button>
+		<button type="button" id="rotateRightBtn" class="map-zoom-btn" title="Rotate Map Right" aria-label="Rotate map right"><svg viewBox="0 0 24 24"><path d="M20 4v6h-6"></path><path d="M18.5 15a8 8 0 1 1-1-8.5L20 10"></path></svg></button>
+		<div id="rotationLevelDisplay" class="zoom-level-display">0°</div>
+	  </div>
+	  <div class="map-control-separator" aria-hidden="true"></div>
+	  <div class="map-control-group" role="group" aria-label="Preview tools">
+		<button type="button" id="magnifierBtn" class="map-zoom-btn" title="Toggle Live Magnifier Lens" aria-label="Toggle live magnifier"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
+	  </div>
+	  <div class="map-control-separator" aria-hidden="true"></div>
+	  <div class="map-control-group" role="group" aria-label="Color preset navigation">
+		<button type="button" id="previousPresetBtn" class="map-zoom-btn" title="Previous Color Preset" aria-label="Previous color preset">↑</button>
+		<button type="button" id="nextPresetBtn" class="map-zoom-btn" title="Next Color Preset" aria-label="Next color preset">↓</button>
+	  </div>
+	</div>
 
-	<!-- Preview-Container -->
-    <div class="preview-container">
-      <div id="mapFrame" class="map-frame ratio-a4-portrait">
-        <div class="print-guide bleed-guide" aria-hidden="true"></div>
-        <div class="print-guide safe-guide" aria-hidden="true"></div>
-        <svg id="shapeMask" class="shape-mask" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <mask id="shapeCutoutMask">
-              <rect width="100" height="100" fill="white"></rect>
-              <path id="shapeCutoutPath" fill="black"></path>
-            </mask>
-          </defs>
-          <rect id="shapeMaskColor" width="100" height="100" mask="url(#shapeCutoutMask)"></rect>
-        </svg>
-        <div id="map"></div>
-        <img id="refinedMapPreview" class="refined-map-preview" alt="" aria-hidden="true">
-      
-      <!-- Live Magnifying Glass Lens -->
-      <canvas id="mapMagnifierLens" class="map-magnifier-lens" width="280" height="280" aria-hidden="true"></canvas>
+	<!-- PREVIEW-CONTAINER -->
+	<div class="preview-container">
+	  <div id="mapFrame" class="map-frame ratio-a4-portrait">
+		<div class="print-guide bleed-guide" aria-hidden="true"></div>
+		<div class="print-guide safe-guide" aria-hidden="true"></div>
+		<svg id="shapeMask" class="shape-mask" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+		  <defs>
+			<mask id="shapeCutoutMask">
+			  <rect width="100" height="100" fill="white"></rect>
+			  <path id="shapeCutoutPath" fill="black"></path>
+			</mask>
+		  </defs>
+		  <rect id="shapeMaskColor" width="100" height="100" mask="url(#shapeCutoutMask)"></rect>
+		</svg>
+		<div id="map"></div>
+		<img id="refinedMapPreview" class="refined-map-preview" alt="" aria-hidden="true">
+	  
+	  <!-- Live Magnifying Glass Lens -->
+	  <canvas id="mapMagnifierLens" class="map-magnifier-lens" width="280" height="280" aria-hidden="true"></canvas>
 
-      <!-- Dynamic Label Overlay -->
-        <div id="mapLabelOverlay" class="map-label-overlay corner-bottom-right">
-          <div id="cityName" class="map-label-city">MAP LOCATION</div>
-          <div id="cityCoords" class="map-label-coords">49.4077° N / 8.6908° E</div>
-          <div id="cityCountry" class="map-label-country"></div>
-        </div>
-        <div id="mapScaleOverlay" class="map-scale-overlay" aria-hidden="true"><span></span></div>
-        <div id="northOverlay" class="north-overlay" aria-hidden="true"><span>N</span><svg viewBox="0 0 24 24"><path d="M12 2 7 17l5-3 5 3L12 2Z"></path></svg></div>
-      </div>
-      <div class="preview-detail-note">The preview might differ in detail from the final exported image.</div>
+	  <!-- Dynamic Label Overlay -->
+		<div id="mapLabelOverlay" class="map-label-overlay corner-bottom-right">
+		  <div id="cityName" class="map-label-city">MAP LOCATION</div>
+		  <div id="cityCoords" class="map-label-coords">49.4077° N / 8.6908° E</div>
+		  <div id="cityCountry" class="map-label-country"></div>
+		</div>
+		<div id="mapScaleOverlay" class="map-scale-overlay" aria-hidden="true"><span></span></div>
+		<div id="northOverlay" class="north-overlay" aria-hidden="true"><span>N</span><svg viewBox="0 0 24 24"><path d="M12 2 7 17l5-3 5 3L12 2Z"></path></svg></div>
+	  </div>
+	  
+	  <!-- Notification on differences between PREVIEW and EXPORT -->
+	  <div class="preview-detail-note">The preview might differ in detail from the final exported image.</div>
 	  
 	  <!-- preview map state indicator -->
 	  <div id="previewStateIndicator" class="preview-state-indicator limited" role="status" aria-live="polite" aria-label="Limited preview" title="Limited preview">
-          <svg class="preview-state-limited" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 4-4 4 4-4 4M4 20l11-11M5 4l15 15M3 3l4 1 1 4-2 2-4-4Z"></path></svg>
-          <svg class="preview-state-detailed" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
-      </div>
+		  <svg class="preview-state-limited" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 4-4 4 4-4 4M4 20l11-11M5 4l15 15M3 3l4 1 1 4-2 2-4-4Z"></path></svg>
+		  <svg class="preview-state-detailed" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
+	  </div>
 	  
-    </div>
+	</div>
   </div>
   
   <!-- Loading cartiva javascript files -->

@@ -98,15 +98,14 @@ button.export-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
 .footer-meta a { color: #9ca3af; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
 .footer-meta a:hover { color: #4b5563; }
 .stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px; height: 100vh; position: relative; }
-.share-btn { position: absolute; top: 28px; right: 76px; z-index: 21; width: 40px; height: 40px; border: 1px solid #d1d5db; border-radius: 50%; background: rgba(255,255,255,.92); color: #374151; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,.15); backdrop-filter: blur(4px); transition: background .2s, color .2s, transform .2s; }
+.share-btn{ width: 32px; height: 32px; background: #fff; border: 1px solid #d1d5db; border-radius: 4px; font-size: .85rem; font-weight: 700; color: #374151; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .2s, color .2s; } 
 .share-btn[hidden] { display: none; }
-.share-btn:hover { background: #f3f4f6; color: #111827; transform: translateY(-1px); }
-.share-btn:focus-visible { outline: 2px solid #059669; outline-offset: 2px; }
-.share-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.share-btn:hover { background: #f3f4f6; color: #111827; }
+.share-btn svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .preview-container { display: flex; flex-direction: column; align-items: center; max-width: 100%; max-height: 100%; }
 .zoom-level-display { padding: 3px 1px 1px; color: #6b7280; font-size: .62rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
 .preview-detail-note { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: min(700px, calc(100% - 32px)); color: #6b7280; font-size: .68rem; text-align: center; }
-.map-zoom-controls { position: absolute; top: 28px; right: 28px; display: flex; flex-direction: column; gap: 4px; z-index: 20; background: rgba(255,255,255,.9); padding: 4px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.15); backdrop-filter: blur(4px); }
+.map-zoom-controls { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 20; background: rgba(255,255,255,.9); padding: 4px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.15); backdrop-filter: blur(4px); }
 .map-control-group { display: flex; flex-direction: column; gap: 4px; }
 .map-zoom-btn { width: 32px; height: 32px; background: #fff; border: 1px solid #d1d5db; border-radius: 4px; font-size: .85rem; font-weight: 700; color: #374151; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .2s, color .2s; }
 .map-zoom-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -124,7 +123,7 @@ button.export-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
 #map { width: 100%; height: 100%; transition: filter .2s ease; }
 .refined-map-preview { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; object-fit: fill; pointer-events: none; opacity: 0; transition: opacity .18s ease; }
 .refined-map-preview.ready { opacity: 1; }
-.preview-state-indicator { position: absolute; right: 10px; bottom: 10px; z-index: 9; width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.8); border-radius: 50%; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.28); pointer-events: none; }
+.preview-state-indicator { position: absolute; right: 8px; bottom: 8px; z-index: 9; width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.8); border-radius: 50%; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.28); pointer-events: none; }
 .preview-state-indicator.limited { background: #d97706; }
 .preview-state-indicator.detailed { background: #059669; }
 .preview-state-indicator svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
