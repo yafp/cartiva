@@ -1,3 +1,5 @@
+![GitHub License](https://img.shields.io/github/license/yafp/cartiva.svg)
+
 ![GitHub Issues Open](https://img.shields.io/github/issues-raw/yafp/cartiva.svg?style=flat)
 
 ![GitHub Last Commit](https://img.shields.io/github/last-commit/yafp/cartiva.svg?style=flat)
