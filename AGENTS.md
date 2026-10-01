@@ -61,8 +61,8 @@ The idea is to use
 
 
 ## File Organization
-- All source files needed for the actual product are located in the folder 'src'
-- All files outside of 'src' might be used for testing, documentation etc
+- All source files needed for the actual product are located in the folder ```src```
+- All files outside of ```src``` might be used for testing, documentation etc
 
 ## Performance Requirements
 - Product should be usable on normal devices - no need for latest / high-tech devices
