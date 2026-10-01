@@ -20,7 +20,7 @@ The idea is to use
 - Comments should be added where-ever it makes sense to ensure new people can easily contribute
 - Create JSdoc headers for all JavaScript functions - following this example
 
-```
+```javascript
 /**
  * Renders a custom map tile grid based on the provided configuration options.
  * 
