@@ -1,1 +1,0 @@
-# About: This action ensures that on each push a JSDoc based documentation gets generated unter /docs/js/. This requires specific headers per function
