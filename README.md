@@ -1,19 +1,21 @@
 # cartiva
+Create beautiful printable map art from any location in the world.
 
-## About
-cartiva is a small, self-contained creative cartography web-app.
+Generate customized map posters with terrain, colors, labels, annotations and export them as high-resolution images or 3D-printable models.
 
-- Select a location
-- configure a few parameters
-- generate and export a high-resolution graphics for printing
 
-Inspired by [Urbanmapdesign.com](https://www.urbanmapdesign.com).
 
 
 ## Demo
 You can find a live demo of the latest released version on [Github Pages](https://yafp.github.io/cartiva/index.html)
 
 ## Examples
+
+<p align="center">
+https://github.com/yafp/cartiva/blob/main/.github/examples/cartiva_PRAGUE_300dpi.png
+<img src="./docs/images/cartiva-demo- </a>
+</p>
+
 ![Cartiva Screenshot Prague](https://github.com/yafp/cartiva/blob/main/.github/examples/cartiva_PRAGUE_300dpi.png)
 ![Cartiva Screenshot Copenhagen](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_COPENHAGEN_300dpi.png)
 ![Cartiva Screenshot Hamburg](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_HAMBURG_300dpi.png)
@@ -27,6 +29,10 @@ You can find a live demo of the latest released version on [Github Pages](https:
 
 ### As a service
 Just use the demo linked above.
+
+
+## History
+Inspired by [Urbanmapdesign.com](https://www.urbanmapdesign.com).
 
 ## Developers
 ### Structure
