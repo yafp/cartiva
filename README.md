@@ -1,6 +1,8 @@
 ![GitHub Download All releases](https://img.shields.io/github/downloads/yafp/cartiva/total.svg)
 ![GitHub Last Commit](https://img.shields.io/github/last-commit/yafp/cartiva.svg?style=flat)
 ![GitHub Issues Open](https://img.shields.io/github/issues-raw/yafp/cartiva.svg?style=flat)
+![GitHub Current Release](https://img.shields.io/github/release/yafp/cartiva.svg?style=flat)
+![GitHub Release Date](https://img.shields.io/github/release-date/yafp/cartiva.svg?style=flat)
 
 # cartiva
 Create beautiful printable map art from any location in the world.
