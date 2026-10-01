@@ -1,10 +1,11 @@
 # cartiva
 Create beautiful printable map art from any location in the world.
+
 Generate customized map posters with terrain, colors, labels, annotations and export them as high-resolution images or 3D-printable models.
 
 You can find a **live demo** of the latest released version on [Github Pages](https://yafp.github.io/cartiva/index.html)
 
-cartiva is a browser-based cartography tool that allows you to:
+**cartiva** is a browser-based cartography tool that allows you to:
 
 - Search for any location worldwide
 - Generate artistic map designs
