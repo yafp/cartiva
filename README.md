@@ -66,6 +66,11 @@ Inspired by [Urbanmapdesign.com](https://www.urbanmapdesign.com).
 - `src/js/export/export-contract.js` defines the serializable export request shape.
 - `src/js/export-worker.js` contains the PDF encoding worker.
 
+### JSDoc documentation
+On each version release an action is re-generating the JSDoc files under
+- https://yafp.github.io/cartiva/docs/js/
+
+
 ### Architecture boundaries
 
 The application separates serializable project state from transient runtime state. UI controls update project state through one delegated form dispatcher, while MapLibre, geocoding, preset data, and export encoding are accessed through dedicated boundaries. Preview and all exporters consume one normalized render specification. The feature files remain classic scripts loaded in dependency order so the app stays dependency-free and can still be opened directly from the `src/index.html` file.
