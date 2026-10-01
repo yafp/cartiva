@@ -1,5 +1,7 @@
 // Project and GeoJSON actions.
 function applyProjectState(projectState) {
+  cancelLocationUpdate();
+  clearTimeout(runtimeState.timers.mapResize);
   const controlMap = {
     format: 'formatSelect', exportType: 'exportType', exportDpi: 'exportDpi', labelStyle: 'labelStyle',
     labelOpacity: 'labelOpacity', labelFont: 'labelFontSelect', labelTextColor: 'labelTextColor',
@@ -11,6 +13,7 @@ function applyProjectState(projectState) {
     stlRoadsEnabled: 'stlRoadsToggle', scaleEnabled: 'scaleToggle', northEnabled: 'northToggle',
     borderEnabled: 'borderCheckbox', borderColor: 'borderColor', borderWidth: 'borderWidth',
     outerBorderRadius: 'outerBorderRadius', innerBorderRadius: 'innerBorderRadius',
+    innerOutlineEnabled: 'innerOutlineEnabled', innerOutlineColor: 'innerOutlineColor', innerOutlineWidth: 'innerOutlineWidth',
     customWidthMm: 'customWidthMm', customHeightMm: 'customHeightMm', bleedMm: 'bleedMm',
     safeMm: 'safeMm', guidesEnabled: 'guidesToggle', exportQuality: 'exportQuality',
     printLineWeight: 'printLineWeight'
@@ -22,16 +25,26 @@ function applyProjectState(projectState) {
     if ($(key)) writeControl(key, value);
   });
   state.layerOrder = [...FIXED_LAYER_ORDER];
-  if (Object.prototype.hasOwnProperty.call(projectState, 'preset')) state.preset = projectState.preset;
-  if (projectState.city) $('cityName').textContent = projectState.city;
+  if (Object.prototype.hasOwnProperty.call(projectState, 'preset')) writeControl('colorPresetSelect', projectState.preset || '');
+  $('customSizeControls').hidden = projectState.format !== 'custom';
+  if (projectState.city) {
+    $('cityName').textContent = projectState.city;
+    $('searchInput').value = projectState.city;
+  }
   if (projectState.coordinates) $('cityCoords').textContent = projectState.coordinates;
   if (projectState.country) $('cityCountry').textContent = projectState.country;
   if (Array.isArray(projectState.center) && Number.isFinite(projectState.zoom)) {
+    locationSelectionInProgress = true;
     map.jumpTo({ center: projectState.center, zoom: projectState.zoom, bearing: projectState.bearing || 0, pitch: projectState.pitch || 0 });
   }
   syncStateFromControls();
   triggerAllLayerUpdates();
   renderPreview();
+  locationSelectionInProgress = true;
+  map.resize();
+  locationSelectionInProgress = false;
+  preserveLocationName();
+  saveLastLocation();
 }
 
 function currentProject() {
@@ -40,18 +53,19 @@ function currentProject() {
 }
 
 const saveProjectBtn = $('saveProjectBtn');
-const downloadProjectBtn = $('downloadProjectBtn');
 const loadProjectBtn = $('loadProjectBtn');
 const projectFileInput = $('projectFileInput');
 
-saveProjectBtn?.addEventListener('click', () => {
-  CartivaProject.save(currentProject());
-  setStatus('Project saved in this browser.');
-});
-
-downloadProjectBtn?.addEventListener('click', () => {
-  CartivaProject.download(currentProject(), `cartiva_${getFileTimestamp()}.json`);
-  setStatus('Project JSON downloaded.');
+saveProjectBtn?.addEventListener('click', async () => {
+  await CartivaOperations.run({
+    area: 'project.save', button: saveProjectBtn,
+    startStatus: 'Saving project...', successStatus: 'Project JSON downloaded.', errorPrefix: 'Project save failed'
+  }, async () => {
+    const project = currentProject();
+    const location = String(project.state.city || 'MAP_LOCATION').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'MAP_LOCATION';
+    CartivaProject.download(project, `cartiva_${location}_${getFileTimestamp()}.json`);
+    CartivaDiagnostics.record('project.save', 'Project saved as JSON.', { location: project.state.city, center: project.state.center });
+  });
 });
 
 loadProjectBtn?.addEventListener('click', () => projectFileInput?.click());
@@ -68,6 +82,7 @@ projectFileInput?.addEventListener('change', async () => {
     cleanup(() => { projectFileInput.value = ''; });
     const project = await CartivaProject.readFile(file);
     applyProjectState(project.state);
+    CartivaDiagnostics.record('project.load', 'Project restored from JSON.', { filename: file.name, location: project.state.city, center: project.state.center });
   });
 });
 

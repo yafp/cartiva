@@ -116,51 +116,30 @@
       const depthMeters = (bounds.getNorth() - bounds.getSouth()) * 110540;
       const widthMm = 160;
       const depthMm = Math.max(20, widthMm * depthMeters / Math.max(widthMeters, 1));
+      const elevations = [...heights];
       const minimum = Math.min(...heights);
-      const maximum = Math.max(...heights);
-      const reliefMm = Math.min(50, 16 * exaggeration / 100);
-      const heightAt = index => 2 + ((heights[index] - minimum) / Math.max(maximum - minimum, 1)) * reliefMm;
-      const vertexAt = (row, column, base = false) => [column * widthMm / (size - 1), row * depthMm / (size - 1), base ? 0 : heightAt(row * size + column)];
+      const metersToMm = widthMm / Math.max(widthMeters, 1) * Math.max(0, Number(exaggeration) || 0) / 100;
+      const modelHeight = elevation => 2 + Math.max(0, elevation - minimum) * metersToMm;
+      const heightAt = index => modelHeight(elevations[index]);
+      const vertexAt = (row, column, base = false) => [column * widthMm / (size - 1), (size - 1 - row) * depthMm / (size - 1), base ? 0 : heightAt(row * size + column)];
       const triangles = [];
       const triangleMaterials = [];
       const add = (a, b, c, material = 'terrain') => { triangles.push(a, b, c); triangleMaterials.push(material); };
-      // Ear clipping handles concave building/water footprints more safely than
-      // a triangle fan, which can create overlapping or inverted faces.
-      const triangulatePolygon = points => {
-        const vertices = points.map((point, index) => ({ point, index }));
-        const area = vertices.reduce((sum, current, index) => {
-          const next = vertices[(index + 1) % vertices.length].point;
-          return sum + current.point[0] * next[1] - next[0] * current.point[1];
-        }, 0) / 2;
-        const orientation = area >= 0 ? 1 : -1;
-        const cross = (a, b, c) => ((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])) * orientation;
-        const inside = (point, a, b, c) => {
-          const ab = cross(a, b, point), bc = cross(b, c, point), ca = cross(c, a, point);
-          return ab >= -0.0001 && bc >= -0.0001 && ca >= -0.0001;
-        };
-        const result = [];
-        while (vertices.length > 3) {
-          let clipped = false;
-          for (let index = 0; index < vertices.length; index += 1) {
-            const previous = vertices[(index - 1 + vertices.length) % vertices.length];
-            const current = vertices[index];
-            const next = vertices[(index + 1) % vertices.length];
-            if (cross(previous.point, current.point, next.point) <= 0) continue;
-            if (vertices.some(candidate => candidate !== previous && candidate !== current && candidate !== next && inside(candidate.point, previous.point, current.point, next.point))) continue;
-            result.push([previous.index, current.index, next.index]);
-            vertices.splice(index, 1);
-            clipped = true;
-            break;
-          }
-          if (!clipped) return null;
-        }
-        if (vertices.length === 3) result.push(vertices.map(vertex => vertex.index));
-        return result;
+      /** Uses Earcut for concave surfaces and island holes. */
+      const triangulatePolygon = (points, holes = []) => {
+        const indices = earcut(points.flatMap(point => point.slice(0, 2)), holes, 2);
+        return Array.from({ length: indices.length / 3 }, (_, index) => indices.slice(index * 3, index * 3 + 3));
       };
       const terrainHeightAt = (x, y) => {
-        const column = Math.max(0, Math.min(size - 1, Math.round(x / widthMm * (size - 1))));
-        const row = Math.max(0, Math.min(size - 1, Math.round(y / depthMm * (size - 1))));
-        return heightAt(row * size + column);
+        const column = Math.max(0, Math.min(size - 1, x / widthMm * (size - 1)));
+        const row = Math.max(0, Math.min(size - 1, (1 - y / depthMm) * (size - 1)));
+        const left = Math.floor(column), top = Math.floor(row);
+        const right = Math.min(size - 1, left + 1), bottom = Math.min(size - 1, top + 1);
+        const horizontal = column - left, vertical = row - top;
+        return heightAt(top * size + left) * (1 - horizontal) * (1 - vertical)
+          + heightAt(top * size + right) * horizontal * (1 - vertical)
+          + heightAt(bottom * size + left) * (1 - horizontal) * vertical
+          + heightAt(bottom * size + right) * horizontal * vertical;
       };
       const pointFromCoordinate = coordinate => {
         const [lng, lat] = coordinate;
@@ -221,18 +200,62 @@
       };
       const waterPolygons = (cityFeatures.water || []).flatMap(feature => {
         const coordinates = feature.geometry?.coordinates;
-        const rings = feature.geometry?.type === 'Polygon'
-          ? [coordinates?.[0]]
+        const polygons = feature.geometry?.type === 'Polygon'
+          ? [coordinates]
           : feature.geometry?.type === 'MultiPolygon'
-            ? coordinates?.map(polygon => polygon[0])
+            ? coordinates
             : [];
-        return rings.filter(Boolean).map(clipRingToModelBounds).filter(ring => ring.length >= 3).map(ring => ({
-          ring,
+        return (polygons || []).map(polygon => polygon.map(clipRingToModelBounds)).filter(rings => rings[0]?.length >= 3).map(([ring, ...holes]) => ({
+          ring, holes: holes.filter(hole => hole.length >= 3),
           minX: Math.min(...ring.map(point => point[0])),
           maxX: Math.max(...ring.map(point => point[0])),
           minY: Math.min(...ring.map(point => point[1])),
           maxY: Math.max(...ring.map(point => point[1]))
         }));
+      });
+      /** Measures proximity to shorelines so grid cells cannot protrude through the water. */
+      const distanceToRing = (point, ring) => Math.min(...ring.map((start, index) => {
+        const end = ring[(index + 1) % ring.length];
+        const deltaX = end[0] - start[0], deltaY = end[1] - start[1];
+        const lengthSquared = deltaX * deltaX + deltaY * deltaY;
+        const ratio = lengthSquared ? Math.max(0, Math.min(1, ((point[0] - start[0]) * deltaX + (point[1] - start[1]) * deltaY) / lengthSquared)) : 0;
+        return Math.hypot(point[0] - start[0] - ratio * deltaX, point[1] - start[1] - ratio * deltaY);
+      }));
+      const insideWater = (point, polygon) => pointIsInsideRing(point, polygon.ring) && !polygon.holes.some(hole => pointIsInsideRing(point, hole));
+      const shorelineMargin = Math.hypot(widthMm, depthMm) / (size - 1);
+      waterPolygons.forEach(polygon => {
+        const samples = [];
+        heights.forEach((height, index) => {
+          const point = vertexAt(Math.floor(index / size), index % size);
+          if (insideWater(point, polygon)) samples.push(height);
+        });
+        if (!samples.length) polygon.ring.forEach(([x, y]) => {
+          const column = Math.max(0, Math.min(size - 1, Math.round(x / widthMm * (size - 1))));
+          const row = Math.max(0, Math.min(size - 1, Math.round((1 - y / depthMm) * (size - 1))));
+          samples.push(heights[row * size + column]);
+        });
+        samples.sort((left, right) => left - right);
+        polygon.level = samples[Math.floor((samples.length - 1) * 0.1)];
+        polygon.group = { level: polygon.level };
+      });
+      waterPolygons.forEach((polygon, index) => {
+        waterPolygons.slice(index + 1).forEach(other => {
+          if (polygon.maxX < other.minX || polygon.minX > other.maxX || polygon.maxY < other.minY || polygon.minY > other.maxY) return;
+          const connected = polygon.ring.some(point => insideWater(point, other) || distanceToRing(point, other.ring) < 0.00001)
+            || other.ring.some(point => insideWater(point, polygon) || distanceToRing(point, polygon.ring) < 0.00001);
+          if (!connected || polygon.group === other.group) return;
+          const previousGroup = other.group;
+          polygon.group.level = Math.min(polygon.group.level, previousGroup.level);
+          waterPolygons.forEach(candidate => { if (candidate.group === previousGroup) candidate.group = polygon.group; });
+        });
+      });
+      elevations.forEach((height, index) => {
+        const point = vertexAt(Math.floor(index / size), index % size);
+        waterPolygons.forEach(polygon => {
+          if (point[0] < polygon.minX - shorelineMargin || point[0] > polygon.maxX + shorelineMargin || point[1] < polygon.minY - shorelineMargin || point[1] > polygon.maxY + shorelineMargin) return;
+          if (polygon.holes.some(hole => pointIsInsideRing(point, hole))) return;
+          if (insideWater(point, polygon) || distanceToRing(point, polygon.ring) <= shorelineMargin) elevations[index] = polygon.group.level;
+        });
       });
       const terrainMaterialAt = vertices => {
         const point = [
@@ -242,7 +265,7 @@
         return waterPolygons.some(polygon =>
           point[0] >= polygon.minX && point[0] <= polygon.maxX &&
           point[1] >= polygon.minY && point[1] <= polygon.maxY &&
-          pointIsInsideRing(point, polygon.ring)
+          insideWater(point, polygon)
         ) ? 'water' : 'terrain';
       };
       const addBuilding = ring => {
@@ -260,18 +283,26 @@
           add(point, next, base, 'building'); add(next, nextBase, base, 'building');
         });
       };
-      const addSurface = (ring, material, height) => {
-        const points = clipRingToModelBounds(ring);
+      const addSurface = (ring, material, height, waterPolygon = null) => {
+        const rings = waterPolygon ? [waterPolygon.ring, ...waterPolygon.holes] : [clipRingToModelBounds(ring)];
+        const points = rings.flat();
         if (points.length < 3) return;
-        const top = points.map(([x, y]) => [x, y, terrainHeightAt(x, y) + height]);
+        const top = points.map(([x, y]) => [x, y, (waterPolygon ? modelHeight(waterPolygon.group.level) : terrainHeightAt(x, y)) + height]);
         if (top.length < 3) return;
-        const trianglesForTop = triangulatePolygon(top);
+        let holeOffset = 0;
+        const holeIndices = rings.slice(0, -1).map(pointsInRing => { holeOffset += pointsInRing.length; return holeOffset; });
+        const trianglesForTop = triangulatePolygon(top, holeIndices);
         if (trianglesForTop) trianglesForTop.forEach(([a, b, c]) => add(top[a], top[b], top[c], material));
-        top.forEach((point, index) => {
-          const next = top[(index + 1) % top.length];
+        let ringOffset = 0;
+        rings.forEach(pointsInRing => {
+        pointsInRing.forEach((_, index) => {
+          const point = top[ringOffset + index];
+          const next = top[ringOffset + (index + 1) % pointsInRing.length];
           const base = [point[0], point[1], terrainHeightAt(point[0], point[1])];
           const nextBase = [next[0], next[1], terrainHeightAt(next[0], next[1])];
           add(point, next, base, material); add(next, nextBase, base, material);
+        });
+        ringOffset += pointsInRing.length;
         });
       };
       const addPathSegment = (start, end, material, height, halfWidth) => {
@@ -291,10 +322,10 @@
         add(topLeft, bottomLeft, topRight, terrainMaterialAt([topLeft, bottomLeft, topRight]));
         add(topRight, bottomLeft, bottomRight, terrainMaterialAt([topRight, bottomLeft, bottomRight]));
         const baseTopLeft = vertexAt(row, column, true), baseTopRight = vertexAt(row, column + 1, true), baseBottomLeft = vertexAt(row + 1, column, true), baseBottomRight = vertexAt(row + 1, column + 1, true);
-        add(baseTopRight, baseBottomLeft, baseTopLeft); add(baseBottomRight, baseBottomLeft, baseTopRight);
+        add(baseTopRight, baseBottomLeft, baseTopLeft, 'base'); add(baseBottomRight, baseBottomLeft, baseTopRight, 'base');
       }
       for (let index = 0; index < size - 1; index += 1) {
-        [[vertexAt(0, index), vertexAt(0, index + 1), vertexAt(0, index + 1, true), vertexAt(0, index, true)], [vertexAt(size - 1, index + 1), vertexAt(size - 1, index), vertexAt(size - 1, index, true), vertexAt(size - 1, index + 1, true)], [vertexAt(index + 1, 0), vertexAt(index, 0), vertexAt(index, 0, true), vertexAt(index + 1, 0, true)], [vertexAt(index, size - 1), vertexAt(index + 1, size - 1), vertexAt(index + 1, size - 1, true), vertexAt(index, size - 1, true)]].forEach(([a, b, c, d]) => { add(a, b, c); add(a, c, d); });
+        [[vertexAt(0, index), vertexAt(0, index + 1), vertexAt(0, index + 1, true), vertexAt(0, index, true)], [vertexAt(size - 1, index + 1), vertexAt(size - 1, index), vertexAt(size - 1, index, true), vertexAt(size - 1, index + 1, true)], [vertexAt(index + 1, 0), vertexAt(index, 0), vertexAt(index, 0, true), vertexAt(index + 1, 0, true)], [vertexAt(index, size - 1), vertexAt(index + 1, size - 1), vertexAt(index + 1, size - 1, true), vertexAt(index, size - 1, true)]].forEach(([a, b, c, d]) => { add(a, b, c, 'base'); add(a, c, d, 'base'); });
       }
       cityFeatures.buildings?.forEach(feature => {
         const coordinates = feature.geometry?.coordinates;
@@ -307,10 +338,9 @@
         if (feature.geometry?.type === 'Polygon') addSurface(feature.geometry.coordinates[0], 'road', 0.9);
         if (feature.geometry?.type === 'MultiPolygon') feature.geometry.coordinates.forEach(polygon => addSurface(polygon[0], 'road', 0.9));
       });
+      waterPolygons.forEach(polygon => addSurface(null, 'water', 0.08, polygon));
       cityFeatures.water?.forEach(feature => {
         const coordinates = feature.geometry?.coordinates;
-        if (feature.geometry?.type === 'Polygon') addSurface(coordinates[0], 'water', 0.35);
-        if (feature.geometry?.type === 'MultiPolygon') coordinates.forEach(polygon => addSurface(polygon[0], 'water', 0.35));
         const lines = feature.geometry?.type === 'LineString' ? [coordinates] : feature.geometry?.type === 'MultiLineString' ? coordinates : [];
         lines.forEach(line => line.slice(1).forEach((point, index) => addPathSegment(line[index], point, 'water', 0.45, 0.45)));
       });
@@ -329,6 +359,7 @@
         const lines = feature.geometry?.type === 'LineString' ? [coordinates] : feature.geometry?.type === 'MultiLineString' ? coordinates : [];
         lines.forEach(line => line.slice(1).forEach((point, index) => addPathSegment(line[index], point, 'boundary', 0.6, 0.18)));
       });
+      CartivaDiagnostics.record('model.terrain', 'Terrain scaled from geographic meters; connected water surfaces flattened.', { widthMeters, depthMeters, metersToMm, waterPolygons: waterPolygons.length });
       return { triangles, triangleMaterials };
     }
 
@@ -403,11 +434,11 @@
     }
 
     function createColoredThreeMf(mesh, colors) {
-      const materialIndex = { terrain: 0, forest: 1, landCover: 2, water: 3, boundary: 4, road: 5, building: 6 };
+      const materialIndex = { terrain: 0, forest: 1, landCover: 2, water: 3, boundary: 4, road: 5, building: 6, base: 7 };
       const color = hex => `${hex.toUpperCase()}FF`;
       const vertices = mesh.triangles.map(vertex => `<vertex x="${vertex[0]}" y="${vertex[1]}" z="${vertex[2]}"/>`).join('');
       const triangles = mesh.triangleMaterials.map((material, index) => `<triangle v1="${index * 3}" v2="${index * 3 + 1}" v3="${index * 3 + 2}" pid="1" p1="${materialIndex[material]}"/>`).join('');
-      const model = `<?xml version="1.0" encoding="UTF-8"?><model xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" unit="millimeter" xml:lang="en-US"><resources><basematerials id="1"><base name="Land" displaycolor="${color(colors.terrain)}"/><base name="Nature" displaycolor="${color(colors.forest)}"/><base name="Urban areas" displaycolor="${color(colors.landCover)}"/><base name="Water" displaycolor="${color(colors.water)}"/><base name="Boundaries" displaycolor="${color(colors.boundary)}"/><base name="Streets" displaycolor="${color(colors.road)}"/><base name="Buildings" displaycolor="${color(colors.building)}"/></basematerials><object id="2" type="model" pid="1" pindex="0"><mesh><vertices>${vertices}</vertices><triangles>${triangles}</triangles></mesh></object></resources><build><item objectid="2"/></build></model>`;
+      const model = `<?xml version="1.0" encoding="UTF-8"?><model xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" unit="millimeter" xml:lang="en-US"><resources><basematerials id="1"><base name="Land" displaycolor="${color(colors.terrain)}"/><base name="Nature" displaycolor="${color(colors.forest)}"/><base name="Urban areas" displaycolor="${color(colors.landCover)}"/><base name="Water" displaycolor="${color(colors.water)}"/><base name="Boundaries" displaycolor="${color(colors.boundary)}"/><base name="Streets" displaycolor="${color(colors.road)}"/><base name="Buildings" displaycolor="${color(colors.building)}"/><base name="Base and sides" displaycolor="${color(colors.base || '#8b5e3c')}"/></basematerials><object id="2" type="model" pid="1" pindex="0"><mesh><vertices>${vertices}</vertices><triangles>${triangles}</triangles></mesh></object></resources><build><item objectid="2"/></build></model>`;
       return createStoredZip([
         { name: '[Content_Types].xml', content: '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>' },
         { name: '_rels/.rels', content: '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>' },
@@ -514,6 +545,20 @@
       }
     }
 
+    /** Draws the outline wholly inside the map edge, preserving rounded inner corners. */
+    function drawInnerBorderOutline(context, exportState, x, y, width, height, scale) {
+      if (!exportState.borderEnabled || !exportState.innerOutlineEnabled) return;
+      const lineWidth = Math.min(width / 2, height / 2, exportState.innerOutlineWidth * scale);
+      const radius = Math.min(width / 2, height / 2, exportState.innerBorderRadius * scale);
+      context.save();
+      context.beginPath();
+      context.roundRect(x, y, width, height, radius);
+      context.roundRect(x + lineWidth, y + lineWidth, width - 2 * lineWidth, height - 2 * lineWidth, Math.max(0, radius - lineWidth));
+      context.fillStyle = exportState.innerOutlineColor;
+      context.fill('evenodd');
+      context.restore();
+    }
+
     function waitForMapIdle(targetMap, timeoutMs = 30000) {
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Map tiles did not finish loading in time.')), timeoutMs);
@@ -547,7 +592,55 @@
       return comparison;
     }
 
-    async function createExportMap(width, height, exportState) {
+    /** Shifts camera stops while preserving feature-dependent values in MapLibre styles. */
+    function shiftStyleZoom(value, offset, multiplier = 1) {
+      if (typeof value === 'number') return value * multiplier;
+      if (value && !Array.isArray(value) && Array.isArray(value.stops)) {
+        return { ...value, stops: value.stops.map(([stop, output]) => [
+          value.property ? stop : stop + offset,
+          typeof output === 'number' ? output * multiplier : output
+        ]) };
+      }
+      if (!Array.isArray(value)) return value;
+      const expression = JSON.parse(JSON.stringify(value));
+      const inputIndex = expression[0] === 'step' ? 1 : expression[0] === 'interpolate' ? 2 : -1;
+      if (inputIndex >= 0 && expression[inputIndex]?.[0] === 'zoom') {
+        for (let index = 3; index < expression.length; index += 2) {
+          expression[index] += offset;
+          if (multiplier !== 1) expression[index + 1] = ['*', expression[index + 1], multiplier];
+        }
+        if (expression[0] === 'step' && multiplier !== 1) expression[2] = ['*', expression[2], multiplier];
+        return expression;
+      }
+      return multiplier === 1 ? expression : ['*', expression, multiplier];
+    }
+
+    /** Preserves label and layer visibility when a larger viewport raises the render zoom. */
+    function createScaledMapStyle(style, scale) {
+      const result = JSON.parse(JSON.stringify(style));
+      result.layers = result.layers.filter(layer => ![TERRAIN_COLOR_SOURCE_ID, TERRAIN_SOURCE_ID].includes(layer.source));
+      delete result.sources[TERRAIN_COLOR_SOURCE_ID];
+      delete result.sources[TERRAIN_SOURCE_ID];
+      const offset = Math.log2(scale);
+      const layoutPixels = new Set(['text-size', 'icon-size', 'text-padding', 'icon-padding', 'symbol-spacing']);
+      const paintPixels = new Set(['text-halo-width', 'text-halo-blur', 'icon-halo-width', 'icon-halo-blur']);
+      result.layers.forEach(layer => {
+        if (layer.minzoom != null) layer.minzoom = Math.max(0, Math.min(24, layer.minzoom + offset));
+        if (layer.maxzoom != null) layer.maxzoom = Math.max(0, Math.min(24, layer.maxzoom + offset));
+        if (layer.type !== 'symbol') return;
+        layer.layout ||= {};
+        if (layer.layout['text-field'] != null && layer.layout['text-size'] == null) layer.layout['text-size'] = 16;
+        for (const group of ['layout', 'paint']) {
+          Object.entries(layer[group] || {}).forEach(([key, value]) => {
+            const multiplier = (group === 'layout' ? layoutPixels : paintPixels).has(key) ? scale : 1;
+            layer[group][key] = shiftStyleZoom(value, offset, multiplier);
+          });
+        }
+      });
+      return result;
+    }
+
+    async function createExportMap(width, height, exportState, options = {}) {
       const container = document.createElement('div');
       container.className = 'export-map-container';
       container.style.width = `${width}px`;
@@ -557,28 +650,30 @@
       // by the pixel scale so a 600 DPI viewport shows the same geography as
       // the much smaller preview viewport instead of zooming out in practice.
       const previewWidth = Math.max(1, exportState.previewMapSize.width);
-      const exportZoom = Math.min(
-        exportState.zoom + Math.log2(width / previewWidth),
-        Number(CartivaServices.maxExportZoom || 18)
-      );
+      const renderScale = (options.fullWidth || width) / previewWidth;
+      const exportZoom = exportState.zoom + Math.log2(renderScale);
       const exportMap = new maplibregl.Map({
         container,
         preserveDrawingBuffer: true,
         pixelRatio: 1,
         attributionControl: false,
         interactive: false,
-        style: MAP_STYLE_URL,
-        center: exportState.center,
+        style: createScaledMapStyle(map.getStyle(), renderScale),
+        maxZoom: Math.max(24, exportZoom),
+        center: options.center || exportState.center,
         zoom: exportZoom,
         bearing: exportState.bearing,
         pitch: exportState.pitch
       });
+      try {
+      CartivaWebGl.prepareMap(exportMap);
       await new Promise((resolve, reject) => {
-        exportMap.once('load', resolve);
-        exportMap.once('error', event => reject(event.error || new Error('Export map failed to load.')));
+        const timeout = setTimeout(() => reject(new Error('Export map did not load in time.')), 30000);
+        exportMap.once('load', () => { clearTimeout(timeout); resolve(); });
+        exportMap.once('error', event => { clearTimeout(timeout); reject(event.error || new Error('Export map failed to load.')); });
       });
       const geoJsonDefinition = globalThis.CartivaGeoJson?.definition?.();
-      if (geoJsonDefinition) {
+      if (geoJsonDefinition && !exportMap.getSource('cartiva-user-geojson')) {
         exportMap.addSource('cartiva-user-geojson', geoJsonDefinition.source);
         geoJsonDefinition.layers.forEach(layer => exportMap.addLayer(layer));
       }
@@ -589,15 +684,77 @@
       // use the same aspect ratio, so center/zoom is more faithful than fitting
       // bounds again on the second MapLibre instance.
       exportMap.jumpTo({
-        center: exportState.center,
+        center: options.center || exportState.center,
         zoom: exportZoom,
         bearing: exportState.bearing,
         pitch: exportState.pitch
       });
       await updateTerrainColorization(exportMap, exportState);
       await waitForMapIdle(exportMap);
-      compareRenderBounds(exportMap, exportState);
+      if (!options.fullWidth) compareRenderBounds(exportMap, exportState);
       return { exportMap, container };
+      } catch (error) {
+        exportMap.remove();
+        container.remove();
+        throw error;
+      }
+    }
+
+    /** Projects a virtual export tile center into geographic coordinates at any map bearing. */
+    function getExportTileCenter(exportState, fullWidth, fullHeight, x, y) {
+      const center = maplibregl.MercatorCoordinate.fromLngLat(exportState.center);
+      const worldSize = 512 * 2 ** exportState.zoom * fullWidth / exportState.previewMapSize.width;
+      const angle = exportState.bearing * Math.PI / 180;
+      const offsetX = (x - fullWidth / 2) / worldSize;
+      const offsetY = (y - fullHeight / 2) / worldSize;
+      return new maplibregl.MercatorCoordinate(
+        center.x + offsetX * Math.cos(angle) - offsetY * Math.sin(angle),
+        center.y + offsetX * Math.sin(angle) + offsetY * Math.cos(angle)
+      ).toLngLat().toArray();
+    }
+
+    /** Composites bounded WebGL tiles directly into the final print canvas. */
+    async function drawExportMap(context, exportState, sourceWidth, sourceHeight, x, y, width, height) {
+      const tileSize = 2048;
+      const overlap = Math.min(512, Math.ceil(64 * sourceWidth / exportState.previewMapSize.width));
+      let exportMap;
+      let container;
+      try {
+        if (sourceWidth <= 4096 && sourceHeight <= 4096 || exportState.pitch !== 0) {
+          const scale = Math.min(1, 4096 / Math.max(sourceWidth, sourceHeight));
+          if (scale < 1) CartivaDiagnostics.record('image.export', 'Pitched map render resolution limited to the GPU budget.', { scale }, 'warn');
+          ({ exportMap, container } = await createExportMap(Math.round(sourceWidth * scale), Math.round(sourceHeight * scale), exportState));
+          drawCanvasInTiles(context, exportMap.getCanvas(), x, y, width, height);
+          return;
+        }
+        const columns = Math.ceil(sourceWidth / tileSize), rows = Math.ceil(sourceHeight / tileSize);
+        for (let row = 0; row < rows; row += 1) {
+          for (let column = 0; column < columns; column += 1) {
+            const left = column * tileSize, top = row * tileSize;
+            const tileWidth = Math.min(tileSize, sourceWidth - left), tileHeight = Math.min(tileSize, sourceHeight - top);
+            const renderWidth = tileWidth + 2 * overlap, renderHeight = tileHeight + 2 * overlap;
+            const center = getExportTileCenter(exportState, sourceWidth, sourceHeight, left + tileWidth / 2, top + tileHeight / 2);
+            setStatus(`3/5 Rendering map tile ${row * columns + column + 1}/${rows * columns}...`);
+            if (!exportMap) {
+              ({ exportMap, container } = await createExportMap(renderWidth, renderHeight, exportState, { fullWidth: sourceWidth, center }));
+            } else {
+              container.style.width = `${renderWidth}px`;
+              container.style.height = `${renderHeight}px`;
+              exportMap.resize();
+              exportMap.jumpTo({ center });
+              await updateTerrainColorization(exportMap, exportState);
+              await waitForMapIdle(exportMap);
+            }
+            context.drawImage(exportMap.getCanvas(), overlap, overlap, tileWidth, tileHeight,
+              x + left * width / sourceWidth, y + top * height / sourceHeight,
+              tileWidth * width / sourceWidth, tileHeight * height / sourceHeight);
+          }
+        }
+        CartivaDiagnostics.record('image.export', 'Tiled map rendering completed.', { columns, rows, sourceWidth, sourceHeight });
+      } finally {
+        exportMap?.remove();
+        container?.remove();
+      }
     }
 
     const refinedMapPreview = document.getElementById('refinedMapPreview');
@@ -665,6 +822,8 @@
           refinedMapPreview.classList.add('ready');
           setRefinedPreviewState(true);
           CartivaDiagnostics.record('preview.refine', 'High-fidelity preview rendered.', {
+            location: exportState.city,
+            center: exportState.center,
             width,
             height,
             detailZoom: exportState.zoom + Math.log2(scale),
@@ -720,12 +879,7 @@
       errorPrefix: 'Export failed',
       errorNotificationPrefix: 'Poster export failed'
     }, async cleanup => {
-      let exportMap;
-      let container;
-      cleanup(() => {
-        exportMap?.remove();
-        container?.remove();
-      });
+      hideRefinedPreview();
         if (document.fonts) {
           await document.fonts.ready;
         }
@@ -743,6 +897,7 @@
         setStatus('2/5 Loading detailed map tiles...');
 
         const exportCanvas = document.createElement('canvas');
+        cleanup(() => { exportCanvas.width = exportCanvas.height = 1; });
         exportCanvas.width = targetDims.width;
         exportCanvas.height = targetDims.height;
           const ctx = exportCanvas.getContext('2d');
@@ -764,7 +919,6 @@
         // MapLibre's geographic crop depends on viewport aspect ratio. Render
         // the source map at the preview aspect to avoid extra latitude in export.
         const sourceMapHeight = Math.max(1, Math.round(renderMapWidth / previewAspect));
-        validateExportSize(renderMapWidth, sourceMapHeight, exportState);
 
         ctx.fillStyle = exportState.borderColor;
         ctx.fillRect(0, 0, targetDims.width, targetDims.height);
@@ -776,9 +930,7 @@
         const contrastSetting = exportState.contrast;
         ctx.filter = `contrast(${contrastSetting}%) brightness(${exportState.brightness}%) saturate(${exportState.saturation}%)`;
 
-      ({ exportMap, container } = await createExportMap(renderMapWidth, sourceMapHeight, exportState));
       setStatus('3/5 Rendering map and layout...');
-      const mapCanvas = exportMap.getCanvas();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       if (exportState.innerBorderRadius > 0 || exportState.shape !== 'none') {
@@ -795,10 +947,11 @@
           ctx.translate(-bWidth, -bWidth);
         }
       }
-      drawCanvasInTiles(ctx, mapCanvas, bWidth, bWidth,
-        targetDims.width - (bWidth * 2), targetDims.height - (bWidth * 2));
+      await drawExportMap(ctx, exportState, renderMapWidth, sourceMapHeight, bWidth, bWidth, mapWidth, mapHeight);
       if (exportState.innerBorderRadius > 0 || exportState.shape !== 'none') ctx.restore();
       ctx.filter = 'none';
+
+      drawInnerBorderOutline(ctx, exportState, bWidth, bWidth, mapWidth, mapHeight, scaleFactor);
 
       if (exportState.labelStyle !== 'none') {
         const hex = exportState.labelBgColor;

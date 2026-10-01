@@ -9,7 +9,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>cartiva - a small, self-contained creative cartography web-app</title>
+	<title>cartiva - Create beautiful printable map art from any location in the world</title>
 
 	<!-- MapLibre GL JS CSS & JS -->
 	<link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
@@ -17,6 +17,7 @@
 	
 	<!-- JSPDF -->
 	<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/dist/earcut.min.js"></script>
 	
 	<!-- LogLevel -->
 	<script src="https://cdn.jsdelivr.net/npm/loglevel@1.9.2/dist/loglevel.min.js"></script>
@@ -40,7 +41,7 @@
 		<div class="sidebar">
 			<!-- SIDEBAR-HEADER -->
 			<div class="sidebar-header">
-				<center><img src="img/cartiva_logo.png" height="60px"></center>
+				<button type="button" id="aboutBtn" class="about-trigger" title="About cartiva" aria-label="About cartiva"><img src="img/cartiva_logo.png" height="60" alt="cartiva"></button>
 				<!--
 				<h1 id="appName">DUMMY_APPNAME</h1>
 				-->
@@ -84,7 +85,7 @@
 				</div>
 				<div class="section-body">
 					<div class="control-group">
-						<label for="formatSelect">Paper format</label>
+						<div class="format-heading"><label for="formatSelect">Paper format</label><span id="outputDimensions" class="output-dimensions">2480 × 3508 px</span></div>
 						<select id="formatSelect" autocomplete="off" title="Select standard print layout dimensions">
 							<option value="a2-portrait">A2 Portrait</option>
 							<option value="a2-landscape">A2 Landscape</option>
@@ -104,7 +105,6 @@
 						<div class="control-group"><label for="customWidthMm">Width (mm)</label><input type="number" id="customWidthMm" min="30" max="1000" value="210" title="Set the custom output width in millimeters"></div>
 						<div class="control-group"><label for="customHeightMm">Height (mm)</label><input type="number" id="customHeightMm" min="30" max="1000" value="297" title="Set the custom output height in millimeters"></div>
 					</div>
-					<div id="outputDimensions" class="output-dimensions">2480 × 3508 px</div>
 				</div>
 			</div>
 
@@ -142,6 +142,13 @@
 						<label for="innerBorderRadius">Inner radius: <span id="innerBorderRadiusVal">0</span>px</label>
 						<input type="range" id="innerBorderRadius" min="0" max="100" value="0" autocomplete="off" title="Round the inside map corners">
 					</div>
+					<div class="misc-subsection border-ui-item">
+						<label><input type="checkbox" id="innerOutlineEnabled" title="Draw a thin outline inside the border"> Inner outline</label>
+						<div class="row row-centered">
+							<div class="control-group control-fixed"><label for="innerOutlineColor">Color</label><input type="color" id="innerOutlineColor" value="#000000" title="Choose the inner outline color"></div>
+							<div class="control-group control-fill"><label for="innerOutlineWidth">Width: <span id="innerOutlineWidthVal">1</span>px</label><input type="range" id="innerOutlineWidth" min="0.5" max="8" step="0.5" value="1" title="Adjust inner outline thickness"></div>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -163,11 +170,7 @@
 								<option value="heart">Heart</option>
 								<option value="star">Star</option>
 								<option value="house">House</option>
-								<option value="spiral">Spiral</option>
-								<option value="peace">Peace Sign</option>
-								<option value="smiley">Smiley</option>
 								<option value="diamond">Diamond</option>
-								<option value="hexagon">Hexagon</option>
 								<option value="cross">Cross</option>
 								<option value="cloud">Cloud</option>
 							</select>
@@ -313,13 +316,13 @@
 			<!-- Preset color selector with sorted names and padded sequence numbers -->
 			<div class="control-group control-spaced">
 			  <label for="colorPresetSelect">Color palette preset</label>
+			  <div class="preset-select-row">
 			  <select id="colorPresetSelect" autocomplete="off" title="Select a predefined color set for all items"></select>
-			</div>
-			
-			<button type="button" class="fine-tuning-toggle" id="fineTuningToggle" title="Show or hide individual map layer controls" aria-expanded="false" aria-controls="fineTuningControls">
-			  Fine-tuning
+			<button type="button" class="fine-tuning-toggle" id="fineTuningToggle" title="Show or hide individual map layer controls" aria-label="Toggle layer fine-tuning" aria-expanded="false" aria-controls="fineTuningControls">
 			  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
 			</button>
+			  </div>
+			</div>
 
 			<div class="fine-tuning-controls" id="fineTuningControls" hidden>
 			<!-- Water -->
@@ -520,9 +523,12 @@
 			  <label for="terrainExaggeration">Relief strength: <span id="terrainExaggerationVal">100</span>%</label>
 			  <input type="range" id="terrainExaggeration" min="20" max="300" value="100" autocomplete="off" title="Adjust the terrain height shading strength">
 			</div>
-			<div class="row annotation-options">
-			  <label><input type="checkbox" id="stlBuildingsToggle" checked autocomplete="off" title="Include visible building footprints in the 3D model"> Buildings</label>
-			  <label><input type="checkbox" id="stlRoadsToggle" checked autocomplete="off" title="Include visible streets in the 3D model"> Streets</label>
+			<div class="misc-subsection">
+			  <div class="misc-subsection-title">3D model details</div>
+			  <div class="row annotation-options">
+				<label><input type="checkbox" id="stlBuildingsToggle" checked autocomplete="off" title="Include visible building footprints in STL and 3MF exports"> Buildings</label>
+				<label><input type="checkbox" id="stlRoadsToggle" checked autocomplete="off" title="Include visible streets in STL and 3MF exports"> Streets</label>
+			  </div>
 			</div>
 		  </div>
 		</div>
@@ -548,11 +554,13 @@
 			  <label for="saturationVal">Saturation: <span id="saturationNum">100</span>%</label>
 			  <input type="range" id="saturationVal" min="0" max="200" value="100" autocomplete="off" title="Adjust global color saturation">
 			</div>
+			<div class="misc-subsection">
+			<div class="misc-subsection-title">Map annotations</div>
 			<div class="row annotation-options">
 			  <label><input type="checkbox" id="scaleToggle" autocomplete="off" title="Show a distance scale on the map"> Scale</label>
 			  <label><input type="checkbox" id="northToggle" autocomplete="off" title="Show the direction of north when the map is rotated"> North</label>
 			</div>
-			<label class="check-row"><input type="checkbox" id="includeExportMetadata" autocomplete="off" title="Download a JSON metadata file alongside exported images"> Export JSON metadata with images</label>
+			</div>
 			<div class="misc-subsection">
 			  <div class="misc-subsection-title">Print guides</div>
 			  <div class="row">
@@ -560,12 +568,18 @@
 				<div class="control-group"><label for="safeMm">Safe area (mm)</label><input type="number" id="safeMm" min="0" max="50" step="0.5" value="5" title="Set the print safe area in millimeters"></div>
 			  </div>
 			  <label class="check-row"><input type="checkbox" id="guidesToggle" title="Show or hide print guides in the preview"> Show guides in preview</label>
-			  <div class="guide-note">Bleed extends beyond the trim edge. The safe area keeps labels away from the cut.</div>
 			</div>
+			<div class="misc-subsection">
+			<div class="misc-subsection-title">Image export</div>
+			<label class="check-row"><input type="checkbox" id="includeExportMetadata" autocomplete="off" title="Download a JSON metadata file alongside exported images"> Export JSON metadata with images</label>
+			</div>
+			<div class="misc-subsection">
+			<div class="misc-subsection-title">Design actions</div>
 			<button type="button" class="secondary-action-btn" id="randomizeDesignBtn" title="Randomize the palette, label layout, and color adjustments">Randomize design</button>
 			<button type="button" class="secondary-action-btn" id="randomPresetBtn" title="Generate a random color preset">Generate random preset</button>
 			<button type="button" class="secondary-action-btn" id="geoJsonBtn" title="Import a GeoJSON overlay file">Import GeoJSON</button>
 			<input type="file" id="geoJsonInput" accept="application/geo+json,application/json,.geojson,.json" aria-label="Select a GeoJSON file" hidden>
+			</div>
 		  </div>
 		</div>
 
@@ -576,10 +590,7 @@
 		<div class="sidebar-footer">
 			<!-- BUTTONS: PROJECT -->
 			<div class="project-actions" role="group" aria-label="Project actions">
-				<!--
-				<button type="button" class="secondary-action-btn" id="saveProjectBtn" title="Save the current design in this browser">Save project</button>
-				-->
-				<button type="button" class="secondary-action-btn" id="downloadProjectBtn" title="Download the current design as JSON">Save project</button>
+				<button type="button" class="secondary-action-btn" id="saveProjectBtn" title="Download the current design as JSON">Save project</button>
 				<button type="button" class="secondary-action-btn" id="loadProjectBtn" title="Load a project JSON file">Load project</button>
 				<input type="file" id="projectFileInput" accept="application/json,.json" aria-label="Select a cartiva project file" hidden>
 			</div>
@@ -591,16 +602,18 @@
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
 			</button>
 			<!-- Export 3D .STL button -->
+			<div class="model-actions" role="group" aria-label="Export 3D model">
 			<button type="button" class="secondary-action-btn" id="stlExportBtn" title="Generate an STL terrain model of the visible map area for 3D printing">
-				<span id="stlExportBtnLabel">Export 3D model (.stl)</span>
+				<span id="stlExportBtnLabel">3D .stl</span>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
 			</button>
 			<!-- Export 3D .3MF button -->
 			<button type="button" class="secondary-action-btn" id="threeMfExportBtn" title="Generate a colored 3MF terrain model using the selected map colors">
-				<span id="threeMfExportBtnLabel">Export 3D model (.3mf)</span>
+				<span id="threeMfExportBtnLabel">3D .3mf</span>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
 			</button>
 			<!-- STATUS-MESSAGE -->
+			</div>
 			<div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
 			<!-- FOOTER -->
 			<div class="footer-meta">
@@ -618,10 +631,8 @@
 	<!-- POPUP: Export image -->
 	<dialog id="exportDialog" class="export-dialog" aria-labelledby="exportDialogTitle">
 		<div class="export-dialog-header">
-			<img src="img/cartiva_logo.png" height="70px">
-			<!--
-			<h2 id="exportDialogTitle">Export image</h2>
-			-->
+			<img src="img/cartiva_logo.png" height="70" alt="cartiva">
+			<h2 id="exportDialogTitle" class="visually-hidden">Export image</h2>
 			<button type="button" id="exportDialogCloseBtn" class="icon-btn" title="Cancel export" aria-label="Close export dialog">×</button>
 		</div>
 		<div class="export-dialog-body">
@@ -670,6 +681,21 @@
 		</div>
 	</dialog>
 	<!-- /POPUP - EXPORT IMAGE -->
+	<dialog id="aboutDialog" class="export-dialog about-dialog" aria-labelledby="aboutDialogTitle">
+		<div class="export-dialog-header">
+			<img src="img/cartiva_logo.png" height="70" alt="cartiva">
+			<button type="button" id="aboutCloseBtn" class="icon-btn" title="Close About" aria-label="Close About dialog">×</button>
+		</div>
+		<div class="export-dialog-body">
+			<h2 id="aboutDialogTitle">cartiva</h2>
+			<p id="aboutDescription"></p>
+			<dl class="about-details">
+				<dt>Version</dt><dd id="aboutVersion"></dd>
+				<dt>GitHub</dt><dd><a id="aboutGithubLink" target="_blank" rel="noopener noreferrer">github.com/yafp/cartiva</a></dd>
+				<dt>License</dt><dd><a href="https://github.com/yafp/cartiva/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></dd>
+			</dl>
+		</div>
+	</dialog>
 
 	</form>
 
@@ -728,6 +754,7 @@
 		</svg>
 		<div id="map"></div>
 		<img id="refinedMapPreview" class="refined-map-preview" alt="" aria-hidden="true">
+		<div id="innerBorderOutline" class="inner-border-outline" aria-hidden="true"></div>
 	  
 	  <!-- Live Magnifying Glass Lens -->
 	  <canvas id="mapMagnifierLens" class="map-magnifier-lens" width="280" height="280" aria-hidden="true"></canvas>
@@ -746,6 +773,7 @@
 	  <div class="preview-detail-note">The preview might differ in detail from the final exported image.</div>
 	  
 	  <!-- preview map state indicator -->
+	  <a id="googleMapsLink" class="map-zoom-btn google-maps-link" href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" title="Open current coordinates in Google Maps" aria-label="Open current coordinates in Google Maps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg></a>
 	  <div id="previewStateIndicator" class="preview-state-indicator limited" role="status" aria-live="polite" aria-label="Limited preview" title="Limited preview">
 		  <svg class="preview-state-limited" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 4-4 4 4-4 4M4 20l11-11M5 4l15 15M3 3l4 1 1 4-2 2-4-4Z"></path></svg>
 		  <svg class="preview-state-detailed" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
@@ -761,6 +789,7 @@
   <script src="js/core/resource-cache.js"></script>
   <script src="js/core/diagnostics.js"></script>
   <script src="js/core/operations.js"></script>
+	<script src="js/core/webgl.js"></script>
   <script src="js/map/layer-registry.js"></script>
   <script src="js/core/render-spec.js"></script>
   <script src="js/export/shared.js"></script>

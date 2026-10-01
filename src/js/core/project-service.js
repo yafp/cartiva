@@ -1,7 +1,6 @@
 // Versioned project persistence. Only plain data crosses this boundary.
 (function attachProjectService(global) {
   const VERSION = 2;
-  const STORAGE_KEY = 'cartiva.project.v2';
   const PERSISTED_KEYS = Object.freeze([
     'preset', 'labelStyle', 'labelOpacity', 'labelFont', 'labelTextColor', 'labelCoordColor',
     'labelCountryColor', 'labelBgColor', 'textFilter', 'format', 'customWidthMm',
@@ -11,6 +10,7 @@
     'terrainExaggeration', 'stlBuildingsEnabled', 'stlRoadsEnabled', 'scaleEnabled',
     'northEnabled', 'borderEnabled', 'borderColor', 'borderWidth', 'outerBorderRadius',
     'innerBorderRadius', 'layerOrder', 'center', 'zoom', 'bearing', 'pitch', 'city',
+    'innerOutlineEnabled', 'innerOutlineColor', 'innerOutlineWidth',
     'coordinates', 'country', 'layers'
   ]);
 
@@ -52,6 +52,10 @@
     project.state.contrast = numberInRange(project.state.contrast, 100, 50, 250);
     project.state.brightness = numberInRange(project.state.brightness, 100, 50, 150);
     project.state.saturation = numberInRange(project.state.saturation, 100, 0, 200);
+    project.state.innerOutlineEnabled = project.state.innerOutlineEnabled === true;
+    project.state.innerOutlineColor = isHex(project.state.innerOutlineColor) ? project.state.innerOutlineColor : '#000000';
+    project.state.innerOutlineWidth = numberInRange(project.state.innerOutlineWidth, 1, 0.5, 8);
+    if (['peace', 'hexagon', 'spiral', 'smiley'].includes(project.state.shape)) project.state.shape = 'none';
     project.state.layers = Object.fromEntries(Object.entries(project.state.layers).map(([key, value]) => {
       if (/Color/i.test(key) && !isHex(value)) return [key, undefined];
       if (/Opacity/i.test(key)) return [key, numberInRange(value, 100, 0, 100)];
@@ -62,22 +66,6 @@
 
   function createProject(state) {
     return normalizeProject({ schemaVersion: VERSION, appVersion: global.CartivaApp?.version, state });
-  }
-
-  function save(project) {
-    const normalized = normalizeProject(project);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-    } catch (error) {
-      throw new Error(`Project could not be saved: ${error.message}`);
-    }
-    global.CartivaDiagnostics?.record('project.save', 'Project saved to browser storage.', { schemaVersion: normalized.schemaVersion });
-    return normalized;
-  }
-
-  function load() {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('cartiva.project.v1');
-    return raw ? normalizeProject(JSON.parse(raw)) : null;
   }
 
   function download(project, filename = 'cartiva-project.json') {
@@ -94,7 +82,7 @@
   }
 
   global.CartivaProject = Object.freeze({
-    VERSION, STORAGE_KEY, create: createProject, normalize: normalizeProject,
-    save, load, download, readFile
+    VERSION, create: createProject, normalize: normalizeProject,
+    download, readFile
   });
 })(window);

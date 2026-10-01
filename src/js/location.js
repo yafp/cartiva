@@ -14,6 +14,8 @@
     let activeSearchIndex = -1;
     let lastSearchAt = 0;
     let reverseController;
+    let reverseRequestId = 0;
+    let namedLocationCenter = '';
     let lastReverseAt = 0;
     let locationSelectionInProgress = false;
     const searchCache = new Map();
@@ -47,8 +49,9 @@
     function selectSearchResult(item) {
       const lat = Number(item.lat);
       const lon = Number(item.lon);
-      map.flyTo({ center: [lon, lat], zoom: 12 });
+      cancelLocationUpdate();
       locationSelectionInProgress = true;
+      map.flyTo({ center: [lon, lat], zoom: 12 });
       cityNameEl.textContent = item.display_name.split(',')[0].toUpperCase();
       searchInput.value = item.display_name.split(',')[0];
       if (item.address?.country) cityCountryEl.textContent = item.address.country.toUpperCase();
@@ -97,17 +100,34 @@
         || address.state;
     }
 
+    /** Invalidates both active requests and throttled reverse-geocoding work. */
+    function cancelLocationUpdate() {
+      reverseRequestId += 1;
+      reverseController?.abort();
+    }
+    /** Associates an explicitly loaded or selected place name with the current map center. */
+    function preserveLocationName() {
+      cancelLocationUpdate();
+      const center = map.getCenter();
+      namedLocationCenter = `${center.lat.toFixed(6)},${center.lng.toFixed(6)}`;
+    }
+    map.on('movestart', cancelLocationUpdate);
+
     async function updateLocationFromCenter() {
       const center = map.getCenter();
       const cacheKey = `${center.lat.toFixed(3)},${center.lng.toFixed(3)}`;
-      reverseController?.abort();
+      cancelLocationUpdate();
+      const requestId = reverseRequestId;
+      const controller = new AbortController();
+      reverseController = controller;
       try {
         const cached = reverseCache.get(cacheKey);
         const waitMs = Math.max(0, REVERSE_INTERVAL_MS - (Date.now() - lastReverseAt));
         if (!cached && waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
-        reverseController = new AbortController();
+        if (requestId !== reverseRequestId) return;
         lastReverseAt = Date.now();
-        const data = cached || await geocoder.reverse({ lat: center.lat, lon: center.lng }, reverseController.signal);
+        const data = cached || await geocoder.reverse({ lat: center.lat, lon: center.lng }, controller.signal);
+        if (requestId !== reverseRequestId) return;
         if (!cached) reverseCache.set(cacheKey, data);
         const city = getNearestCity(data.address || {});
         if (city) {
@@ -115,10 +135,12 @@
           searchInput.value = city;
         }
         if (data.address?.country) cityCountryEl.textContent = data.address.country.toUpperCase();
+        namedLocationCenter = `${center.lat.toFixed(6)},${center.lng.toFixed(6)}`;
         syncStateFromControls();
         saveLastLocation();
+        schedulePreviewRenderSync();
       } catch (error) {
-        if (error.name !== 'AbortError') {
+        if (error.name !== 'AbortError' && requestId === reverseRequestId) {
           setStatus(`Location update failed: ${error.message}`, true);
         }
       }
@@ -127,9 +149,12 @@
     map.on('moveend', () => {
       if (locationSelectionInProgress) {
         locationSelectionInProgress = false;
+        preserveLocationName();
         syncStateFromControls();
         return;
       }
+      const center = map.getCenter();
+      if (namedLocationCenter === `${center.lat.toFixed(6)},${center.lng.toFixed(6)}`) return;
       updateLocationFromCenter();
     });
 

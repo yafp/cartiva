@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>cartiva browser regressions</title></head>
+<body>
+  <h1>cartiva browser regressions</h1>
+  <pre id="results">Loading application...</pre>
+  <iframe id="application" src="../src/index.html" title="cartiva under test" width="1200" height="850"></iframe>
+  <script src="browser-regressions.js"></script>
+  <script>
+    document.getElementById('application').addEventListener('load', async event => {
+      const app = event.target.contentWindow;
+      try {
+        if (!app.CartivaMap.loaded()) await app.CartivaMap.once('load');
+        const results = await runCartivaRegressionTests(app);
+        window.testResults = results;
+        document.getElementById('results').textContent = results.map(result => `${result.passed ? 'PASS' : 'FAIL'}: ${result.name}${result.error ? ': ' + result.error : ''}`).join('\n');
+      } catch (error) {
+        document.getElementById('results').textContent = `FAIL: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

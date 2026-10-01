@@ -1,5 +1,6 @@
 // Global keyboard shortcuts for map navigation and exports.
 document.addEventListener('keydown', event => {
+  if (document.querySelector('dialog[open]')) return;
   if (event.target.matches('input, select, textarea')) return;
   if (event.key === '+' || event.key === '=') {
     event.preventDefault();

@@ -44,7 +44,9 @@ if ($duplicateIds.Count) {
 $requiredFeatureIds = @(
   'exportDialog', 'exportConfirmBtn', 'exportCancelBtn', 'exportDialogProgress',
   'includeExportMetadata', 'shapeScale', 'shapeScaleVal', 'rotationLevelDisplay',
-  'colorPresetsSection'
+  'colorPresetsSection', 'aboutBtn', 'aboutDialog', 'aboutCloseBtn', 'aboutVersion',
+  'googleMapsLink', 'innerOutlineEnabled', 'innerOutlineColor', 'innerOutlineWidth',
+  'saveProjectBtn', 'loadProjectBtn'
 )
 $missingFeatureIds = @($requiredFeatureIds | Where-Object { $_ -notin $ids })
 if ($missingFeatureIds.Count) {

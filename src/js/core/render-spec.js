@@ -14,6 +14,7 @@
       pitch: source.pitch || 0
     };
     const modelMaterials = Object.freeze({
+      base: '#8b5e3c',
       terrain: source.terrainEnabled ? source.mountainColor : layers.landColor,
       forest: layers.forestColor,
       landCover: layers.landCoverColor,

@@ -59,6 +59,29 @@
     return true;
   }
 
+  /** Groups forest colors into neutral and hue families, then orders their lightness. */
+  function forestColorKey(hex) {
+    const channels = [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255);
+    const [red, green, blue] = channels;
+    const maximum = Math.max(...channels), minimum = Math.min(...channels);
+    const chroma = maximum - minimum;
+    const lightness = (maximum + minimum) / 2;
+    if (chroma < 0.08) return [0, lightness, 0];
+    const hue = ((maximum === red ? (green - blue) / chroma : maximum === green ? 2 + (blue - red) / chroma : 4 + (red - green) / chroma) * 60 + 360) % 360;
+    const family = hue < 65 ? 1 : hue < 170 ? 2 : hue < 260 ? 3 : hue < 330 ? 4 : 5;
+    return [family, lightness, hue];
+  }
+
+  /** Sorts catalog entries by their actual forest colors without changing preset IDs. */
+  function compareForestColors(left, right) {
+    const leftKey = forestColorKey(left.values.forestColor);
+    const rightKey = forestColorKey(right.values.forestColor);
+    for (let index = 0; index < leftKey.length; index += 1) {
+      if (leftKey[index] !== rightKey[index]) return leftKey[index] - rightKey[index];
+    }
+    return left.name.localeCompare(right.name);
+  }
+
   function createService(catalog, presets) {
     const entries = new Map();
     catalog.forEach(entry => {
@@ -69,7 +92,7 @@
     });
 
     return Object.freeze({
-      list: () => [...entries.values()],
+      list: () => [...entries.values()].sort(compareForestColors),
       get: id => entries.get(id) || null,
       values: id => entries.get(id)?.values || null,
       validate: validatePreset,

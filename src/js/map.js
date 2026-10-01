@@ -27,6 +27,7 @@
       pitch: START_LOCATION.pitch || 0
     });
     window.CartivaMap = map;
+    CartivaWebGl.prepareMap(map);
     map.on('error', event => {
       const error = event.error || new Error('MapLibre reported an unknown error.');
       CartivaDiagnostics.report('map', error);
@@ -42,6 +43,13 @@
     }
     map.on('move', updateZoomLevelDisplay);
     map.on('move', renderMapAnnotations);
+    /** Keeps the external maps link aligned with the map center, even with labels hidden. */
+    function updateGoogleMapsLink() {
+      const center = map.getCenter();
+      $('googleMapsLink').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${center.lat.toFixed(6)},${center.lng.toFixed(6)}`)}`;
+    }
+    map.on('move', updateGoogleMapsLink);
+    updateGoogleMapsLink();
     map.on('movestart', () => globalThis.CartivaRefinedPreview?.hide());
     map.on('zoomend', () => {
       configureMapForRender(map, state);
@@ -405,7 +413,7 @@
       targetMap.setPaintProperty(TERRAIN_LAYER_ID, 'hillshade-highlight-color', shadeHex(terrainState.mountainColor, 80));
       targetMap.setPaintProperty(TERRAIN_LAYER_ID, 'hillshade-shadow-color', shadeHex(terrainState.mountainColor, -80));
       targetMap.setPaintProperty(TERRAIN_LAYER_ID, 'hillshade-accent-color', terrainState.mountainColor);
-      targetMap.setPaintProperty(TERRAIN_LAYER_ID, 'hillshade-exaggeration', terrainState.terrainEnabled ? terrainState.terrainExaggeration / 180 : 0);
+      targetMap.setPaintProperty(TERRAIN_LAYER_ID, 'hillshade-exaggeration', terrainState.terrainEnabled ? Math.max(0, Math.min(1, (Number(terrainState.terrainExaggeration) || 0) / 300)) : 0);
     }
 
     async function updateTerrainColorization(targetMap = map, terrainState = state) {

@@ -6,8 +6,8 @@
 // All basic app constants - as 1 object
 const APP = {
   NAME: "cartiva",
-  DESCRIPTION: "a small, self-contained creative cartography web-app",
-  VERSION: "2026.09.28.202800", // yyyy.mm.dd.HHMMSS
+  DESCRIPTION: "Create beautiful printable map art from any location in the world",
+  VERSION: "2026.10.01.120000", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
@@ -331,6 +331,9 @@ const DEFAULTS = Object.freeze({
       state.borderWidth = Number(readControl('borderWidth'));
       state.outerBorderRadius = Number(readControl('outerBorderRadius'));
       state.innerBorderRadius = Number(readControl('innerBorderRadius'));
+      state.innerOutlineEnabled = readControl('innerOutlineEnabled');
+      state.innerOutlineColor = readControl('innerOutlineColor');
+      state.innerOutlineWidth = Number(readControl('innerOutlineWidth'));
       CartivaLayerRegistry.controlIds.forEach(id => {
         state.layers[id] = readControl(id);
       });
@@ -464,6 +467,13 @@ const DEFAULTS = Object.freeze({
       mapFrame.style.backgroundColor = renderSpec.borderEnabled ? renderSpec.borderColor : '#ffffff';
       mapFrame.style.borderRadius = `${renderSpec.outerBorderRadius}px`;
       mapEl.style.borderRadius = `${renderSpec.innerBorderRadius}px`;
+      $('refinedMapPreview').style.borderRadius = mapEl.style.borderRadius;
+      const outline = $('innerBorderOutline');
+      outline.style.display = renderSpec.borderEnabled && renderSpec.innerOutlineEnabled ? 'block' : 'none';
+      outline.style.border = `${renderSpec.innerOutlineWidth}px solid ${renderSpec.innerOutlineColor}`;
+      outline.style.borderRadius = mapEl.style.borderRadius;
+      $('innerOutlineWidthVal').textContent = renderSpec.innerOutlineWidth;
+      $('innerOutlineColor').disabled = $('innerOutlineWidth').disabled = !renderSpec.innerOutlineEnabled;
       mapFrame.className = `map-frame ratio-${renderSpec.format}`;
       if (renderSpec.format === 'custom') mapFrame.style.aspectRatio = `${renderSpec.customWidthMm} / ${renderSpec.customHeightMm}`;
       else mapFrame.style.removeProperty('aspect-ratio');
@@ -511,11 +521,7 @@ const DEFAULTS = Object.freeze({
       if (shape === 'heart') return 'M 50 88 C 5 58 5 25 27 15 C 40 9 49 20 50 31 C 51 20 60 9 73 15 C 95 25 95 58 50 88 Z';
       if (shape === 'star') return 'M 50 8 L 61 36 L 91 38 L 68 57 L 76 88 L 50 70 L 24 88 L 32 57 L 9 38 L 39 36 Z';
       if (shape === 'house') return 'M 10 45 L 50 10 L 90 45 L 82 45 L 82 90 L 60 90 L 60 63 L 40 63 L 40 90 L 18 90 L 18 45 Z';
-      if (shape === 'spiral') return 'M 50 7 C 85 7 94 34 91 55 C 88 81 67 94 43 91 C 18 88 6 68 10 46 C 14 24 33 14 52 17 C 72 20 81 36 78 53 C 75 70 61 78 47 75 C 33 72 27 61 30 49 C 33 37 43 32 53 35 C 63 38 67 46 64 54 C 62 61 56 64 50 62 L 50 49 C 52 51 53 50 53 49 C 53 47 51 46 49 47 C 46 48 45 52 47 55 C 50 59 56 58 59 54 C 63 48 60 41 54 39 C 45 36 37 42 35 51 C 32 63 41 71 51 72 C 66 73 76 61 75 48 C 74 29 58 18 42 20 C 19 23 8 43 13 62 C 19 84 42 94 62 86 C 86 77 96 50 86 28 C 79 13 65 7 50 7 Z';
-      if (shape === 'peace') return 'M 50 8 A 42 42 0 1 1 49.99 8 Z M 44 20 L 56 20 L 56 56 L 79 79 L 70 87 L 50 67 L 30 87 L 21 79 L 44 56 Z';
-      if (shape === 'smiley') return 'M 50 8 A 42 42 0 1 1 49.99 8 Z M 31 32 A 6 6 0 1 1 30.99 32 Z M 69 32 A 6 6 0 1 1 68.99 32 Z M 25 57 C 31 81 69 81 75 57 L 64 57 C 59 68 41 68 36 57 Z';
       if (shape === 'diamond') return 'M 50 7 L 92 50 L 50 93 L 8 50 Z';
-      if (shape === 'hexagon') return 'M 27 10 L 73 10 L 94 50 L 73 90 L 27 90 L 6 50 Z';
       if (shape === 'cross') return 'M 35 8 L 65 8 L 65 35 L 92 35 L 92 65 L 65 65 L 65 92 L 35 92 L 35 65 L 8 65 L 8 35 L 35 35 Z';
       if (shape === 'cloud') return 'M 22 79 C 7 79 4 57 17 50 C 13 31 34 19 48 31 C 57 12 85 21 84 43 C 101 48 96 79 77 79 Z';
       return '';
@@ -666,9 +672,37 @@ const DEFAULTS = Object.freeze({
       const showControls = fineTuningControls.hidden;
       fineTuningControls.hidden = !showControls;
       fineTuningToggle.setAttribute('aria-expanded', String(showControls));
-      fineTuningToggle.textContent = showControls
-        ? 'Hide layer fine-tuning'
-        : 'Show layer fine-tuning';
+      fineTuningToggle.title = showControls ? 'Hide layer fine-tuning' : 'Show layer fine-tuning';
+    });
+
+    $('aboutDescription').textContent = APP.DESCRIPTION;
+    $('aboutVersion').textContent = APP.VERSION;
+    $('aboutGithubLink').href = APP.GITHUBLINK;
+    $('aboutBtn').addEventListener('click', () => $('aboutDialog').showModal());
+    $('aboutCloseBtn').addEventListener('click', () => $('aboutDialog').close());
+    $('aboutDialog').addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        $('aboutDialog').close();
+      }
+    });
+
+    /** Records committed control changes and command activations without logging file contents. */
+    function logInteraction(event) {
+      const element = event.target.closest('button, a, input, select, [role="button"]');
+      if (!element || (event.type === 'click' && element.matches('input, select'))) return;
+      if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
+      CartivaDiagnostics.record('ui.interaction', 'User activated a control.', {
+        element: element.id || element.getAttribute('aria-label') || element.textContent.trim(),
+        action: event.type,
+        value: element.type === 'checkbox' ? element.checked : element.type === 'file' ? undefined : element.value,
+        label: element.getAttribute('aria-label') || element.title || undefined
+      });
+    }
+    document.addEventListener('click', logInteraction);
+    document.addEventListener('change', logInteraction);
+    document.addEventListener('keydown', event => {
+      if (event.target.matches('[role="button"]')) logInteraction(event);
     });
 
 
