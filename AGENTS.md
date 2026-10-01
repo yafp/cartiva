@@ -18,7 +18,30 @@ The idea is to use
 ## Coding Standards
 - Language is english
 - Comments should be added where-ever it makes sense to ensure new people can easily contribute
-- Create JSdoc headers for all JavaScript functions
+- Create JSdoc headers for all JavaScript functions - following this example
+`
+/**
+ * Renders a custom map tile grid based on the provided configuration options.
+ * 
+ * @async
+ * @function renderTileGrid
+ * @param {Object} options - Configuration options for the rendering engine.
+ * @param {string} options.projection - The target map projection format (e.g., 'EPSG:3857').
+ * @param {number} [options.zoom=10] - Initial zoom level for the generated tiles.
+ * @param {string[]} [options.layers=['base']] - An array of active layer identifiers.
+ * @param {TileProgressCallback} [onProgress] - Optional callback reporting rendering progress.
+ * @returns {Promise<HTMLCanvasElement>} A promise resolving to the fully rendered canvas element.
+ * @throws {TypeError} Throws an error if the projection string is invalid or missing.
+ * @example
+ * const canvas = await renderTileGrid({
+ *   projection: 'EPSG:3857',
+ *   zoom: 12,
+ *   layers: ['base', 'labels']
+ * }, (progress) => {
+ *   console.log(`Rendering: ${progress}%`);
+ * });
+ */
+ `
 - Code should always follow best practice - and be designed in a scale-able way
 - Ensure all relevant parts are logged as well - using the logging framework in use
 
