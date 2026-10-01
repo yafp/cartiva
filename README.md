@@ -1,3 +1,5 @@
+![GitHub Download All releases](https://img.shields.io/github/downloads/yafp/cartiva/total.svg)
+
 # cartiva
 Create beautiful printable map art from any location in the world.
 
