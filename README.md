@@ -1,18 +1,9 @@
 # cartiva
 Create beautiful printable map art from any location in the world.
-
 Generate customized map posters with terrain, colors, labels, annotations and export them as high-resolution images or 3D-printable models.
 
 You can find a **live demo** of the latest released version on [Github Pages](https://yafp.github.io/cartiva/index.html)
 
-## Examples
-![Cartiva Screenshot Prague](https://github.com/yafp/cartiva/blob/main/.github/examples/cartiva_PRAGUE_300dpi.png)
-![Cartiva Screenshot Copenhagen](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_COPENHAGEN_300dpi.png)
-![Cartiva Screenshot Hamburg](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_HAMBURG_300dpi.png)
-![Cartiva Screenshot Heidelberg](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_HEIDELBERG_300dpi.png)
-
-
-## What is cartiva?
 cartiva is a browser-based cartography tool that allows you to:
 
 - Search for any location worldwide
@@ -23,6 +14,14 @@ cartiva is a browser-based cartography tool that allows you to:
 - Save and reload projects
 
 No installation required.
+
+## Examples
+![Cartiva Screenshot Prague](https://github.com/yafp/cartiva/blob/main/.github/examples/cartiva_PRAGUE_300dpi.png)
+![Cartiva Screenshot Copenhagen](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_COPENHAGEN_300dpi.png)
+![Cartiva Screenshot Hamburg](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_HAMBURG_300dpi.png)
+![Cartiva Screenshot Heidelberg](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_HEIDELBERG_300dpi.png)
+
+
 
 
 ## Usage
