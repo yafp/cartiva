@@ -3,18 +3,9 @@ Create beautiful printable map art from any location in the world.
 
 Generate customized map posters with terrain, colors, labels, annotations and export them as high-resolution images or 3D-printable models.
 
-
-
-
-## Demo
-You can find a live demo of the latest released version on [Github Pages](https://yafp.github.io/cartiva/index.html)
+You can find a **live demo** of the latest released version on [Github Pages](https://yafp.github.io/cartiva/index.html)
 
 ## Examples
-
-<p align="center">
-https://github.com/yafp/cartiva/blob/main/.github/examples/cartiva_PRAGUE_300dpi.png
-<img src="./docs/images/cartiva-demo- </a>
-</p>
 
 ![Cartiva Screenshot Prague](https://github.com/yafp/cartiva/blob/main/.github/examples/cartiva_PRAGUE_300dpi.png)
 ![Cartiva Screenshot Copenhagen](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_COPENHAGEN_300dpi.png)
