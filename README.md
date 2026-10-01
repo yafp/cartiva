@@ -25,18 +25,18 @@ No installation required.
 
 
 
-## Usage
+## Getting started
+### As a service
+Just use the demo on [Github Pages](https://yafp.github.io/cartiva/index.html)
+
 ### Locally
 - Download [latest release](https://github.com/yafp/cartiva/releases)
 - Extract
 - Double-click the .html file within the `src` folder
 
-### As a service
-Just use the demo linked above.
 
-
-## History
-Inspired by [Urbanmapdesign.com](https://www.urbanmapdesign.com).
+## History & References
+- Inspired by [Urbanmapdesign.com](https://www.urbanmapdesign.com).
 
 ## Developers
 ### Structure
