@@ -1,40 +1,131 @@
-# About: This action ensures that the latest github release gets pushed to github-pages https://yafp.github.io/cartiva/ - to act as demo
+# About:
+# Deploys the latest published release of Cartiva to GitHub Pages.
 #
-name: Deploy Release to GitHub Pages
+# The deployment contains:
+#   - The application from /src at the root of the GitHub Pages site
+#   - Generated JSDoc documentation under /docs/js
+#
+# Published URLs:
+#   Application: https://yafp.github.io/cartiva/
+#   JSDoc:      https://yafp.github.io/cartiva/docs/js/
+
+name: Deploy Release and JSDoc to GitHub Pages
 
 on:
+  # Automatically run when a new GitHub release is published.
   release:
-    types: [published]
+    types:
+      - published
 
+  # Allow the workflow to be run manually.
+  # When started manually, it deploys the selected branch or tag.
   workflow_dispatch:
 
+# Ensure that only one GitHub Pages deployment runs at a time.
+# If another deployment starts, the older running deployment is cancelled.
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+# Permissions required for reading the repository and deploying to GitHub Pages.
 permissions:
   contents: read
   pages: write
   id-token: write
 
 jobs:
-  deploy:
+  build:
+    name: Build application and documentation
     runs-on: ubuntu-latest
+
+    steps:
+      # For a release event, check out the exact released tag.
+      # For a manual run, check out the branch or tag selected in the GitHub UI.
+      - name: Checkout released version
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      # Node.js is required to run JSDoc.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Create a temporary directory containing the complete Pages website.
+      #
+      # The contents of /src are copied to the root of /_site so that
+      # the Cartiva application remains available at:
+      # https://yafp.github.io/cartiva/
+      - name: Prepare GitHub Pages website
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf _site
+          mkdir -p _site
+
+          cp -R src/. _site/
+
+      # Generate the documentation directly inside the temporary Pages website.
+      #
+      # The generated JSDoc index will consequently be available at:
+      # https://yafp.github.io/cartiva/docs/js/
+      - name: Generate JSDoc documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          npx --yes jsdoc@4 src/js \
+            --recurse \
+            --destination _site/docs/js
+
+      # Prevent GitHub Pages from processing the uploaded website with Jekyll.
+      - name: Disable Jekyll processing
+        shell: bash
+        run: |
+          touch _site/.nojekyll
+
+      # Verify that both the application and JSDoc entry pages exist.
+      # The workflow stops here if either output is missing.
+      - name: Validate generated website
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f _site/index.html
+          test -f _site/docs/js/index.html
+
+          echo "Application entry point:"
+          ls -la _site/index.html
+
+          echo "JSDoc entry point:"
+          ls -la _site/docs/js/index.html
+
+      # Configure metadata required for GitHub Pages.
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      # Upload the complete website as one GitHub Pages artifact.
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "./_site"
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+
+    # Do not start deployment until the build job has successfully completed.
+    needs:
+      - build
 
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout released version
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.release.tag_name }}
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload website
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: './src'
-
-      - name: Deploy to GitHub Pages
+      # Deploy the artifact uploaded by the build job.
+      - name: Deploy application and documentation
         id: deployment
         uses: actions/deploy-pages@v4
