@@ -19,6 +19,7 @@ The idea is to use
 - Language is english
 - Comments should be added where-ever it makes sense to ensure new people can easily contribute
 - Create JSdoc headers for all JavaScript functions - following this example
+
 `
 /**
  * Renders a custom map tile grid based on the provided configuration options.
@@ -41,7 +42,8 @@ The idea is to use
  *   console.log(`Rendering: ${progress}%`);
  * });
  */
- `
+`
+
 - Code should always follow best practice - and be designed in a scale-able way
 - Ensure all relevant parts are logged as well - using the logging framework in use
 
