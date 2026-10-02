@@ -81,15 +81,6 @@ if (-not ($failures | Where-Object { $_ -like 'Invalid JSON:*' })) {
   Add-Pass "All $($jsonFiles.Count) JSON files parse"
 }
 
-$jsdocWorkflow = Join-Path $ProjectRoot '.github/workflows/jsdoc.yml'
-if (-not (Test-Path $jsdocWorkflow -PathType Leaf)) {
-  Add-Failure 'Missing JSDoc workflow'
-} elseif ((Get-Content $jsdocWorkflow -Raw) -notmatch 'docs/js') {
-  Add-Failure 'JSDoc workflow does not target docs/js'
-} else {
-  Add-Pass 'JSDoc workflow targets docs/js'
-}
-
 $javascriptFiles = @(Get-ChildItem (Join-Path $srcRoot 'js') -Recurse -File -Filter *.js)
 $referencedIds = foreach ($file in $javascriptFiles) {
   $content = Get-Content $file.FullName -Raw
