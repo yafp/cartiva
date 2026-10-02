@@ -17,4 +17,4 @@ jobs:
         uses: actions/checkout@v4
       - name: Validate project structure
         shell: pwsh
-        run: ./scripts/Test-cartiva.ps1
+        run: ./tests/Test-cartiva.ps1
