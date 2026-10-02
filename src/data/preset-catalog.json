@@ -12,20 +12,8 @@
     "name": "Arctic Badlands"
   },
   {
-    "id": "autumn",
-    "name": "Autumn Rust"
-  },
-  {
-    "id": "baroque",
-    "name": "Baroque Gold"
-  },
-  {
     "id": "blueprint",
     "name": "Blueprint / Technical"
-  },
-  {
-    "id": "bordeaux",
-    "name": "Bordeaux Wine"
   },
   {
     "id": "burnished-delta",
@@ -36,20 +24,12 @@
     "name": "Canyon Red Rock"
   },
   {
-    "id": "celadon",
-    "name": "Celadon Breeze"
-  },
-  {
     "id": "chalkboard",
     "name": "Chalkboard Dark"
   },
   {
     "id": "cherry",
     "name": "Cherry Blossom"
-  },
-  {
-    "id": "citrus",
-    "name": "Citrus Punch"
   },
   {
     "id": "cloud-delta",
@@ -92,28 +72,12 @@
     "name": "Deep Archipelago"
   },
   {
-    "id": "desert",
-    "name": "Desert Sand"
-  },
-  {
     "id": "electric-highlands",
     "name": "Electric Highlands"
   },
   {
-    "id": "emerald",
-    "name": "Emerald Forest"
-  },
-  {
-    "id": "fern",
-    "name": "Fern Canopy"
-  },
-  {
     "id": "fiesta",
     "name": "Fiesta Vibrant"
-  },
-  {
-    "id": "forestmist",
-    "name": "Forest Mist"
   },
   {
     "id": "frostbite",
@@ -128,24 +92,12 @@
     "name": "Glacial Ice"
   },
   {
-    "id": "glacier",
-    "name": "Glacier Blue"
-  },
-  {
     "id": "granite",
     "name": "Granite Stone"
   },
   {
-    "id": "harvest",
-    "name": "Harvest Moon"
-  },
-  {
     "id": "hazelnut",
     "name": "Hazelnut Earth"
-  },
-  {
-    "id": "honey",
-    "name": "Honey Amber"
   },
   {
     "id": "horizon",
@@ -164,10 +116,6 @@
     "name": "Lagoon Teal"
   },
   {
-    "id": "lavender",
-    "name": "Lavender Mist"
-  },
-  {
     "id": "positron",
     "name": "Light Positron"
   },
@@ -182,10 +130,6 @@
   {
     "id": "midnight",
     "name": "Midnight Purple"
-  },
-  {
-    "id": "minimalgrey",
-    "name": "Minimal Grey"
   },
   {
     "id": "mocha",
@@ -206,14 +150,6 @@
   {
     "id": "opal-archipelago",
     "name": "Opal Archipelago"
-  },
-  {
-    "id": "orchid",
-    "name": "Orchid Bloom"
-  },
-  {
-    "id": "parchment",
-    "name": "Parchment Scroll"
   },
   {
     "id": "pasteldream",
@@ -240,10 +176,6 @@
     "name": "Quiet Highlands"
   },
   {
-    "id": "radiant-archipelago",
-    "name": "Radiant Archipelago"
-  },
-  {
     "id": "redwood",
     "name": "Redwood Timber"
   },
@@ -260,10 +192,6 @@
     "name": "Steampunk Brass"
   },
   {
-    "id": "sunset",
-    "name": "Sunset Glow"
-  },
-  {
     "id": "synthwave",
     "name": "Synthwave 80s"
   },
@@ -272,16 +200,8 @@
     "name": "Tundra Frost"
   },
   {
-    "id": "velvet-delta",
-    "name": "Velvet Delta"
-  },
-  {
     "id": "warmvintage",
     "name": "Warm Vintage Sepia"
-  },
-  {
-    "id": "wild-archipelago",
-    "name": "Wild Archipelago"
   },
   {
     "id": "aero-blue",
@@ -292,24 +212,8 @@
     "name": "Alabaster Coast"
   },
   {
-    "id": "amber-harbor",
-    "name": "Amber Harbor"
-  },
-  {
-    "id": "apricot-bay",
-    "name": "Apricot Bay"
-  },
-  {
-    "id": "ash-lagoon",
-    "name": "Ash Lagoon"
-  },
-  {
     "id": "birch-inlet",
     "name": "Birch Inlet"
-  },
-  {
-    "id": "blush-marina",
-    "name": "Blush Marina"
   },
   {
     "id": "bronze-cove",
@@ -320,16 +224,8 @@
     "name": "Cedar Sound"
   },
   {
-    "id": "clay-shore",
-    "name": "Clay Shore"
-  },
-  {
     "id": "cream-fjord",
     "name": "Cream Fjord"
-  },
-  {
-    "id": "denim-bay",
-    "name": "Denim Bay"
   },
   {
     "id": "eucalyptus-port",
@@ -344,24 +240,12 @@
     "name": "Graphite Coast"
   },
   {
-    "id": "heather-bay",
-    "name": "Heather Bay"
-  },
-  {
     "id": "linen-lagoon",
     "name": "Linen Lagoon"
   },
   {
-    "id": "mango-inlet",
-    "name": "Mango Inlet"
-  },
-  {
     "id": "mauve-harbor",
     "name": "Mauve Harbor"
-  },
-  {
-    "id": "mint-sound",
-    "name": "Mint Sound"
   },
   {
     "id": "mossy-cove",
@@ -372,24 +256,12 @@
     "name": "Oatmeal Bay"
   },
   {
-    "id": "ochre-port",
-    "name": "Ochre Port"
-  },
-  {
     "id": "paper-fjord",
     "name": "Paper Fjord"
   },
   {
     "id": "peach-coast",
     "name": "Peach Coast"
-  },
-  {
-    "id": "pine-marina",
-    "name": "Pine Marina"
-  },
-  {
-    "id": "plum-inlet",
-    "name": "Plum Inlet"
   },
   {
     "id": "porcelain-bay",
@@ -406,18 +278,6 @@
   {
     "id": "sandstone-sound",
     "name": "Sandstone Sound"
-  },
-  {
-    "id": "seafoam-coast",
-    "name": "Seafoam Coast"
-  },
-  {
-    "id": "shell-lagoon",
-    "name": "Shell Lagoon"
-  },
-  {
-    "id": "smoke-bay",
-    "name": "Smoke Bay"
   },
   {
     "id": "spruce-inlet",
@@ -440,26 +300,6 @@
     "name": "Umber Bay"
   },
   {
-    "id": "vanilla-port",
-    "name": "Vanilla Port"
-  },
-  {
-    "id": "willow-fjord",
-    "name": "Willow Fjord"
-  },
-  {
-    "id": "winter-harbor",
-    "name": "Winter Harbor"
-  },
-  {
-    "id": "wisteria-coast",
-    "name": "Wisteria Coast"
-  },
-  {
-    "id": "woodland-bay",
-    "name": "Woodland Bay"
-  },
-  {
     "id": "zinc-marina",
     "name": "Zinc Marina"
   },
@@ -470,18 +310,6 @@
   {
     "id": "coral-harbor",
     "name": "Coral Harbor"
-  },
-  {
-    "id": "fern-coast",
-    "name": "Fern Coast"
-  },
-  {
-    "id": "lilac-bay",
-    "name": "Lilac Bay"
-  },
-  {
-    "id": "pebble-port",
-    "name": "Pebble Port"
   },
   {
     "id": "kandinsky",
