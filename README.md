@@ -9,10 +9,6 @@
 # cartiva
 Create beautiful printable map art from any location in the world.
 
-Generate customized map posters with terrain, colors, labels, annotations and export them as high-resolution images or 3D-printable models.
-
-You can find a **live demo** of the latest released version on [Github Pages](https://yafp.github.io/cartiva/index.html)
-
 **cartiva** is a browser-based cartography tool that allows you to:
 
 - Search for any location worldwide
@@ -21,6 +17,8 @@ You can find a **live demo** of the latest released version on [Github Pages](ht
 - Export high-resolution artwork
 - Create STL and 3MF files for 3D printing
 - Save and reload projects
+
+You can find a **live demo** of the latest released version on [Github Pages](https://yafp.github.io/cartiva/index.html)
 
 No installation required.
 
@@ -44,36 +42,10 @@ Just use the demo on [Github Pages](https://yafp.github.io/cartiva/index.html)
 
 
 ## History & References
+- Started in 2026.08
 - Inspired by [Urbanmapdesign.com](https://www.urbanmapdesign.com).
 
 ## Developers
-### Structure
-
-- `src/index.html` contains the application markup.
-- `src/cartiva.css` contains all presentation styles.
-- `src/js/preset-data.js` contains the palette catalog and normalized preset data.
-- `src/data/preset-catalog.json` contains the editable preset display catalog; the JS data module remains as a direct-file-compatible runtime fallback for palette values.
-- `src/js/app.js` is the small composition root loaded after the feature runtimes.
-- `src/js/ui.js` owns persistent design state, delegated form handling, preview rendering, labels, and layout controls.
-- `src/js/ui/projects.js` owns project file and GeoJSON actions.
-- `src/js/ui/shortcuts.js` owns global keyboard commands.
-- `src/js/map.js` owns MapLibre initialization, map layers, terrain, annotations, and map interactions.
-- `src/js/location.js` owns search, reverse geocoding, and location persistence.
-- `src/js/export.js` owns image rendering and the shared terrain/mesh algorithms.
-- `src/js/export/model-export.js` owns STL and 3MF export orchestration.
-- `src/js/export/shared.js` owns downloads, metadata, timestamps, and binary checksums.
-- `src/js/pdf-exporter.js` owns the PDF worker adapter.
-- `src/js/core/runtime-state.js` contains transient timers, controllers, and active operations that are never persisted.
-- `src/js/core/render-spec.js` creates the immutable render specification shared by preview, image, STL, and 3MF rendering.
-- `src/js/core/operations.js` provides consistent logging, status, control state, failure handling, and cleanup for asynchronous operations.
-- `src/js/core/` also contains project persistence, caching, diagnostics, and external service configuration.
-- `src/js/map/layer-registry.js` owns MapLibre style-layer role detection.
-- `src/js/map/style-adapter.js` normalizes provider layers into application roles.
-- `src/js/services/geocoder.js` owns the Nominatim network boundary.
-- `src/js/presets/preset-service.js` validates and exposes preset data.
-- `src/js/export/export-contract.js` defines the serializable export request shape.
-- `src/js/export-worker.js` contains the PDF encoding worker.
-
 ### JSDoc documentation
 On each version release an action is re-generating the JSDoc files under
 - https://yafp.github.io/cartiva/docs/js/
