@@ -15,7 +15,7 @@ const APP = {
 // Init some values in the UI with constants
 // 
 // Tab title
-document.title = `${APP.NAME} - ${APP.DESCRIPTION} - v${APP.VERSION}`;
+document.title = `${APP.NAME} - ${APP.DESCRIPTION}`;
 
 // AppName
 const heading = document.getElementById('appName');
