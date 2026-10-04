@@ -1,6 +1,7 @@
-![GitHub License](https://img.shields.io/github/license/yafp/cartiva.svg)
+License: ![GitHub License](https://img.shields.io/github/license/yafp/cartiva.svg)
 
 Code: ![GitHub Issues Open](https://img.shields.io/github/issues-raw/yafp/cartiva.svg?style=flat) ![GitHub Last Commit](https://img.shields.io/github/last-commit/yafp/cartiva.svg?style=flat)
+
 Release: ![GitHub Current Release](https://img.shields.io/github/release/yafp/cartiva.svg?style=flat) ![GitHub Release Date](https://img.shields.io/github/release-date/yafp/cartiva.svg?style=flat)
 
 # cartiva
