@@ -7,7 +7,7 @@
 const APP = {
   NAME: "cartiva",
   DESCRIPTION: "Create beautiful printable map art from any location in the world",
-  VERSION: "2026.10.01.120000", // yyyy.mm.dd.HHMMSS
+  VERSION: "2026.10.04.172500", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
