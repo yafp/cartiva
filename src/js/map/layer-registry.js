@@ -9,7 +9,7 @@
     boundary: ['boundary'],
     building: ['building']
   });
-  const order = Object.freeze(['land', 'water', 'forest', 'landCover', 'terrain', 'road', 'boundary', 'building']);
+  const order = Object.freeze(['land', 'forest', 'landCover', 'water', 'terrain', 'road', 'boundary', 'building']);
   const definitions = Object.freeze([
     Object.freeze({ role: 'water', toggleId: 'waterToggle', colorId: 'waterColor', opacityId: 'waterOpacity', valueId: 'waterOpacityVal', featureKey: 'water', featureLimit: 4000, material: 'water' }),
     Object.freeze({ role: 'forest', toggleId: 'forestToggle', colorId: 'forestColor', accentColorId: 'forestColorAccent', opacityId: 'forestOpacity', valueId: 'forestOpacityVal', featureKey: 'forest', featureLimit: 4000, material: 'forest' }),

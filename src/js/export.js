@@ -48,9 +48,20 @@
     const exportCancelBtn = document.getElementById('exportCancelBtn');
     const exportDialogCloseBtn = document.getElementById('exportDialogCloseBtn');
 
+    function selectExportTab(models) {
+      $('exportImagesPanel').hidden = models;
+      $('exportModelsPanel').hidden = !models;
+      $('exportImagesTab').setAttribute('aria-selected', String(!models));
+      $('exportModelsTab').setAttribute('aria-selected', String(models));
+      $('exportConfirmBtn').hidden = models;
+    }
+    $('exportImagesTab').addEventListener('click', () => selectExportTab(false));
+    $('exportModelsTab').addEventListener('click', () => selectExportTab(true));
+
     exportBtn.addEventListener('click', () => {
       updateOutputDimensions();
       setStatus('');
+      selectExportTab(false);
       exportDialog.showModal();
     });
     [exportCancelBtn, exportDialogCloseBtn].forEach(button => {
@@ -690,6 +701,7 @@
         pitch: exportState.pitch
       });
       await updateTerrainColorization(exportMap, exportState);
+      if (exportState.contourEnabled) await updateContours(exportMap, exportState);
       await waitForMapIdle(exportMap);
       if (!options.fullWidth) compareRenderBounds(exportMap, exportState);
       return { exportMap, container };

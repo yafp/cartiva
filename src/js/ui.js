@@ -7,7 +7,7 @@
 const APP = {
   NAME: "cartiva",
   DESCRIPTION: "Create beautiful printable map art from any location",
-  VERSION: "2026.10.04.172500", // yyyy.mm.dd.HHMMSS
+  VERSION: "2026.10.05.190000", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
@@ -95,7 +95,32 @@ function getRandomStarterCity() {
   return STARTER_CITIES[Math.floor(Math.random() * STARTER_CITIES.length)];
 }
 
-const START_LOCATION = getStoredLocation() || getRandomStarterCity();
+const urlParams = new URLSearchParams(window.location.search);
+const urlLat = Number(urlParams.get('lat'));
+const urlLng = Number(urlParams.get('lng'));
+const urlZoom = Number(urlParams.get('zoom'));
+const urlRotation = Number(urlParams.get('rotation'));
+const hasSharedLocation = ['lat', 'lng', 'zoom', 'rotation'].every(key => urlParams.has(key))
+  && Number.isFinite(urlLat) && Math.abs(urlLat) <= 85
+  && Number.isFinite(urlLng) && Math.abs(urlLng) <= 180
+  && Number.isFinite(urlZoom) && urlZoom >= 0 && urlZoom <= 22
+  && Number.isFinite(urlRotation);
+const START_LOCATION = hasSharedLocation
+  ? { city: 'MAP LOCATION', country: '', center: [urlLng, urlLat], zoom: urlZoom, bearing: urlRotation, pitch: 0 }
+  : getStoredLocation() || getRandomStarterCity();
+
+/** Keeps share links aligned with the latest camera and selected catalog preset. */
+function updateShareUrl() {
+  if (!map) return;
+  const center = map.getCenter();
+  const url = new URL(window.location.href);
+  url.searchParams.set('lat', center.lat.toFixed(6));
+  url.searchParams.set('lng', center.lng.toFixed(6));
+  url.searchParams.set('zoom', map.getZoom().toFixed(2));
+  url.searchParams.set('rotation', map.getBearing().toFixed(2));
+  url.searchParams.set('preset', state.preset || DEFAULTS.preset);
+  history.replaceState(null, '', url);
+}
 
 
 /**
@@ -156,7 +181,7 @@ if (shareBtn && sharingSupported) {
   shareBtn.addEventListener('click', async () => {
     try {
       // Must run directly within the click handler to preserve user activation.
-      await navigator.share(shareData);
+      await navigator.share({ ...shareData, url: window.location.href });
     } catch (error) {
       // AbortError means the user intentionally closed the native share dialog.
       if (error.name !== 'AbortError') {
@@ -195,6 +220,7 @@ const DEFAULTS = Object.freeze({
       shapeScale: 100,
       includeExportMetadata: false,
       terrainEnabled: false,
+      contourEnabled: false,
       mountainColor: '#64748b',
       terrainExaggeration: 100,
       stlBuildingsEnabled: true,
@@ -320,6 +346,7 @@ const DEFAULTS = Object.freeze({
       state.shapeScale = Number(readControl('shapeScale'));
       state.includeExportMetadata = readControl('includeExportMetadata');
       state.terrainEnabled = readControl('terrainToggle');
+      state.contourEnabled = readControl('contourToggle');
       state.mountainColor = readControl('mountainColor');
       state.terrainExaggeration = Number(readControl('terrainExaggeration'));
       state.stlBuildingsEnabled = readControl('stlBuildingsToggle');
@@ -390,156 +417,6 @@ const DEFAULTS = Object.freeze({
     }
 
 
-// -----------------------------------------------------------------------------
-// CONTRAST & ACCESSIBILITY
-// relativeLuminance: WCAG-style luminance calculation for a hex color.
-// updateContrastWarning: compute text/background contrast and show warning.
-// -----------------------------------------------------------------------------
-    function relativeLuminance(hex) {
-      const channels = [1, 3, 5].map(index => {
-        const value = parseInt(hex.slice(index, index + 2), 16) / 255;
-        return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-      });
-      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-    }
-
-    function updateContrastWarning() {
-      const background = relativeLuminance(state.labelBgColor);
-      const ratios = [state.labelTextColor, state.labelCoordColor, state.labelCountryColor].map(color => {
-        const foreground = relativeLuminance(color);
-        return (Math.max(background, foreground) + 0.05) / (Math.min(background, foreground) + 0.05);
-      });
-      const minimum = Math.min(...ratios);
-      const warning = $('contrastWarning');
-      const passes = minimum >= 4.5 || state.labelStyle === 'none' || state.labelOpacity < 50;
-      warning.textContent = passes
-        ? `Text contrast: ${minimum.toFixed(1)}:1`
-        : `Low text contrast: ${minimum.toFixed(1)}:1 (aim for 4.5:1)`;
-      warning.classList.toggle('good', passes);
-    }
-
-
-// -----------------------------------------------------------------------------
-// PREVIEW RENDERING
-// Applies current state to the live preview:
-// - CSS filters on map
-// - Label overlay visibility, colors, font, background
-// - Border/frame styles and shape mask
-// - Map annotations (scale/north), text filters, dimensions, contrast warning
-// -----------------------------------------------------------------------------
-    function renderPreview() {
-      if (!runtimeState.mapReady) return;
-      globalThis.CartivaRefinedPreview?.hide();
-      const renderSpec = CartivaRenderSpec.create(state);
-      contrastNum.textContent = renderSpec.contrast;
-      brightnessNum.textContent = renderSpec.brightness;
-      saturationNum.textContent = renderSpec.saturation;
-      $('shapeScaleVal').textContent = renderSpec.shapeScale;
-      mapEl.style.filter = `contrast(${renderSpec.contrast}%) brightness(${renderSpec.brightness}%) saturate(${renderSpec.saturation}%)`;
-      $('refinedMapPreview').style.filter = mapEl.style.filter;
-      opacityNum.textContent = renderSpec.labelOpacity;
-      mapLabelOverlay.style.display = renderSpec.labelStyle === 'none' ? 'none' : 'block';
-      if (renderSpec.labelStyle !== 'none') {
-        mapLabelOverlay.className = `map-label-overlay ${renderSpec.labelStyle}`;
-        mapLabelOverlay.style.fontFamily = renderSpec.labelFont;
-        const hex = renderSpec.labelBgColor;
-        const alpha = renderSpec.labelOpacity / 100;
-        const rgb = [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16));
-        mapLabelOverlay.style.backgroundColor = renderSpec.labelStyle === 'special-minimal'
-          ? 'transparent'
-          : `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
-        cityNameEl.style.color = renderSpec.labelTextColor;
-        cityCoordsEl.style.color = renderSpec.labelCoordColor;
-        cityCountryEl.style.color = renderSpec.labelCountryColor;
-        [cityNameEl, cityCoordsEl, cityCountryEl].forEach(element => {
-          element.style.fontFamily = renderSpec.labelFont;
-        });
-      }
-      borderWidthVal.textContent = renderSpec.borderWidth;
-      $('outerBorderRadiusVal').textContent = renderSpec.outerBorderRadius;
-      $('innerBorderRadiusVal').textContent = renderSpec.innerBorderRadius;
-      borderUiItems.forEach(item => {
-        item.style.display = renderSpec.borderEnabled ? 'flex' : 'none';
-      });
-      mapFrame.style.border = renderSpec.borderEnabled
-        ? `${renderSpec.borderWidth}px solid ${renderSpec.borderColor}`
-        : 'none';
-      mapFrame.style.backgroundColor = renderSpec.borderEnabled ? renderSpec.borderColor : '#ffffff';
-      mapFrame.style.borderRadius = `${renderSpec.outerBorderRadius}px`;
-      mapEl.style.borderRadius = `${renderSpec.innerBorderRadius}px`;
-      $('refinedMapPreview').style.borderRadius = mapEl.style.borderRadius;
-      const outline = $('innerBorderOutline');
-      outline.style.display = renderSpec.borderEnabled && renderSpec.innerOutlineEnabled ? 'block' : 'none';
-      outline.style.border = `${renderSpec.innerOutlineWidth}px solid ${renderSpec.innerOutlineColor}`;
-      outline.style.borderRadius = mapEl.style.borderRadius;
-      $('innerOutlineWidthVal').textContent = renderSpec.innerOutlineWidth;
-      $('innerOutlineColor').disabled = $('innerOutlineWidth').disabled = !renderSpec.innerOutlineEnabled;
-      mapFrame.className = `map-frame ratio-${renderSpec.format}`;
-      if (renderSpec.format === 'custom') mapFrame.style.aspectRatio = `${renderSpec.customWidthMm} / ${renderSpec.customHeightMm}`;
-      else mapFrame.style.removeProperty('aspect-ratio');
-      document.body.classList.toggle('guides-visible', renderSpec.guidesEnabled);
-      const safeGuide = mapFrame.querySelector('.safe-guide');
-      if (safeGuide) safeGuide.style.inset = `${Math.max(0, renderSpec.safeMm)}mm`;
-      renderShapeMask(renderSpec);
-      renderMapAnnotations();
-      applyMapState(map, renderSpec);
-      updateOutputDimensions();
-      updateContrastWarning();
-      schedulePreviewRenderSync();
-    }
-
-
-// -----------------------------------------------------------------------------
-// UI UPDATE WRAPPER
-// Sync state from controls, then re-render preview.
-// -----------------------------------------------------------------------------
-    function updateStateFromControls() {
-      syncStateFromControls();
-      renderPreview();
-    }
-
-
-// -----------------------------------------------------------------------------
-// SHAPE MASKS
-// getShapePath: create scaled Path2D for a shape.
-// getShapeSvgPath: SVG path strings for various shapes (100 x 100 viewBox).
-// renderShapeMask: show/hide and configure the SVG shape mask overlay.
-// -----------------------------------------------------------------------------
-    function getShapePath(shape, width, height, scalePercent = 100) {
-      const svgPath = getShapeSvgPath(shape);
-      const path = new Path2D(svgPath);
-      const scale = Math.max(0.25, Math.min(1, Number(scalePercent) / 100));
-      const transform = new DOMMatrix([
-        width / 100 * scale, 0, 0, height / 100 * scale,
-        width / 2 * (1 - scale), height / 2 * (1 - scale)
-      ]);
-      return new Path2D(path, transform);
-    }
-
-    function getShapeSvgPath(shape) {
-      if (shape === 'circle') return 'M 50 10 A 40 40 0 1 1 49.99 10 Z';
-      if (shape === 'heart') return 'M 50 88 C 5 58 5 25 27 15 C 40 9 49 20 50 31 C 51 20 60 9 73 15 C 95 25 95 58 50 88 Z';
-      if (shape === 'star') return 'M 50 8 L 61 36 L 91 38 L 68 57 L 76 88 L 50 70 L 24 88 L 32 57 L 9 38 L 39 36 Z';
-      if (shape === 'house') return 'M 10 45 L 50 10 L 90 45 L 82 45 L 82 90 L 60 90 L 60 63 L 40 63 L 40 90 L 18 90 L 18 45 Z';
-      if (shape === 'diamond') return 'M 50 7 L 92 50 L 50 93 L 8 50 Z';
-      if (shape === 'cross') return 'M 35 8 L 65 8 L 65 35 L 92 35 L 92 65 L 65 65 L 65 92 L 35 92 L 35 65 L 8 65 L 8 35 L 35 35 Z';
-      if (shape === 'cloud') return 'M 22 79 C 7 79 4 57 17 50 C 13 31 34 19 48 31 C 57 12 85 21 84 43 C 101 48 96 79 77 79 Z';
-      return '';
-    }
-
-    function renderShapeMask(renderSpec = CartivaRenderSpec.create(state)) {
-      const mask = $('shapeMask');
-      if (renderSpec.shape === 'none') {
-        mask.style.display = 'none';
-        return;
-      }
-      mask.style.display = 'block';
-      $('shapeCutoutPath').setAttribute('d', getShapeSvgPath(renderSpec.shape));
-      const scale = Math.max(0.25, Math.min(1, Number(renderSpec.shapeScale) / 100));
-      $('shapeCutoutPath').setAttribute('transform', `translate(50 50) scale(${scale}) translate(-50 -50)`);
-      $('shapeMaskColor').setAttribute('fill', renderSpec.shapeColor);
-    }
-
     const settingsForm = document.getElementById('settingsForm');
     const delegatedControlExclusions = new Set(['searchInput', 'geoJsonInput', 'projectFileInput', 'colorPresetSelect']);
     function handleSettingsChange(event) {
@@ -571,6 +448,13 @@ const DEFAULTS = Object.freeze({
         configureTerrain(map, state);
         updateTerrainColorization(map, state).catch(error => CartivaDiagnostics.report('terrain.color', error));
       }
+      if (control.id === 'contourToggle' || (control.id === 'mountainColor' && state.contourEnabled)) {
+        if (state.contourEnabled) updateContours(map, state).catch(error => CartivaDiagnostics.report('terrain.contours', error));
+        else {
+          contourRequests.delete(map);
+          if (map.getLayer('cartiva-contours')) map.setLayoutProperty('cartiva-contours', 'visibility', 'none');
+        }
+      }
     }
     settingsForm.addEventListener('input', handleSettingsChange);
     settingsForm.addEventListener('change', handleSettingsChange);
@@ -580,6 +464,7 @@ const DEFAULTS = Object.freeze({
 // Runs on DOMContentLoaded and on pageshow if persisted.
 // -----------------------------------------------------------------------------
     function initializeDefaults() {
+	  $('loadingProgress').value = 55;
 		
 		
 		
@@ -594,7 +479,7 @@ const DEFAULTS = Object.freeze({
       document.getElementById('searchInput').value = START_LOCATION.city;
       document.getElementById('cityName').textContent = START_LOCATION.city;
       document.getElementById('cityCountry').textContent = START_LOCATION.country;
-      document.getElementById('colorPresetSelect').value = DEFAULTS.preset;
+      document.getElementById('colorPresetSelect').value = presetService.get(urlParams.get('preset')) ? urlParams.get('preset') : DEFAULTS.preset;
       document.getElementById('labelStyle').value = DEFAULTS.labelStyle;
       document.getElementById('labelOpacity').value = DEFAULTS.labelOpacity;
       document.getElementById('textFilter').value = DEFAULTS.textFilter;
@@ -607,6 +492,7 @@ const DEFAULTS = Object.freeze({
       writeControl('shapeScale', DEFAULTS.shapeScale);
       writeControl('includeExportMetadata', DEFAULTS.includeExportMetadata);
       writeControl('terrainToggle', DEFAULTS.terrainEnabled);
+      writeControl('contourToggle', DEFAULTS.contourEnabled);
       writeControl('mountainColor', DEFAULTS.mountainColor);
       writeControl('terrainExaggeration', DEFAULTS.terrainExaggeration);
       writeControl('stlBuildingsToggle', DEFAULTS.stlBuildingsEnabled);
@@ -616,7 +502,7 @@ const DEFAULTS = Object.freeze({
       renderPreview();
       if (runtimeState.mapReady) {
         applyTextFilters();
-        applyColorPreset(DEFAULTS.preset);
+        applyColorPreset($('colorPresetSelect').value || DEFAULTS.preset);
       }
       syncStateFromControls();
     }
@@ -627,87 +513,6 @@ const DEFAULTS = Object.freeze({
     });
 
 
-// -----------------------------------------------------------------------------
-// ACCORDION SECTIONS
-// Collapsible section blocks with ARIA attributes and keyboard support.
-// Only one section expanded at a time.
-// -----------------------------------------------------------------------------
-    // Accordion Control
-    const sectionBlocks = document.querySelectorAll('.section-block');
-    sectionBlocks.forEach((block, index) => {
-      const header = block.querySelector('.section-header');
-      const body = block.querySelector('.section-body');
-      const bodyId = body.id || `section-body-${index + 1}`;
-      body.id = bodyId;
-      header.id = header.id || `section-header-${index + 1}`;
-      header.setAttribute('role', 'button');
-      header.setAttribute('tabindex', '0');
-      header.setAttribute('aria-controls', bodyId);
-      header.setAttribute('aria-expanded', String(!block.classList.contains('collapsed')));
-      const toggleSection = () => {
-        const isCollapsed = block.classList.contains('collapsed');
-        sectionBlocks.forEach(b => {
-          b.classList.add('collapsed');
-          b.querySelector('.section-header').setAttribute('aria-expanded', 'false');
-        });
-        if (isCollapsed) {
-          block.classList.remove('collapsed');
-          header.setAttribute('aria-expanded', 'true');
-        }
-      };
-      header.addEventListener('click', () => {
-        toggleSection();
-      });
-      header.addEventListener('keydown', event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          toggleSection();
-        }
-      });
-    });
-
-    const fineTuningToggle = document.getElementById('fineTuningToggle');
-    const fineTuningControls = document.getElementById('fineTuningControls');
-    fineTuningToggle.addEventListener('click', () => {
-      const showControls = fineTuningControls.hidden;
-      fineTuningControls.hidden = !showControls;
-      fineTuningToggle.setAttribute('aria-expanded', String(showControls));
-      fineTuningToggle.title = showControls ? 'Hide layer fine-tuning' : 'Show layer fine-tuning';
-    });
-
-    $('aboutDescription').textContent = APP.DESCRIPTION;
-    $('aboutVersion').textContent = APP.VERSION;
-    $('aboutGithubLink').href = APP.GITHUBLINK;
-    $('aboutBtn').addEventListener('click', () => $('aboutDialog').showModal());
-    $('aboutCloseBtn').addEventListener('click', () => $('aboutDialog').close());
-    $('aboutDialog').addEventListener('keydown', event => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        $('aboutDialog').close();
-      }
-    });
-
-    /** Records committed control changes and command activations without logging file contents. */
-    function logInteraction(event) {
-      const element = event.target.closest('button, a, input, select, [role="button"]');
-      if (!element || (event.type === 'click' && element.matches('input, select'))) return;
-      if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
-      CartivaDiagnostics.record('ui.interaction', 'User activated a control.', {
-        element: element.id || element.getAttribute('aria-label') || element.textContent.trim(),
-        action: event.type,
-        value: element.type === 'checkbox' ? element.checked : element.type === 'file' ? undefined : element.value,
-        label: element.getAttribute('aria-label') || element.title || undefined
-      });
-    }
-    document.addEventListener('click', logInteraction);
-    document.addEventListener('change', logInteraction);
-    document.addEventListener('keydown', event => {
-      if (event.target.matches('[role="button"]')) logInteraction(event);
-    });
-
-
-// -----------------------------------------------------------------------------
-
 // LIVE COLOR ADJUSTMENTS
 // Apply contrast, brightness, and saturation to the map element.
 // -----------------------------------------------------------------------------
@@ -715,44 +520,6 @@ const DEFAULTS = Object.freeze({
     const contrastNum = document.getElementById('contrastNum');
     const brightnessNum = document.getElementById('brightnessNum');
     const saturationNum = document.getElementById('saturationNum');
-
-// -----------------------------------------------------------------------------
-
-// LABEL OVERLAY & FONT STYLING
-// Controls for label position/style, font, and separate colors
-// for city name, coordinates, and country.
-// -----------------------------------------------------------------------------
-    // Text Label Overlay & Font Styling (with 3 separate color fields)
-    const mapLabelOverlay = document.getElementById('mapLabelOverlay');
-    const opacityNum = document.getElementById('opacityNum');
-
-    // Capture the preview's label geometry once so canvas export and DOM preview
-    // use the same offsets, baselines, font sizes, and colors.
-    function getLabelRenderModel(targetMap = map) {
-      const mapRect = targetMap.getContainer().getBoundingClientRect();
-      const overlayRect = mapLabelOverlay.getBoundingClientRect();
-      const previewScale = targetMap.getContainer().clientWidth / mapRect.width;
-      const children = [cityNameEl, cityCoordsEl, cityCountryEl].map(element => {
-        const rect = element.getBoundingClientRect();
-        const computed = getComputedStyle(element);
-        return {
-          x: (rect.left - overlayRect.left) * previewScale,
-          baselineY: (rect.top - overlayRect.top + parseFloat(computed.fontSize)) * previewScale,
-          fontSize: parseFloat(computed.fontSize) * previewScale,
-          fontWeight: computed.fontWeight,
-          textAlign: computed.textAlign,
-          color: computed.color
-        };
-      });
-      return {
-        x: (overlayRect.left - mapRect.left) * previewScale,
-        y: (overlayRect.top - mapRect.top) * previewScale,
-        width: overlayRect.width * previewScale,
-        height: overlayRect.height * previewScale,
-        borderRadius: parseFloat(getComputedStyle(mapLabelOverlay).borderRadius) * previewScale,
-        children
-      };
-    }
 
 // -----------------------------------------------------------------------------
 // BORDER & ASPECT RATIO

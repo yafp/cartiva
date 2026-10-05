@@ -43,13 +43,28 @@
     }
     map.on('move', updateZoomLevelDisplay);
     map.on('move', renderMapAnnotations);
-    /** Keeps the external maps link aligned with the map center, even with labels hidden. */
-    function updateGoogleMapsLink() {
-      const center = map.getCenter();
-      $('googleMapsLink').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${center.lat.toFixed(6)},${center.lng.toFixed(6)}`)}`;
-    }
-    map.on('move', updateGoogleMapsLink);
-    updateGoogleMapsLink();
+    const mapServices = [
+      { name: 'Google Maps', url: (lat, lng) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lng}`)}` },
+      { name: 'OpenStreetMap', url: (lat, lng) => `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=${Math.round(map.getZoom())}/${lat}/${lng}` }
+    ];
+    const mapServicesDialog = $('mapServicesDialog');
+    $('mapServicesBtn').addEventListener('click', () => {
+      const { lat, lng } = map.getCenter();
+      const list = $('mapServicesList');
+      list.replaceChildren();
+      for (const service of mapServices) {
+        const link = document.createElement('a');
+        link.className = 'secondary-action-btn map-service-link';
+        link.textContent = service.name;
+        link.href = service.url(lat.toFixed(6), lng.toFixed(6));
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.addEventListener('click', () => mapServicesDialog.close());
+        list.append(link);
+      }
+      mapServicesDialog.showModal();
+    });
+    $('mapServicesCloseBtn').addEventListener('click', () => mapServicesDialog.close());
     map.on('movestart', () => globalThis.CartivaRefinedPreview?.hide());
     map.on('zoomend', () => {
       configureMapForRender(map, state);
@@ -59,6 +74,7 @@
     map.on('moveend', () => {
       syncStateFromControls();
       saveLastLocation();
+      updateShareUrl();
       schedulePreviewRenderSync();
     });
     let terrainRefreshTimer;
@@ -66,6 +82,7 @@
       clearTimeout(terrainRefreshTimer);
       terrainRefreshTimer = setTimeout(() => {
         if (state.terrainEnabled) updateTerrainColorization().catch(error => CartivaDiagnostics.report('terrain.color', error));
+        if (state.contourEnabled) updateContours().catch(error => CartivaDiagnostics.report('terrain.contours', error));
       }, 250);
     });
 
@@ -121,9 +138,10 @@
       if (!magnifierActive || !magnifierPosition) return;
       const { x, y, rect } = magnifierPosition;
       const mapCanvas = map.getCanvas();
-      const sourceX = (x / rect.width) * mapCanvas.width;
-      const sourceY = (y / rect.height) * mapCanvas.height;
-      const sourceSize = 140;
+      const canvasRect = mapCanvas.getBoundingClientRect();
+      const sourceX = ((x + rect.left - canvasRect.left) / canvasRect.width) * mapCanvas.width;
+      const sourceY = ((y + rect.top - canvasRect.top) / canvasRect.height) * mapCanvas.height;
+      const sourceSize = Math.min(mapCanvas.width, mapCanvas.height) * 0.09;
       magnifierContext.clearRect(0, 0, mapMagnifierLens.width, mapMagnifierLens.height);
       magnifierContext.drawImage(
         mapCanvas,
@@ -150,7 +168,7 @@
       }
 
       mapMagnifierLens.style.display = 'block';
-      const lensSize = 140;
+      const lensSize = 180;
       mapMagnifierLens.style.width = `${lensSize}px`;
       mapMagnifierLens.style.height = `${lensSize}px`;
       mapMagnifierLens.style.left = `${x - lensSize / 2}px`;
@@ -363,6 +381,67 @@
       configureTerrain(targetMap, mapState);
       applyMapState(targetMap, mapState);
       applyLayerOrder(targetMap);
+      if (mapState.contourEnabled && targetMap === map) updateContours(targetMap, mapState).catch(error => CartivaDiagnostics.report('terrain.contours', error));
+      else {
+        contourRequests.delete(targetMap);
+        if (targetMap.getLayer('cartiva-contours')) targetMap.setLayoutProperty('cartiva-contours', 'visibility', 'none');
+      }
+    }
+
+    const contourRequests = new WeakMap();
+    /** Derives elevation isolines from the same DEM grid used for terrain exports. */
+    async function updateContours(targetMap = map, mapState = state) {
+      if (!mapState.contourEnabled || !targetMap.getStyle()?.layers?.length) return;
+      const bounds = targetMap.getBounds();
+      const requestKey = JSON.stringify([bounds.toArray(), Math.floor(targetMap.getZoom()), mapState.mountainColor]);
+      if (contourRequests.get(targetMap) === requestKey) return;
+      contourRequests.set(targetMap, requestKey);
+      const size = 49;
+      let heights;
+      try {
+        ({ heights } = await getElevationGrid(bounds, size, Math.min(12, Math.max(9, Math.floor(targetMap.getZoom())))));
+      } catch (error) {
+        if (contourRequests.get(targetMap) === requestKey) contourRequests.delete(targetMap);
+        throw error;
+      }
+      if (contourRequests.get(targetMap) !== requestKey) return;
+      if (!mapState.contourEnabled || !targetMap.getStyle()?.layers?.length) return;
+      const minimum = Math.max(100, Math.ceil(Math.min(...heights) / 100) * 100);
+      const maximum = Math.min(Math.max(...heights), minimum + 6000);
+      const features = [];
+      const coordinate = (column, row) => [
+        bounds.getWest() + column / (size - 1) * (bounds.getEast() - bounds.getWest()),
+        bounds.getNorth() + row / (size - 1) * (bounds.getSouth() - bounds.getNorth())
+      ];
+      for (let elevation = minimum; elevation <= maximum; elevation += 100) {
+        const lines = [];
+        for (let row = 0; row < size - 1; row += 1) {
+          for (let column = 0; column < size - 1; column += 1) {
+            const corners = [
+              [column, row, heights[row * size + column]],
+              [column + 1, row, heights[row * size + column + 1]],
+              [column + 1, row + 1, heights[(row + 1) * size + column + 1]],
+              [column, row + 1, heights[(row + 1) * size + column]]
+            ];
+            const crossings = [];
+            for (let edge = 0; edge < 4; edge += 1) {
+              const start = corners[edge], end = corners[(edge + 1) % 4];
+              if ((start[2] < elevation) === (end[2] < elevation)) continue;
+              const fraction = (elevation - start[2]) / (end[2] - start[2]);
+              crossings.push(coordinate(start[0] + (end[0] - start[0]) * fraction, start[1] + (end[1] - start[1]) * fraction));
+            }
+            for (let index = 0; index + 1 < crossings.length; index += 2) lines.push([crossings[index], crossings[index + 1]]);
+          }
+        }
+        if (lines.length) features.push({ type: 'Feature', properties: { elevation }, geometry: { type: 'MultiLineString', coordinates: lines } });
+      }
+      const sourceId = 'cartiva-contours';
+      const data = { type: 'FeatureCollection', features };
+      if (!targetMap.getSource(sourceId)) targetMap.addSource(sourceId, { type: 'geojson', data });
+      else targetMap.getSource(sourceId).setData(data);
+      if (!targetMap.getLayer(sourceId)) targetMap.addLayer({ id: sourceId, type: 'line', source: sourceId, paint: { 'line-color': mapState.mountainColor, 'line-width': 0.8, 'line-opacity': 0.65 } }, targetMap.getStyle().layers.find(layer => layer.type === 'symbol')?.id);
+      targetMap.setPaintProperty(sourceId, 'line-color', mapState.mountainColor);
+      targetMap.setLayoutProperty(sourceId, 'visibility', 'visible');
     }
 
     let previewSyncToken = 0;
@@ -525,10 +604,60 @@
       colorPresetSelect.appendChild(option);
     });
 
+    const presetPicker = document.createElement('div');
+    presetPicker.className = 'visual-preset-picker';
+    const presetPickerButton = document.createElement('button');
+    presetPickerButton.type = 'button';
+    presetPickerButton.className = 'secondary-action-btn';
+    presetPickerButton.title = 'Choose a color palette with a four-color preview';
+    presetPickerButton.setAttribute('aria-expanded', 'false');
+    const presetPickerList = document.createElement('div');
+    presetPickerList.className = 'visual-preset-list';
+    presetPickerList.hidden = true;
+    const presetSwatch = values => {
+      const swatch = document.createElement('span');
+      swatch.className = 'preset-swatch';
+      swatch.style.background = `conic-gradient(${values.waterColor} 0 25%, ${values.forestColor} 25% 50%, ${values.landColor} 50% 75%, ${values.buildingColor} 75% 100%)`;
+      return swatch;
+    };
+    function updatePresetPicker() {
+      const preset = presetService.get(colorPresetSelect.value);
+      presetPickerButton.replaceChildren();
+      if (preset) presetPickerButton.append(presetSwatch(preset.values));
+      presetPickerButton.append(document.createTextNode(preset?.name || 'Custom palette'));
+    }
+    presetService.list().forEach(preset => {
+      const choice = document.createElement('button');
+      choice.type = 'button';
+      choice.className = 'preset-choice';
+      choice.append(presetSwatch(preset.values), document.createTextNode(preset.name));
+      choice.addEventListener('click', () => {
+        colorPresetSelect.value = preset.id;
+        colorPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        presetPickerList.hidden = true;
+        presetPickerButton.setAttribute('aria-expanded', 'false');
+      });
+      presetPickerList.append(choice);
+    });
+    presetPickerButton.addEventListener('click', () => {
+      presetPickerList.hidden = !presetPickerList.hidden;
+      presetPickerButton.setAttribute('aria-expanded', String(!presetPickerList.hidden));
+    });
+    document.addEventListener('click', event => {
+      if (!presetPicker.contains(event.target)) {
+        presetPickerList.hidden = true;
+        presetPickerButton.setAttribute('aria-expanded', 'false');
+      }
+    });
+    presetPicker.append(presetPickerButton, presetPickerList);
+    colorPresetSelect.after(presetPicker);
+    colorPresetSelect.classList.add('visually-hidden');
+
     function applyColorPreset(presetName) {
       const set = presetService.values(presetName);
       if (!set) return;
 
+      colorPresetSelect.value = presetName;
       Object.entries(set).forEach(([id, value]) => {
         if ($(id)) writeControl(id, value);
       });
@@ -537,6 +666,8 @@
 
       triggerAllLayerUpdates();
       renderPreview();
+      updateShareUrl();
+      updatePresetPicker();
     }
 
     colorPresetSelect.addEventListener('change', (e) => {
@@ -557,22 +688,35 @@
     $('nextPresetBtn').addEventListener('click', () => stepPreset(1));
 
     $('randomPresetBtn').addEventListener('click', () => {
-      const randomHex = () => `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`;
-      const blueWater = ['#0ea5e9', '#38bdf8', '#0284c7', '#2563eb', '#60a5fa', '#7dd3fc', '#1d4ed8'];
-      const fields = [
-        'waterColor', 'forestColor', 'forestColorAccent', 'landColor',
-        'landCoverColor', 'landCoverColorAccent', 'roadColor',
-        'boundaryColor', 'buildingColor', 'buildingOutlineColor'
-      ];
-      fields.forEach(id => writeControl(id, randomHex()));
-      writeControl('waterColor', Math.random() < 0.75
-        ? blueWater[Math.floor(Math.random() * blueWater.length)]
-        : randomHex());
-      $('colorPresetSelect').selectedIndex = -1;
-      state.layers = {};
+      const mode = ['complementary', 'analog', 'triadic', 'monochromatic', 'split complementary', 'warm', 'cold', 'high contrast'][Math.floor(Math.random() * 8)];
+      const baseHue = Math.floor(Math.random() * 360);
+      const offsets = {
+        complementary: [0, 180], analog: [-30, 0, 30], triadic: [0, 120, 240],
+        monochromatic: [0], 'split complementary': [0, 150, 210],
+        warm: [-25, 0, 25], cold: [140, 180, 220], 'high contrast': [0, 180]
+      }[mode];
+      const hslToHex = (hue, saturation, lightness) => {
+        const channel = offset => {
+          const value = (offset + hue / 30) % 12;
+          const chroma = saturation * Math.min(lightness, 1 - lightness);
+          return Math.round(255 * (lightness - chroma * Math.max(-1, Math.min(value - 3, 9 - value, 1)))).toString(16).padStart(2, '0');
+        };
+        return `#${channel(0)}${channel(8)}${channel(4)}`;
+      };
+      const colors = Object.keys(presetService.values(DEFAULTS.preset)).filter(key => key.toLowerCase().includes('color'));
+      const palette = Object.fromEntries(colors.map((key, index) => [key, hslToHex(
+        (baseHue + offsets[index % offsets.length] + 360) % 360,
+        mode === 'monochromatic' ? 0.35 : 0.4 + Math.random() * 0.3,
+        mode === 'high contrast' ? (index % 2 ? 0.25 : 0.8) : 0.35 + Math.random() * 0.4
+      )]));
+      Object.entries(palette).forEach(([id, value]) => { if ($(id)) writeControl(id, value); });
+      colorPresetSelect.selectedIndex = -1;
+      state.layers = palette;
       syncStateFromControls();
       triggerAllLayerUpdates();
       renderPreview();
+      updatePresetPicker();
+      setStatus(`${mode} color palette generated.`);
     });
 
     $('randomizeDesignBtn').addEventListener('click', () => {
@@ -586,6 +730,19 @@
       writeControl('brightnessVal', 90 + Math.floor(Math.random() * 21));
       writeControl('saturationVal', 80 + Math.floor(Math.random() * 61));
       applyColorPreset(readControl('colorPresetSelect'));
+      $('randomPresetBtn').click();
+      writeControl('labelBgColor', readControl('landColor'));
+      const background = readControl('labelBgColor');
+      const textColor = relativeLuminance(background) > 0.179 ? '#111827' : '#ffffff';
+      writeControl('labelTextColor', textColor);
+      writeControl('labelCoordColor', textColor);
+      writeControl('labelCountryColor', textColor);
+      writeControl('borderCheckbox', Math.random() > 0.3);
+      writeControl('borderColor', readControl('buildingColor'));
+      writeControl('borderWidth', 4 + Math.floor(Math.random() * 28));
+      writeControl('outerBorderRadius', Math.floor(Math.random() * 25));
+      writeControl('innerOutlineEnabled', Math.random() > 0.5);
+      writeControl('innerOutlineColor', readControl('roadColor'));
       updateStateFromControls();
     });
 
@@ -615,7 +772,15 @@
       applyTextFilters();
 
       CartivaLayerRegistry.definitions.forEach(setupLayerControls);
-      applyColorPreset(DEFAULTS.preset);
+      const requestedPreset = urlParams.get('preset');
+      if (requestedPreset && !presetService.get(requestedPreset)) {
+        setStatus(`Preset "${requestedPreset}" is unavailable. Using the default preset.`, true);
+        if (typeof Toastify === 'function') Toastify({ text: 'Shared preset is unavailable. Using the default preset.', duration: 5000, gravity: 'top', position: 'right' }).showToast();
+      }
+      applyColorPreset(presetService.get(requestedPreset) ? requestedPreset : DEFAULTS.preset);
+      $('loadingProgress').value = 100;
+      $('loadingSplash').classList.add('finished');
+      $('loadingSplash').addEventListener('transitionend', () => $('loadingSplash').remove(), { once: true });
       configureBuildingZoom(map);
       triggerAllLayerUpdates();
       applyTextFilters(map, readControl('textFilter'));

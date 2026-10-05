@@ -14,6 +14,7 @@ Create beautiful printable map art from any location in the world.
 - Export high-resolution artwork (images or 3D models)
 - Save and reload projects
 - Generate artistic map designs
+- Share a URL with location, zoom, rotation, and preset; open coordinates in Google Maps or OpenStreetMap
 
 You can find a **live demo** of the latest released version on [Github Pages](https://yafp.github.io/cartiva/index.html)
 
@@ -52,6 +53,8 @@ On each version release an action is re-generating the JSDoc files under
 
 The application separates serializable project state from transient runtime state. UI controls update project state through one delegated form dispatcher, while MapLibre, geocoding, preset data, and export encoding are accessed through dedicated boundaries. Preview and all exporters consume one normalized render specification. The feature files remain classic scripts loaded in dependency order so the app stays dependency-free and can still be opened directly from the `src/index.html` file.
 
+UI responsibilities are split between `src/js/ui.js` (state and control synchronization), `src/js/ui/preview.js` (preview and shapes), `src/js/ui/labels.js` (label geometry and contrast), `src/js/ui/settings.js` (saved application settings and color sampling), and `src/js/ui/events.js` (accordion and dialog event wiring). Classic scripts load these modules after the UI core and before the map.
+
 Map layer controls are defined declaratively in `src/js/map/layer-registry.js`. The same definitions drive state synchronization, map styling, 3D feature limits, visibility, and materials.
 
 External provider URLs are centralized in `src/js/core/service-config.js`. This makes provider replacement, local testing, and future configuration injection possible without changing UI or rendering code.
@@ -62,6 +65,8 @@ PDF output preserves the selected physical paper size by converting image pixels
 Export preflight supports A4 PNG output at 600 DPI while still rejecting dimensions above the browser-safe 16,384-pixel side and 160-megapixel limits. Temporary export maps are cleaned up after failures, and large map transfers use bounded tile compositing.
 Custom paper sizes, bleed/safe-area guides, GeoJSON overlays, and project migrations are available in the sidebar. Projects can be saved in the browser or transferred as JSON files. Provider details remain in export metadata but are not displayed in the interface.
 Preview zoom, rotation, magnifier, and color-preset controls share one right-side toolbar with dividers between each functional group.
+The right-side toolbar also opens external map services for the current coordinate and offers a browser-supported color eyedropper. Choosing a map service closes the centered dialog. The preset selector shows four map colors for each catalog entry. The left-side settings cog opens a centered dialog showing the saved preview surround color; Save commits it to local storage, while Cancel or closing discards changes. The surround color does not alter exports. The left sidebar shows a scrollbar when needed. Export options are divided into Images and 3D Models tabs. Optional 100-meter elevation contours are generated from the existing terrain service when enabled in Terrain; they require network access to elevation tiles.
+URLs include `lat`, `lng`, `zoom`, `rotation`, and `preset` parameters. An unavailable preset falls back to Alpine Snow with a notification. Custom randomized colors are not encoded in the URL; save a project JSON to preserve them.
 Quality profiles render the map at 1x, 1.5x, or 2x before downsampling with high-quality canvas filtering. The interactive preview remains capped at 2x device pixel ratio. After 600 ms of inactivity, a cancellable high-fidelity preview renders at up to two additional detail levels with a 3,200-pixel maximum side; it is hidden immediately when interaction resumes and only the latest queued state is shown. Export zoom is provider-clamped, print line weights can be adjusted, PNG exports receive DPI metadata, and PDF prefers lossless PNG embedding when jsPDF is available.
 STL and 3MF terrain exports include visible water, nature, urban land cover, boundaries, roads, and buildings. 3MF uses standard material colors; STL writes the common 15-bit per-facet color extension for viewers that support colored STL files.
 Surface polygons are clipped to the 3D model bounds instead of being discarded at an edge. Distinct vector-tile fragments are retained, and terrain beneath water polygons uses the water material to prevent dry-colored gaps caused by intersecting surface meshes.
@@ -71,7 +76,7 @@ Map layers use a fixed cartographic order so previews and all export formats rem
 
 The app uses `loglevel` for structured lifecycle, map, geocoder, project, and export logging. The default level is `info`; call `CartivaDiagnostics.setLevel('debug')` in the browser console to persist a different level, and inspect recent structured entries with `CartivaDiagnostics.list()`. Map, geocoder, and terrain failures are reported without preventing other features from working. Accordion headers expose keyboard focus, `Enter`/`Space` activation, and `aria-controls`; color inputs receive explicit accessible names.
 
-Export completion and failure messages use Toastify JS. Notifications are limited to image, STL, and 3MF export outcomes; progress remains in the sidebar status area.
+Export completion and failure messages use Toastify JS. Unavailable shared presets also show a notification; progress remains in the sidebar status area.
 Image export settings are confirmed in a modal dialog. JSON export metadata is optional and can be enabled under `9. Misc`.
 
 JavaScript API documentation is generated into `docs/js` by the `JSDoc` GitHub Actions workflow after each source push.
