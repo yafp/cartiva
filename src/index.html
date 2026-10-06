@@ -628,8 +628,23 @@
 			    <h2 id="exportDialogTitle">Export</h2>
 			<button type="button" id="exportDialogCloseBtn" class="icon-btn" title="Cancel export" aria-label="Close export dialog">×</button>
 		</div>
+		
+		
+		<!-- MODAL POPUP: EXPORT -->
 		<div class="export-dialog-body">
-			<div class="export-tabs" role="tablist" aria-label="Export category"><button type="button" id="exportImagesTab" class="secondary-action-btn" role="tab" aria-selected="true">Images</button><button type="button" id="exportModelsTab" class="secondary-action-btn" role="tab" aria-selected="false">3D Models</button></div>
+			<div class="export-tabs" role="tablist" aria-label="Export category">
+				<button type="button" id="exportImagesTab" class="secondary-action-btn" role="tab" aria-selected="true">Images <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></button>
+				<button type="button" id="exportModelsTab" class="secondary-action-btn" role="tab" aria-selected="false">3D Models <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+stroke="currentColor" stroke-width="2"
+stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 2 20 6 12 10 4 6 12 2Z"/>
+<path d="M20 6V14L12 18V10"/>
+<path d="M4 6V14L12 18"/>
+</svg></button>
+			</div>
+			<!-- SEPARATOR --> 
+			<div class="footer-action-separator" aria-hidden="true"></div>
+			
 			<div id="exportImagesPanel" role="tabpanel">
 			<div class="export-dialog-grid">
 				<div class="control-group">
@@ -678,13 +693,15 @@
 		</div>
 	</dialog>
 	<!-- /POPUP - EXPORT IMAGE -->
+	
+	<!-- MODAL POPUP: CARTIVA SETTINGS -->
 	    <dialog id="appSettingsDialog" class="export-dialog" aria-labelledby="appSettingsTitle">
-		    <div class="export-dialog-header"><img src="img/cartiva_logo_only.png" alt=""><h2 id="appSettingsTitle">App settings</h2><button type="button" id="appSettingsCloseBtn" class="icon-btn" title="Close settings" aria-label="Close settings">×</button></div>
+		    <div class="export-dialog-header"><img src="img/cartiva_logo_only.png" alt=""><h2 id="appSettingsTitle">cartiva settings</h2><button type="button" id="appSettingsCloseBtn" class="icon-btn" title="Close settings" aria-label="Close settings">×</button></div>
 		<div class="export-dialog-body"><div class="color-field-inline"><label for="previewBackgroundColor">Preview background</label><input type="color" id="previewBackgroundColor" value="#d1d5db" title="Choose the preview surround color"></div></div>
 		<div class="export-dialog-actions"><button type="button" id="appSettingsCancelBtn" class="secondary-action-btn">Cancel</button><button type="button" id="appSettingsSaveBtn" class="export-btn">Save</button></div>
 	</dialog>
 	    <dialog id="mapServicesDialog" class="export-dialog" aria-labelledby="mapServicesTitle">
-		    <div class="export-dialog-header"><img src="img/cartiva_logo_only.png" alt=""><h2 id="mapServicesTitle">Open coordinates in external map</h2><button type="button" id="mapServicesCloseBtn" class="icon-btn" aria-label="Close map services" title="Close">×</button></div>
+		    <div class="export-dialog-header"><img src="img/cartiva_logo_only.png" alt=""><h2 id="mapServicesTitle">Open coordinates in ...</h2><button type="button" id="mapServicesCloseBtn" class="icon-btn" aria-label="Close map services" title="Close">×</button></div>
 		<div id="mapServicesList" class="export-dialog-body"></div>
 	</dialog>
 	<dialog id="aboutDialog" class="export-dialog about-dialog" aria-labelledby="aboutDialogTitle">

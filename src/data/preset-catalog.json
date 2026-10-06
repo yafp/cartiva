@@ -20,16 +20,8 @@
     "name": "Burnished Delta"
   },
   {
-    "id": "canyon",
-    "name": "Canyon Red Rock"
-  },
-  {
     "id": "chalkboard",
     "name": "Chalkboard Dark"
-  },
-  {
-    "id": "cherry",
-    "name": "Cherry Blossom"
   },
   {
     "id": "cloud-delta",
@@ -56,10 +48,6 @@
     "name": "Coral Reef"
   },
   {
-    "id": "crimson",
-    "name": "Crimson Night"
-  },
-  {
     "id": "cyberalt",
     "name": "Cyberpunk Neon Alt"
   },
@@ -76,10 +64,6 @@
     "name": "Electric Highlands"
   },
   {
-    "id": "fiesta",
-    "name": "Fiesta Vibrant"
-  },
-  {
     "id": "frostbite",
     "name": "Frostbite Blue"
   },
@@ -92,28 +76,12 @@
     "name": "Glacial Ice"
   },
   {
-    "id": "granite",
-    "name": "Granite Stone"
-  },
-  {
     "id": "hazelnut",
     "name": "Hazelnut Earth"
   },
   {
-    "id": "horizon",
-    "name": "Horizon Line"
-  },
-  {
     "id": "indigo",
     "name": "Indigo Night"
-  },
-  {
-    "id": "jungle",
-    "name": "Jungle Safari"
-  },
-  {
-    "id": "lagoon",
-    "name": "Lagoon Teal"
   },
   {
     "id": "positron",
@@ -140,10 +108,6 @@
     "name": "Nebula Glow"
   },
   {
-    "id": "nordic",
-    "name": "Nordic Frost"
-  },
-  {
     "id": "olive",
     "name": "Olive Grove"
   },
@@ -166,10 +130,6 @@
   {
     "id": "monochrome",
     "name": "Pure Monochrome"
-  },
-  {
-    "id": "quartz",
-    "name": "Quartz Crystal"
   },
   {
     "id": "quiet-highlands",
@@ -196,10 +156,6 @@
     "name": "Synthwave 80s"
   },
   {
-    "id": "tundra",
-    "name": "Tundra Frost"
-  },
-  {
     "id": "warmvintage",
     "name": "Warm Vintage Sepia"
   },
@@ -212,28 +168,8 @@
     "name": "Alabaster Coast"
   },
   {
-    "id": "birch-inlet",
-    "name": "Birch Inlet"
-  },
-  {
-    "id": "bronze-cove",
-    "name": "Bronze Cove"
-  },
-  {
-    "id": "cedar-sound",
-    "name": "Cedar Sound"
-  },
-  {
     "id": "cream-fjord",
     "name": "Cream Fjord"
-  },
-  {
-    "id": "eucalyptus-port",
-    "name": "Eucalyptus Port"
-  },
-  {
-    "id": "foggy-marina",
-    "name": "Foggy Marina"
   },
   {
     "id": "graphite-coast",
@@ -248,36 +184,8 @@
     "name": "Mauve Harbor"
   },
   {
-    "id": "mossy-cove",
-    "name": "Mossy Cove"
-  },
-  {
     "id": "oatmeal-bay",
     "name": "Oatmeal Bay"
-  },
-  {
-    "id": "paper-fjord",
-    "name": "Paper Fjord"
-  },
-  {
-    "id": "peach-coast",
-    "name": "Peach Coast"
-  },
-  {
-    "id": "porcelain-bay",
-    "name": "Porcelain Bay"
-  },
-  {
-    "id": "rosewood-port",
-    "name": "Rosewood Port"
-  },
-  {
-    "id": "sage-harbor",
-    "name": "Sage Harbor"
-  },
-  {
-    "id": "sandstone-sound",
-    "name": "Sandstone Sound"
   },
   {
     "id": "spruce-inlet",
@@ -288,16 +196,8 @@
     "name": "Stone Marina"
   },
   {
-    "id": "terracotta-cove",
-    "name": "Terracotta Cove"
-  },
-  {
     "id": "thistle-shore",
     "name": "Thistle Shore"
-  },
-  {
-    "id": "umber-bay",
-    "name": "Umber Bay"
   },
   {
     "id": "zinc-marina",
