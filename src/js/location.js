@@ -22,30 +22,50 @@
     const reverseCache = new Map();
     const SEARCH_INTERVAL_MS = 1000;
     const REVERSE_INTERVAL_MS = 1200;
-    const statusMessage = document.getElementById('statusMessage');
     const geocoder = CartivaGeocoding.create(CartivaServices.geocoder);
 
-    function setStatus(message, isError = false) {
-      statusMessage.textContent = message;
-      statusMessage.classList.toggle('error', isError);
+    /**
+     * Sets status for the Cartiva application.
+     * @function setStatus
+     * @param {*} message - Input value.
+     * @param {*} isError - Input value.
+     * @param {*} notificationMessage - Input value.
+     */
+    function setStatus(message, isError = false, notificationMessage = message) {
       const dialogProgress = document.getElementById('exportDialogProgress');
       if (dialogProgress) {
         dialogProgress.textContent = message;
         dialogProgress.classList.toggle('error', isError);
       }
+      if (isError) CartivaOperations.notify(notificationMessage, 'error');
     }
 
+    /**
+     * Sets search results visible for the Cartiva application.
+     * @function setSearchResultsVisible
+     * @param {*} visible - Input value.
+     */
     function setSearchResultsVisible(visible) {
       searchResults.style.display = visible ? 'block' : 'none';
       searchInput.setAttribute('aria-expanded', String(visible));
     }
 
+    /**
+     * Handles search message for the Cartiva application.
+     * @function showSearchMessage
+     * @param {*} message - Input value.
+     */
     function showSearchMessage(message) {
       searchResults.innerHTML = `<div class="search-message">${message}</div>`;
       setSearchResultsVisible(true);
       activeSearchIndex = -1;
     }
 
+    /**
+     * Returns information about search result for the Cartiva application.
+     * @function selectSearchResult
+     * @param {*} item - Input value.
+     */
     function selectSearchResult(item) {
       const lat = Number(item.lat);
       const lon = Number(item.lon);
@@ -63,6 +83,11 @@
       CartivaDiagnostics.record('geocoder.selection', 'Location selected.', { name: item.display_name, center: [lon, lat] });
     }
 
+    /**
+     * Renders search results for the Cartiva application.
+     * @function renderSearchResults
+     * @param {*} data - Input value.
+     */
     function renderSearchResults(data) {
       searchResults.innerHTML = '';
       activeSearchIndex = -1;
@@ -82,6 +107,10 @@
       setSearchResultsVisible(true);
     }
 
+    /**
+     * Updates coords display for the Cartiva application.
+     * @function updateCoordsDisplay
+     */
     function updateCoordsDisplay() {
       const center = map.getCenter();
       const lat = center.lat.toFixed(4);
@@ -91,6 +120,11 @@
 
     map.on('move', updateCoordsDisplay);
 
+    /**
+     * Returns information about nearest city for the Cartiva application.
+     * @function getNearestCity
+     * @param {*} address - Input value.
+     */
     function getNearestCity(address) {
       return address.city
         || address.town
@@ -113,9 +147,16 @@
     }
     map.on('movestart', cancelLocationUpdate);
 
+    /**
+     * Updates location from center for the Cartiva application.
+     * @function updateLocationFromCenter
+     */
     async function updateLocationFromCenter() {
       const center = map.getCenter();
       const cacheKey = `${center.lat.toFixed(3)},${center.lng.toFixed(3)}`;
+      cityNameEl.textContent = '';
+      cityCountryEl.textContent = '';
+      searchInput.value = '';
       cancelLocationUpdate();
       const requestId = reverseRequestId;
       const controller = new AbortController();
@@ -130,11 +171,9 @@
         if (requestId !== reverseRequestId) return;
         if (!cached) reverseCache.set(cacheKey, data);
         const city = getNearestCity(data.address || {});
-        if (city) {
-          cityNameEl.textContent = city.toUpperCase();
-          searchInput.value = city;
-        }
-        if (data.address?.country) cityCountryEl.textContent = data.address.country.toUpperCase();
+        cityNameEl.textContent = city ? city.toUpperCase() : '';
+        searchInput.value = city || '';
+        cityCountryEl.textContent = data.address?.country?.toUpperCase() || '';
         namedLocationCenter = `${center.lat.toFixed(6)},${center.lng.toFixed(6)}`;
         syncStateFromControls();
         saveLastLocation();
@@ -158,6 +197,10 @@
       updateLocationFromCenter();
     });
 
+    /**
+     * Requests location search for the Cartiva application.
+     * @function requestLocationSearch
+     */
     function requestLocationSearch() {
       clearTimeout(debounceTimer);
       const query = searchInput.value.trim();

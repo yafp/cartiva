@@ -5,11 +5,19 @@
 // - Overlay geometry and label metrics for precise placement
 // -----------------------------------------------------------------------------
     // The export and preview begin from the same normalized live render snapshot.
+    /**
+     * Creates render snapshot for the Cartiva application.
+     * @function createRenderSnapshot
+     */
     function createRenderSnapshot() {
       syncStateFromControls();
       return getExportState();
     }
 
+    /**
+     * Returns information about export state for the Cartiva application.
+     * @function getExportState
+     */
     function getExportState() {
       const labelModel = getLabelRenderModel(map);
       return CartivaRenderSpec.create(state, {
@@ -48,6 +56,11 @@
     const exportCancelBtn = document.getElementById('exportCancelBtn');
     const exportDialogCloseBtn = document.getElementById('exportDialogCloseBtn');
 
+    /**
+     * Returns information about export tab for the Cartiva application.
+     * @function selectExportTab
+     * @param {*} models - Input value.
+     */
     function selectExportTab(models) {
       $('exportImagesPanel').hidden = models;
       $('exportModelsPanel').hidden = !models;
@@ -73,6 +86,13 @@
       if (runtimeState.operations['image.export']) event.preventDefault();
     });
     const pdfExporter = CartivaPdfExporter.create();
+    /**
+     * Handles lat to tile for the Cartiva application.
+     * @function lngLatToTile
+     * @param {*} lng - Input value.
+     * @param {*} lat - Input value.
+     * @param {*} zoom - Input value.
+     */
     function lngLatToTile(lng, lat, zoom) {
       const latitude = Math.max(-85.05112878, Math.min(85.05112878, lat));
       const scale = 2 ** zoom;
@@ -84,7 +104,20 @@
 
     const elevationTileCache = CartivaCache.create(120);
 
+    /**
+     * Returns information about elevation grid for the Cartiva application.
+     * @function getElevationGrid
+     * @param {*} bounds - Input value.
+     * @param {*} size - Input value.
+     * @param {*} zoom - Input value.
+     */
     async function getElevationGrid(bounds, size = 65, zoom = 12) {
+      /**
+       * Loads tile for the Cartiva application.
+       * @function loadTile
+       * @param {*} tileX - Input value.
+       * @param {*} tileY - Input value.
+       */
       async function loadTile(tileX, tileY) {
         const scale = 2 ** zoom;
         const wrappedX = ((tileX % scale) + scale) % scale;
@@ -121,6 +154,15 @@
       return { heights, size };
     }
 
+    /**
+     * Creates terrain mesh for the Cartiva application.
+     * @function createTerrainMesh
+     * @param {*} heights - Input value.
+     * @param {*} size - Input value.
+     * @param {*} bounds - Input value.
+     * @param {*} exaggeration - Input value.
+     * @param {*} cityFeatures - Input value.
+     */
     function createTerrainMesh(heights, size, bounds, exaggeration, cityFeatures = {}) {
       const latitude = (bounds.getNorth() + bounds.getSouth()) / 2;
       const widthMeters = (bounds.getEast() - bounds.getWest()) * 111320 * Math.cos(latitude * Math.PI / 180);
@@ -374,6 +416,12 @@
       return { triangles, triangleMaterials };
     }
 
+    /**
+     * Creates terrain stl for the Cartiva application.
+     * @function createTerrainStl
+     * @param {*} mesh - Input value.
+     * @param {*} colors - Input value.
+     */
     function createTerrainStl(mesh, colors) {
       const triangleCount = mesh.triangles.length / 3;
       const buffer = new ArrayBuffer(84 + triangleCount * 50);
@@ -399,6 +447,12 @@
       return new Blob([buffer], { type: 'model/stl' });
     }
 
+    /**
+     * Rotates mesh to map bearing for the Cartiva application.
+     * @function rotateMeshToMapBearing
+     * @param {*} mesh - Input value.
+     * @param {*} bearing - Input value.
+     */
     function rotateMeshToMapBearing(mesh, bearing) {
       if (!bearing) return mesh;
       const bounds = mesh.triangles.reduce((result, vertex) => ({
@@ -420,6 +474,11 @@
       };
     }
 
+    /**
+     * Creates stored zip for the Cartiva application.
+     * @function createStoredZip
+     * @param {*} files - Input value.
+     */
     function createStoredZip(files) {
       const encoder = new TextEncoder();
       const entries = files.map(({ name, content }) => ({ name: encoder.encode(name), content: typeof content === 'string' ? encoder.encode(content) : content }));
@@ -444,6 +503,12 @@
       return new Blob(parts, { type: 'model/3mf' });
     }
 
+    /**
+     * Creates colored three mf for the Cartiva application.
+     * @function createColoredThreeMf
+     * @param {*} mesh - Input value.
+     * @param {*} colors - Input value.
+     */
     function createColoredThreeMf(mesh, colors) {
       const materialIndex = { terrain: 0, forest: 1, landCover: 2, water: 3, boundary: 4, road: 5, building: 6, base: 7 };
       const color = hex => `${hex.toUpperCase()}FF`;
@@ -457,6 +522,16 @@
       ]);
     }
 
+    /**
+     * Draws export annotations for the Cartiva application.
+     * @function drawExportAnnotations
+     * @param {*} context - Input value.
+     * @param {*} exportState - Input value.
+     * @param {*} width - Input value.
+     * @param {*} height - Input value.
+     * @param {*} mapWidth - Input value.
+     * @param {*} borderWidth - Input value.
+     */
     function drawExportAnnotations(context, exportState, width, height, mapWidth, borderWidth) {
       context.save();
       context.fillStyle = '#111827';
@@ -488,6 +563,12 @@
       context.restore();
     }
 
+    /**
+    * Converts a canvas into an SVG document containing the exported artwork.
+     * @function canvasToSvg
+     * @param {*} canvas - Input value.
+     * @param {*} exportState - Input value.
+     */
     function canvasToSvg(canvas, exportState) {
       const dataUrl = canvas.toDataURL('image/png');
       const escape = value => String(value).replace(/[&<>"]/g, character => ({
@@ -499,6 +580,12 @@
 </svg>`;
     }
 
+    /**
+     * Validates export size for the Cartiva application.
+     * @function validateExportSize
+     * @param {*} width - Input value.
+     * @param {*} height - Input value.
+     */
     function validateExportSize(width, height) {
       const pixels = width * height;
       const maxPixels = 160000000;
@@ -509,6 +596,12 @@
       }
     }
 
+    /**
+     * Adds png resolution metadata for the Cartiva application.
+     * @function addPngResolutionMetadata
+     * @param {*} blob - Input value.
+     * @param {*} dpi - Input value.
+     */
     async function addPngResolutionMetadata(blob, dpi) {
       if (blob.type !== 'image/png' || !Number.isFinite(dpi)) return blob;
       const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -530,6 +623,12 @@
       return new Blob([bytes.slice(0, 33), chunk, bytes.slice(33)], { type: 'image/png' });
     }
 
+    /**
+    * Adjusts map line weights to match the selected print profile.
+     * @function applyExportLineWeight
+     * @param {*} targetMap - Input value.
+     * @param {*} exportState - Input value.
+     */
     function applyExportLineWeight(targetMap, exportState) {
       const multipliers = { fine: 0.78, standard: 1, bold: 1.28 };
       const multiplier = multipliers[exportState.printLineWeight] || 1;
@@ -542,6 +641,17 @@
       });
     }
 
+    /**
+     * Draws canvas in tiles for the Cartiva application.
+     * @function drawCanvasInTiles
+     * @param {*} context - Input value.
+     * @param {*} source - Input value.
+     * @param {*} x - Input value.
+     * @param {*} y - Input value.
+     * @param {*} width - Input value.
+     * @param {*} height - Input value.
+     * @param {*} tileSize - Input value.
+     */
     function drawCanvasInTiles(context, source, x, y, width, height, tileSize = 2048) {
       const scaleX = width / source.width;
       const scaleY = height / source.height;
@@ -570,6 +680,12 @@
       context.restore();
     }
 
+    /**
+     * Waits for map idle for the Cartiva application.
+     * @function waitForMapIdle
+     * @param {*} targetMap - Input value.
+     * @param {*} timeoutMs - Input value.
+     */
     function waitForMapIdle(targetMap, timeoutMs = 30000) {
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Map tiles did not finish loading in time.')), timeoutMs);
@@ -584,6 +700,12 @@
       });
     }
 
+    /**
+     * Handles render bounds for the Cartiva application.
+     * @function compareRenderBounds
+     * @param {*} exportMap - Input value.
+     * @param {*} exportState - Input value.
+     */
     function compareRenderBounds(exportMap, exportState) {
       const actual = exportMap.getBounds().toArray();
       const expected = exportState.bounds;
@@ -651,6 +773,14 @@
       return result;
     }
 
+    /**
+     * Creates export map for the Cartiva application.
+     * @function createExportMap
+     * @param {*} width - Input value.
+     * @param {*} height - Input value.
+     * @param {*} exportState - Input value.
+     * @param {*} options - Input value.
+     */
     async function createExportMap(width, height, exportState, options = {}) {
       const container = document.createElement('div');
       container.className = 'export-map-container';
@@ -689,6 +819,7 @@
         geoJsonDefinition.layers.forEach(layer => exportMap.addLayer(layer));
       }
       configureMapForRender(exportMap, exportState);
+      if (options.includeContours && exportState.contourEnabled) await updateContours(exportMap, exportState);
       applyExportLineWeight(exportMap, exportState);
       exportMap.resize();
       // Preserve the preview camera exactly. The preview and export dimensions
@@ -771,6 +902,7 @@
 
     const refinedMapPreview = document.getElementById('refinedMapPreview');
     const previewStateIndicator = document.getElementById('previewStateIndicator');
+    const previewLoadingBanner = document.getElementById('previewLoadingBanner');
     const REFINED_PREVIEW_MAX_SIDE = 3200;
     const REFINED_PREVIEW_ZOOM_BOOST = 2;
     const REFINED_PREVIEW_DELAY_MS = 600;
@@ -779,14 +911,24 @@
     let refinedPreviewRendering = false;
     let refinedPreviewPending = false;
 
+    /**
+     * Sets refined preview state for the Cartiva application.
+     * @function setRefinedPreviewState
+     * @param {*} detailed - Input value.
+     */
     function setRefinedPreviewState(detailed) {
       const label = detailed ? 'Detailed preview loaded' : 'Limited preview';
       previewStateIndicator.classList.toggle('detailed', detailed);
       previewStateIndicator.classList.toggle('limited', !detailed);
       previewStateIndicator.setAttribute('aria-label', label);
       previewStateIndicator.title = label;
+      previewLoadingBanner.hidden = detailed;
     }
 
+    /**
+     * Handles refined preview for the Cartiva application.
+     * @function hideRefinedPreview
+     */
     function hideRefinedPreview() {
       refinedPreviewToken += 1;
       clearTimeout(runtimeState.timers.refinedPreview);
@@ -794,6 +936,11 @@
       setRefinedPreviewState(false);
     }
 
+    /**
+     * Renders refined preview for the Cartiva application.
+     * @function renderRefinedPreview
+     * @param {*} token - Input value.
+     */
     async function renderRefinedPreview(token) {
       if (token !== refinedPreviewToken || document.hidden || !runtimeState.mapReady) return;
       if (refinedPreviewRendering) {
@@ -811,7 +958,7 @@
         const scale = Math.max(1, Math.min(requestedScale, REFINED_PREVIEW_MAX_SIDE / Math.max(previewWidth, previewHeight)));
         const width = Math.round(previewWidth * scale);
         const height = Math.round(previewHeight * scale);
-        ({ exportMap: refinedMap, container } = await createExportMap(width, height, exportState));
+        ({ exportMap: refinedMap, container } = await createExportMap(width, height, exportState, { includeContours: true }));
         if (token !== refinedPreviewToken) return;
         const buildingLayerIds = (refinedMap.getStyle()?.layers || [])
           .filter(layer => getLayerRole(layer) === 'building')
@@ -844,7 +991,10 @@
         };
         refinedMapPreview.src = nextUrl;
       } catch (error) {
-        if (token === refinedPreviewToken) CartivaDiagnostics.report('preview.refine', error);
+        if (token === refinedPreviewToken) {
+          previewLoadingBanner.hidden = true;
+          CartivaDiagnostics.report('preview.refine', error);
+        }
       } finally {
         refinedMap?.remove();
         container?.remove();
@@ -856,9 +1006,14 @@
       }
     }
 
+    /**
+     * Schedules refined preview for the Cartiva application.
+     * @function scheduleRefinedPreview
+     */
     function scheduleRefinedPreview() {
       hideRefinedPreview();
       if (document.hidden) return;
+      previewLoadingBanner.hidden = false;
       const token = refinedPreviewToken;
       runtimeState.timers.refinedPreview = setTimeout(() => renderRefinedPreview(token), REFINED_PREVIEW_DELAY_MS);
     }
@@ -877,6 +1032,10 @@
       refinedPreviewUrl = '';
     });
 
+    /**
+     * Runs image export for the Cartiva application.
+     * @function runImageExport
+     */
     async function runImageExport() {
       exportCancelBtn.disabled = true;
       exportDialogCloseBtn.disabled = true;
@@ -1142,9 +1301,6 @@
       exportDialogCloseBtn.disabled = false;
       if (result) {
         exportDialog.close();
-        setTimeout(() => {
-          if (statusMessage.textContent === '5/5 Poster exported.') setStatus('');
-        }, 7000);
       }
     }
 

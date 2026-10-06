@@ -1,4 +1,9 @@
 // STL and 3MF export orchestration. Geometry helpers live in the export engine.
+/**
+ * Returns information about visible city features for the Cartiva application.
+ * @function getVisibleCityFeatures
+ * @param {*} renderSpec - Input value.
+ */
 function getVisibleCityFeatures(renderSpec) {
   const layers = map.getStyle().layers || [];
   const collect = role => {
@@ -16,8 +21,8 @@ function getVisibleCityFeatures(renderSpec) {
     .filter(definition => definition.featureKey)
     .map(definition => {
       const layerEnabled = renderSpec.layers[definition.toggleId] !== false;
-      const modelEnabled = !definition.modelToggle || renderSpec.model[definition.modelToggle];
-      const features = layerEnabled && modelEnabled
+      const layerOpacity = Number(renderSpec.layers[definition.opacityId] ?? 100);
+      const features = layerEnabled && layerOpacity > 0
         ? collect(definition.role).slice(0, definition.featureLimit)
         : [];
       return [definition.featureKey, features];
@@ -49,6 +54,7 @@ $('stlExportBtn').addEventListener('click', () => {
     const name = `cartiva_${renderSpec.city.trim().replace(/\s+/g, '_')}_${getFileTimestamp()}.stl`;
     downloadBlob(model, name);
     if (renderSpec.includeExportMetadata) downloadExportMetadata(renderSpec, name.replace(/\.stl$/, ''));
+    $('exportDialog').close();
   });
 });
 
@@ -77,5 +83,6 @@ $('threeMfExportBtn').addEventListener('click', () => {
     const name = `cartiva_${renderSpec.city.trim().replace(/\s+/g, '_')}_${getFileTimestamp()}.3mf`;
     downloadBlob(model, name);
     if (renderSpec.includeExportMetadata) downloadExportMetadata(renderSpec, name.replace(/\.3mf$/, ''));
+    $('exportDialog').close();
   });
 });

@@ -1,9 +1,20 @@
 // Immutable render input shared by preview, image, and 3D renderers.
 (function attachRenderSpec(global) {
+  /**
+   * Clones clone for the Cartiva application.
+   * @function clone
+   * @param {*} value - Input value.
+   */
   function clone(value) {
     return value == null ? value : JSON.parse(JSON.stringify(value));
   }
 
+  /**
+   * Creates create for the Cartiva application.
+   * @function create
+   * @param {*} projectState - Input value.
+   * @param {*} runtime - Input value.
+   */
   function create(projectState, runtime = {}) {
     const source = clone(projectState);
     const layers = Object.freeze({ ...(source.layers || {}) });
@@ -36,8 +47,6 @@
       previewMapSize: runtime.previewMapSize ? Object.freeze({ ...runtime.previewMapSize }) : null,
       overlay: clone(runtime.overlay ?? source.overlay ?? null),
       model: Object.freeze({
-        includeBuildings: source.stlBuildingsEnabled !== false,
-        includeRoads: source.stlRoadsEnabled !== false,
         materials: modelMaterials
       })
     });

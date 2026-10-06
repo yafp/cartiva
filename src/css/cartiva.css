@@ -80,7 +80,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 3px; }
 .search-message { padding: 8px; color: #6b7280; font-size: .75rem; }
 .sidebar-footer { padding-top: 8px; border-top: 1px solid #e5e7eb; margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
 .custom-size-row[hidden] { display: none; }
-.check-row { align-items: center; gap: 6px; cursor: pointer; }
+.check-row { justify-content: flex-start; align-items: center; gap: 6px; cursor: pointer; }
 .guide-note { color: #6b7280; font-size: .68rem; line-height: 1.35; }
 .misc-subsection { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; padding-top: 7px; border-top: 1px solid #e5e7eb; }
 .misc-subsection-title { color: #374151; font-size: .72rem; font-weight: 700; }
@@ -114,8 +114,10 @@ button.export-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
 .export-dialog { width: min(520px, calc(100vw - 32px)); padding: 0; border: 1px solid #d1d5db; border-radius: 8px; color: #111827; box-shadow: 0 24px 70px rgba(0,0,0,.35); }
 #appSettingsDialog, #mapServicesDialog { position: fixed; inset: 0; margin: auto; max-height: 90vh; }
 .export-dialog::backdrop { background: rgba(17,24,39,.68); backdrop-filter: blur(5px); }
-.export-dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #e5e7eb; }
-.export-dialog-header h2 { font-size: 1rem; }
+.export-dialog-header { display: flex; align-items: center; justify-content: flex-start; gap: 10px; padding: 10px 16px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb; }
+.export-dialog-header img { width: 32px; height: 32px; object-fit: contain; }
+.export-dialog-header h2 { flex: 1; font-size: 1rem; }
+.export-dialog-header .icon-btn { margin-left: auto; }
 .export-dialog-body { display: flex; flex-direction: column; gap: 14px; padding: 16px; }
 .export-dialog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .export-dialog-summary { color: #6b7280; font-size: .75rem; text-align: center; font-variant-numeric: tabular-nums; }
@@ -166,6 +168,8 @@ button.export-btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
 .preview-state-indicator svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .preview-state-indicator .preview-state-detailed, .preview-state-indicator.detailed .preview-state-limited { display: none; }
 .preview-state-indicator.detailed .preview-state-detailed { display: block; }
+.preview-loading-banner { position: absolute; top: 15%; left: 0; z-index: 40; width: 100%; padding: 10px 16px; background: rgba(250, 204, 21, .78); color: #292524; font-size: .85rem; font-weight: 700; text-align: center; pointer-events: none; }
+.preview-loading-banner[hidden] { display: none; }
 .shape-mask { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; display: none; }
 .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-attrib { display: none !important; }
 .map-label-overlay { position: absolute; text-align: center; z-index: 5; pointer-events: none; transition: all .2s ease; }

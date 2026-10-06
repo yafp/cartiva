@@ -5,12 +5,22 @@
   const LINE_ID = `${SOURCE_ID}-line`;
   let data = null;
 
+  /**
+   * Handles coordinates for the Cartiva application.
+   * @function countCoordinates
+   * @param {*} value - Input value.
+   */
   function countCoordinates(value) {
     if (!Array.isArray(value)) return 0;
     if (typeof value[0] === 'number') return 1;
     return value.reduce((total, child) => total + countCoordinates(child), 0);
   }
 
+  /**
+  * Validates imported GeoJSON structure and configured size limits.
+   * @function validate
+   * @param {*} input - Input value.
+   */
   function validate(input) {
     const featureCollection = input?.type === 'FeatureCollection'
       ? input
@@ -31,6 +41,11 @@
     return featureCollection;
   }
 
+  /**
+  * Adds an imported GeoJSON source and its rendered layers to the map.
+   * @function addToMap
+   * @param {*} targetMap - Input value.
+   */
   function addToMap(targetMap) {
     if (!data || !targetMap?.isStyleLoaded()) return;
     if (targetMap.getLayer(FILL_ID)) targetMap.removeLayer(FILL_ID);
@@ -41,6 +56,11 @@
     targetMap.addLayer({ id: LINE_ID, type: 'line', source: SOURCE_ID, paint: { 'line-color': '#047857', 'line-width': 2, 'line-opacity': 0.9 } });
   }
 
+  /**
+   * Handles map for the Cartiva application.
+   * @function fitMap
+   * @param {*} targetMap - Input value.
+   */
   function fitMap(targetMap) {
     const coordinates = [];
     const collect = value => {
@@ -53,6 +73,12 @@
     targetMap.fitBounds(bounds, { padding: 40, maxZoom: 14, duration: 500 });
   }
 
+  /**
+  * Reads and validates the GeoJSON file selected by the user.
+   * @function load
+   * @param {*} file - Input value.
+   * @param {*} targetMap - Input value.
+   */
   async function load(file, targetMap = global.CartivaMap) {
     global.CartivaDiagnostics?.record('geojson', 'GeoJSON import started.', { filename: file.name, bytes: file.size });
     const parsed = validate(JSON.parse(await file.text()));

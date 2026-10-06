@@ -35,6 +35,11 @@
     buildingTopColor: 'buildingColor'
   });
 
+  /**
+   * Handles preset for the Cartiva application.
+   * @function completePreset
+   * @param {*} values - Input value.
+   */
   function completePreset(values) {
     const completed = { ...values };
     for (const [key, fallbackKey] of Object.entries(detailColorFallbacks)) {
@@ -46,6 +51,12 @@
     return completed;
   }
 
+  /**
+   * Validates preset for the Cartiva application.
+   * @function validatePreset
+   * @param {*} id - Input value.
+   * @param {*} values - Input value.
+   */
   function validatePreset(id, values) {
     if (!values || typeof values !== 'object') throw new Error(`Preset ${id} is not an object.`);
     for (const [key, value] of Object.entries(values)) {
@@ -82,6 +93,12 @@
     return left.name.localeCompare(right.name);
   }
 
+  /**
+   * Creates service for the Cartiva application.
+   * @function createService
+   * @param {*} catalog - Input value.
+   * @param {*} presets - Input value.
+   */
   function createService(catalog, presets) {
     const entries = new Map();
     catalog.forEach(entry => {

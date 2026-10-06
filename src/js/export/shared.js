@@ -1,4 +1,8 @@
 // Shared download and binary helpers used by project, image, STL, and 3MF exports.
+/**
+ * Returns information about file timestamp for the Cartiva application.
+ * @function getFileTimestamp
+ */
 function getFileTimestamp() {
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -10,6 +14,12 @@ function getFileTimestamp() {
   return `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
 }
 
+/**
+ * Downloads blob for the Cartiva application.
+ * @function downloadBlob
+ * @param {*} blob - Input value.
+ * @param {*} filename - Input value.
+ */
 function downloadBlob(blob, filename) {
   CartivaDiagnostics.record('download', 'Preparing browser download.', { filename, bytes: blob.size, type: blob.type });
   const objectUrl = URL.createObjectURL(blob);
@@ -22,6 +32,12 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
 }
 
+/**
+ * Downloads export metadata for the Cartiva application.
+ * @function downloadExportMetadata
+ * @param {*} renderSpec - Input value.
+ * @param {*} filename - Input value.
+ */
 function downloadExportMetadata(renderSpec, filename) {
   const metadata = {
     schemaVersion: 1,
@@ -55,6 +71,11 @@ function downloadExportMetadata(renderSpec, filename) {
   downloadBlob(new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }), `${filename}.json`);
 }
 
+/**
+ * Handles crc32 for the Cartiva application.
+ * @function crc32
+ * @param {*} bytes - Input value.
+ */
 function crc32(bytes) {
   let crc = 0xffffffff;
   for (const byte of bytes) {

@@ -45,7 +45,8 @@ $requiredFeatureIds = @(
   'exportDialog', 'exportConfirmBtn', 'exportCancelBtn', 'exportDialogProgress',
   'includeExportMetadata', 'shapeScale', 'shapeScaleVal', 'rotationLevelDisplay',
   'colorPresetsSection', 'aboutBtn', 'aboutDialog', 'aboutCloseBtn', 'aboutVersion',
-  'googleMapsLink', 'innerOutlineEnabled', 'innerOutlineColor', 'innerOutlineWidth',
+  'mapServicesDialog', 'mapServicesList', 'innerOutlineEnabled', 'innerOutlineColor', 'innerOutlineWidth',
+  'previewLoadingBanner', 'buildingMinZoom',
   'saveProjectBtn', 'loadProjectBtn'
 )
 $missingFeatureIds = @($requiredFeatureIds | Where-Object { $_ -notin $ids })

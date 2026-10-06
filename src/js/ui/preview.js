@@ -1,4 +1,8 @@
 // Render the current state into the interactive preview.
+/**
+ * Renders preview for the Cartiva application.
+ * @function renderPreview
+ */
 function renderPreview() {
   if (!runtimeState.mapReady) return;
   globalThis.CartivaRefinedPreview?.hide();
@@ -60,11 +64,23 @@ function renderPreview() {
   schedulePreviewRenderSync();
 }
 
+/**
+ * Updates state from controls for the Cartiva application.
+ * @function updateStateFromControls
+ */
 function updateStateFromControls() {
   syncStateFromControls();
   renderPreview();
 }
 
+/**
+ * Returns information about shape path for the Cartiva application.
+ * @function getShapePath
+ * @param {*} shape - Input value.
+ * @param {*} width - Input value.
+ * @param {*} height - Input value.
+ * @param {*} scalePercent - Input value.
+ */
 function getShapePath(shape, width, height, scalePercent = 100) {
   const svgPath = getShapeSvgPath(shape);
   const path = new Path2D(svgPath);
@@ -76,6 +92,11 @@ function getShapePath(shape, width, height, scalePercent = 100) {
   return new Path2D(path, transform);
 }
 
+/**
+ * Returns information about shape svg path for the Cartiva application.
+ * @function getShapeSvgPath
+ * @param {*} shape - Input value.
+ */
 function getShapeSvgPath(shape) {
   if (shape === 'circle') return 'M 50 10 A 40 40 0 1 1 49.99 10 Z';
   if (shape === 'heart') return 'M 50 88 C 5 58 5 25 27 15 C 40 9 49 20 50 31 C 51 20 60 9 73 15 C 95 25 95 58 50 88 Z';
@@ -87,6 +108,11 @@ function getShapeSvgPath(shape) {
   return '';
 }
 
+/**
+ * Renders shape mask for the Cartiva application.
+ * @function renderShapeMask
+ * @param {*} renderSpec - Input value.
+ */
 function renderShapeMask(renderSpec = CartivaRenderSpec.create(state)) {
   const mask = $('shapeMask');
   if (renderSpec.shape === 'none') {

@@ -7,7 +7,7 @@
 const APP = {
   NAME: "cartiva",
   DESCRIPTION: "Create beautiful printable map art from any location",
-  VERSION: "2026.10.05.190000", // yyyy.mm.dd.HHMMSS
+  VERSION: "2026.10.06.192700", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
@@ -70,6 +70,10 @@ const STARTER_CITIES = Object.freeze([
   { city: 'SYDNEY', country: 'AUSTRALIA', center: [151.2093, -33.8688], zoom: 11.5 }
 ]);
 
+/**
+ * Returns information about stored location for the Cartiva application.
+ * @function getStoredLocation
+ */
 function getStoredLocation() {
   try {
     const value = JSON.parse(localStorage.getItem(LAST_LOCATION_STORAGE_KEY));
@@ -91,6 +95,10 @@ function getStoredLocation() {
   }
 }
 
+/**
+ * Returns information about random starter city for the Cartiva application.
+ * @function getRandomStarterCity
+ */
 function getRandomStarterCity() {
   return STARTER_CITIES[Math.floor(Math.random() * STARTER_CITIES.length)];
 }
@@ -223,8 +231,7 @@ const DEFAULTS = Object.freeze({
       contourEnabled: false,
       mountainColor: '#64748b',
       terrainExaggeration: 100,
-      stlBuildingsEnabled: true,
-      stlRoadsEnabled: true,
+      buildingMinZoom: 10.5,
       scaleEnabled: false,
       northEnabled: false,
       layerOrder: FIXED_LAYER_ORDER
@@ -295,6 +302,11 @@ const DEFAULTS = Object.freeze({
 // readControl: get value (boolean for checkbox, string otherwise).
 // writeControl: set value (boolean for checkbox, string otherwise).
 // -----------------------------------------------------------------------------
+    /**
+     * Returns information about control for the Cartiva application.
+     * @function readControl
+     * @param {*} id - Input value.
+     */
     function readControl(id) {
       const control = $(id);
       if (!control) {
@@ -303,6 +315,12 @@ const DEFAULTS = Object.freeze({
       return control.type === 'checkbox' ? control.checked : control.value;
     }
 
+    /**
+     * Handles control for the Cartiva application.
+     * @function writeControl
+     * @param {*} id - Input value.
+     * @param {*} value - Input value.
+     */
     function writeControl(id, value) {
       const control = $(id);
       if (!control) {
@@ -318,6 +336,10 @@ const DEFAULTS = Object.freeze({
 // Reads all relevant controls and updates the global `state` object.
 // Also captures map camera state if `map` exists.
 // -----------------------------------------------------------------------------
+    /**
+     * Handles state from controls for the Cartiva application.
+     * @function syncStateFromControls
+     */
     function syncStateFromControls() {
       state.format = readControl('formatSelect');
       state.customWidthMm = Number(readControl('customWidthMm')) || 210;
@@ -349,8 +371,7 @@ const DEFAULTS = Object.freeze({
       state.contourEnabled = readControl('contourToggle');
       state.mountainColor = readControl('mountainColor');
       state.terrainExaggeration = Number(readControl('terrainExaggeration'));
-      state.stlBuildingsEnabled = readControl('stlBuildingsToggle');
-      state.stlRoadsEnabled = readControl('stlRoadsToggle');
+      state.buildingMinZoom = Number(readControl('buildingMinZoom'));
       state.scaleEnabled = readControl('scaleToggle');
       state.northEnabled = readControl('northToggle');
       state.borderEnabled = readControl('borderCheckbox');
@@ -382,6 +403,11 @@ const DEFAULTS = Object.freeze({
 // STATE PATCH HELPER
 // Applies a partial update to `state` and optionally re-renders preview.
 // -----------------------------------------------------------------------------
+    /**
+     * Sets state for the Cartiva application.
+     * @function setState
+     * @param {*} patch - Input value.
+     */
     function setState(patch, { render = true } = {}) {
       Object.assign(state, patch);
       if (render) renderPreview();
@@ -393,6 +419,11 @@ const DEFAULTS = Object.freeze({
 // Compute target export size (px) for a given format and DPI.
 // Update on-screen dimension readout.
 // -----------------------------------------------------------------------------
+    /**
+     * Returns information about target dimensions for the Cartiva application.
+     * @function getTargetDimensions
+     * @param {*} format - Input value.
+     */
     function getTargetDimensions(format = readControl('formatSelect'), dpi = Number(readControl('exportDpi'))) {
       if (format === 'custom') {
         return {
@@ -409,6 +440,10 @@ const DEFAULTS = Object.freeze({
       };
     }
 
+    /**
+     * Updates output dimensions for the Cartiva application.
+     * @function updateOutputDimensions
+     */
     function updateOutputDimensions() {
       const dimensions = getTargetDimensions();
       const label = `${dimensions.width} × ${dimensions.height} px`;
@@ -419,6 +454,11 @@ const DEFAULTS = Object.freeze({
 
     const settingsForm = document.getElementById('settingsForm');
     const delegatedControlExclusions = new Set(['searchInput', 'geoJsonInput', 'projectFileInput', 'colorPresetSelect']);
+    /**
+     * Handles settings change for the Cartiva application.
+     * @function handleSettingsChange
+     * @param {*} event - Input value.
+     */
     function handleSettingsChange(event) {
       const control = event.target;
       if (!(control instanceof HTMLInputElement || control instanceof HTMLSelectElement)) return;
@@ -431,6 +471,9 @@ const DEFAULTS = Object.freeze({
         state.layers = {};
       }
       updateStateFromControls();
+      if (control.id === 'buildingMinZoom') {
+        $('buildingMinZoomVal').textContent = String(state.buildingMinZoom);
+      }
 
       const layerDefinition = CartivaLayerRegistry.definitions.find(definition =>
         [definition.colorId, definition.accentColorId, definition.opacityId, definition.toggleId,
@@ -463,6 +506,10 @@ const DEFAULTS = Object.freeze({
 // Reset form, apply default values to controls, and sync state.
 // Runs on DOMContentLoaded and on pageshow if persisted.
 // -----------------------------------------------------------------------------
+    /**
+     * Initializes defaults for the Cartiva application.
+     * @function initializeDefaults
+     */
     function initializeDefaults() {
 	  $('loadingProgress').value = 55;
 		
@@ -495,8 +542,8 @@ const DEFAULTS = Object.freeze({
       writeControl('contourToggle', DEFAULTS.contourEnabled);
       writeControl('mountainColor', DEFAULTS.mountainColor);
       writeControl('terrainExaggeration', DEFAULTS.terrainExaggeration);
-      writeControl('stlBuildingsToggle', DEFAULTS.stlBuildingsEnabled);
-      writeControl('stlRoadsToggle', DEFAULTS.stlRoadsEnabled);
+      writeControl('buildingMinZoom', DEFAULTS.buildingMinZoom);
+      $('buildingMinZoomVal').textContent = DEFAULTS.buildingMinZoom;
       writeControl('scaleToggle', DEFAULTS.scaleEnabled);
       writeControl('northToggle', DEFAULTS.northEnabled);
       renderPreview();

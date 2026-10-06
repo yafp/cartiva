@@ -5,6 +5,14 @@
   const configuredLevel = global.localStorage?.getItem('cartiva.logLevel') || 'info';
   logger.setDefaultLevel?.(configuredLevel);
 
+  /**
+   * Handles record for the Cartiva application.
+   * @function record
+   * @param {*} area - Input value.
+   * @param {*} message - Input value.
+   * @param {*} details - Input value.
+   * @param {*} level - Input value.
+   */
   function record(area, message, details = {}, level = 'info') {
     const event = { time: new Date().toISOString(), level, area, message, details };
     events.push(event);
@@ -13,12 +21,32 @@
     write?.call(logger, `[cartiva:${area}] ${message}`, details);
     return event;
   }
+  /**
+   * Reports report for the Cartiva application.
+   * @function report
+   * @param {*} area - Input value.
+   * @param {*} error - Input value.
+   * @param {*} details - Input value.
+   */
   function report(area, error, details = {}) {
     const message = error instanceof Error ? error.message : String(error);
     return record(area, message, { ...details, stack: error?.stack }, 'error');
   }
+  /**
+   * Handles list for the Cartiva application.
+   * @function list
+   */
   function list() { return events.slice(); }
+  /**
+   * Handles clear for the Cartiva application.
+   * @function clear
+   */
   function clear() { events.length = 0; }
+  /**
+   * Sets level for the Cartiva application.
+   * @function setLevel
+   * @param {*} level - Input value.
+   */
   function setLevel(level) {
     logger.setLevel?.(level);
     global.localStorage?.setItem('cartiva.logLevel', level);

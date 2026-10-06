@@ -1,11 +1,17 @@
 // Shared lifecycle for asynchronous user operations.
 (function attachOperations(global) {
+  /**
+   * Notifys notify for the Cartiva application.
+   * @function notify
+   * @param {*} notification - Input value.
+   * @param {*} type - Input value.
+   */
   function notify(notification, type) {
     if (!notification || typeof global.Toastify !== 'function') return;
     const details = typeof notification === 'string' ? { message: notification } : notification;
     const toast = global.Toastify({
       text: details.message,
-      duration: 4500,
+      duration: type === 'error' ? -1 : 4500,
       close: true,
       gravity: 'top',
       position: 'right',
@@ -18,6 +24,14 @@
       }
     });
     toast.showToast();
+    if (type === 'error' && toast.toastElement) {
+      toast.toastElement.tabIndex = 0;
+      toast.toastElement.title = 'Click to confirm and dismiss';
+      toast.toastElement.addEventListener('click', () => toast.hideToast(), { once: true });
+      toast.toastElement.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') toast.hideToast();
+      });
+    }
     if (details.icon === 'image' && toast.toastElement) {
       const icon = document.createElement('span');
       icon.textContent = '\u{1F5BC}\uFE0F';
@@ -27,6 +41,12 @@
     toast.toastElement?.setAttribute('role', type === 'error' ? 'alert' : 'status');
   }
 
+  /**
+   * Runs run for the Cartiva application.
+   * @function run
+   * @param {*} options - Input value.
+   * @param {*} task - Input value.
+   */
   async function run(options, task) {
     const {
       area,
@@ -59,8 +79,8 @@
     } catch (error) {
       if (error?.name !== 'AbortError') {
         global.CartivaDiagnostics.report(area, error);
-        global.setStatus?.(`${errorPrefix}: ${error.message}`, true);
-        if (errorNotificationPrefix) notify(`${errorNotificationPrefix}: ${error.message}`, 'error');
+        global.setStatus?.(`${errorPrefix}: ${error.message}`, true,
+          `${errorNotificationPrefix || errorPrefix}: ${error.message}`);
       }
       return null;
     } finally {
@@ -73,5 +93,5 @@
     }
   }
 
-  global.CartivaOperations = Object.freeze({ run });
+  global.CartivaOperations = Object.freeze({ run, notify });
 })(window);

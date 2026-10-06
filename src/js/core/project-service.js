@@ -7,23 +7,46 @@
     'customHeightMm', 'bleedMm', 'safeMm', 'guidesEnabled', 'exportQuality',
     'printLineWeight', 'exportType', 'exportDpi', 'contrast', 'brightness',
     'saturation', 'shape', 'shapeColor', 'shapeScale', 'includeExportMetadata', 'terrainEnabled', 'mountainColor',
-    'terrainExaggeration', 'stlBuildingsEnabled', 'stlRoadsEnabled', 'scaleEnabled',
+    'terrainExaggeration', 'buildingMinZoom', 'scaleEnabled',
     'northEnabled', 'borderEnabled', 'borderColor', 'borderWidth', 'outerBorderRadius',
     'innerBorderRadius', 'layerOrder', 'center', 'zoom', 'bearing', 'pitch', 'city',
     'innerOutlineEnabled', 'innerOutlineColor', 'innerOutlineWidth',
     'coordinates', 'country', 'layers'
   ]);
 
+  /**
+   * Clones clone for the Cartiva application.
+   * @function clone
+   * @param {*} value - Input value.
+   */
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
   }
 
+  /**
+   * Determines whether hex is true.
+   * @function isHex
+   * @param {*} value - Input value.
+   */
   function isHex(value) { return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value); }
+  /**
+   * Handles in range for the Cartiva application.
+   * @function numberInRange
+   * @param {*} value - Input value.
+   * @param {*} fallback - Input value.
+   * @param {*} minimum - Input value.
+   * @param {*} maximum - Input value.
+   */
   function numberInRange(value, fallback, minimum, maximum) {
     const number = Number(value);
     return Number.isFinite(number) ? Math.max(minimum, Math.min(maximum, number)) : fallback;
   }
 
+  /**
+   * Migrates migrate for the Cartiva application.
+   * @function migrate
+   * @param {*} input - Input value.
+   */
   function migrate(input) {
     const source = input?.state && typeof input.state === 'object' ? input.state : input;
     const migrated = clone(source || {});
@@ -33,6 +56,11 @@
     return migrated;
   }
 
+  /**
+   * Normalizes project for the Cartiva application.
+   * @function normalizeProject
+   * @param {*} input - Input value.
+   */
   function normalizeProject(input) {
     if (!input || typeof input !== 'object') throw new Error('Project data must be an object.');
     const source = migrate(input);
@@ -64,10 +92,21 @@
     return project;
   }
 
+  /**
+   * Creates project for the Cartiva application.
+   * @function createProject
+   * @param {*} state - Input value.
+   */
   function createProject(state) {
     return normalizeProject({ schemaVersion: VERSION, appVersion: global.CartivaApp?.version, state });
   }
 
+  /**
+   * Downloads download for the Cartiva application.
+   * @function download
+   * @param {*} project - Input value.
+   * @param {*} filename - Input value.
+   */
   function download(project, filename = 'cartiva-project.json') {
     const blob = new Blob([JSON.stringify(normalizeProject(project), null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -77,6 +116,11 @@
     global.CartivaDiagnostics?.record('project.download', 'Project download created.', { filename, bytes: blob.size });
   }
 
+  /**
+   * Returns information about file for the Cartiva application.
+   * @function readFile
+   * @param {*} file - Input value.
+   */
   function readFile(file) {
     return file.text().then(text => normalizeProject(JSON.parse(text)));
   }

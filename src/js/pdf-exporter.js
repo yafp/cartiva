@@ -1,5 +1,13 @@
 // PDF worker adapter. Export orchestration does not need to know worker details.
 (function attachPdfExporter(global) {
+  /**
+   * Creates pdf blob for the Cartiva application.
+   * @function createPdfBlob
+   * @param {*} blob - Input value.
+   * @param {*} width - Input value.
+   * @param {*} height - Input value.
+   * @param {*} dpi - Input value.
+   */
   async function createPdfBlob(blob, width, height, dpi = 300) {
     const image = new Uint8Array(await blob.arrayBuffer());
     const encoder = new TextEncoder();
@@ -31,6 +39,14 @@
     return new Blob(parts, { type: 'application/pdf' });
   }
 
+  /**
+   * Creates lossless pdf blob for the Cartiva application.
+   * @function createLosslessPdfBlob
+   * @param {*} blob - Input value.
+   * @param {*} width - Input value.
+   * @param {*} height - Input value.
+   * @param {*} dpi - Input value.
+   */
   async function createLosslessPdfBlob(blob, width, height, dpi) {
     const jsPdf = global.jspdf?.jsPDF;
     if (!jsPdf) return null;
@@ -47,6 +63,11 @@
     return document.output('blob');
   }
 
+  /**
+   * Creates create for the Cartiva application.
+   * @function create
+   * @param {*} workerUrl - Input value.
+   */
   function create(workerUrl = 'js/export-worker.js') {
     let worker = null;
     let requestId = 0;

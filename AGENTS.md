@@ -72,7 +72,6 @@ The idea is to use
 - Execute tests
   
 ## AI Working Instructions
-- Do NOT over-spend tokens and do pick the model which is most efficient
 - Whenever you create a new version/update - please ensure all new code is tested & commented
 - Existing test routines should be executed
 - README.md files should be updated

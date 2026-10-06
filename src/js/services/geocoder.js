@@ -1,5 +1,11 @@
 // Network boundary for Nominatim. UI code should only deal with domain results.
 (function attachGeocoder(global) {
+  /**
+   * Requests json for the Cartiva application.
+   * @function requestJson
+   * @param {*} url - Input value.
+   * @param {*} signal - Input value.
+   */
   async function requestJson(url, signal) {
     const response = await fetch(url, {
       signal,
@@ -10,6 +16,11 @@
     return response.json();
   }
 
+  /**
+   * Creates geocoder for the Cartiva application.
+   * @function createGeocoder
+   * @param {*} reverseEndpoint - Input value.
+   */
   function createGeocoder({ searchEndpoint, reverseEndpoint }) {
     const cache = global.CartivaCache?.create(80);
     let lastRequestAt = 0;
@@ -17,6 +28,12 @@
       if (error?.name !== 'AbortError') global.CartivaDiagnostics?.report(area, error);
       throw error;
     };
+    /**
+     * Handles limited request for the Cartiva application.
+     * @function rateLimitedRequest
+     * @param {*} url - Input value.
+     * @param {*} signal - Input value.
+     */
     async function rateLimitedRequest(url, signal) {
       const interval = Number(global.CartivaServices?.geocoder?.minIntervalMs || 1200);
       const wait = Math.max(0, interval - (Date.now() - lastRequestAt));

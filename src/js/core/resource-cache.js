@@ -1,5 +1,10 @@
 // Small cache boundary shared by geocoding and tile services.
 (function attachResourceCache(global) {
+  /**
+   * Creates create for the Cartiva application.
+   * @function create
+   * @param {*} maxEntries - Input value.
+   */
   function create(maxEntries = 100) {
     const values = new Map();
     return Object.freeze({

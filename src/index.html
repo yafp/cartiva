@@ -50,7 +50,7 @@
 			<!-- SIDEBAR-HEADER -->
 			<div class="sidebar-header">
 				<button type="button" id="aboutBtn" class="about-trigger" title="About cartiva" aria-label="About cartiva"><img src="img/cartiva_logo.png" height="60" alt="cartiva"></button>
-				<button type="button" id="appSettingsBtn" class="icon-btn settings-trigger" title="Application settings" aria-label="Application settings">⚙</button>
+				<button type="button" id="appSettingsBtn" class="icon-btn settings-trigger" title="Settings" aria-label="Application settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></button>
 				<!--
 				<h1 id="appName">DUMMY_APPNAME</h1>
 				-->
@@ -533,13 +533,10 @@
 			  <label for="terrainExaggeration">Relief strength: <span id="terrainExaggerationVal">100</span>%</label>
 			  <input type="range" id="terrainExaggeration" min="20" max="300" value="100" autocomplete="off" title="Adjust the terrain height shading strength">
 			</div>
-			<div class="misc-subsection">
-			  <div class="misc-subsection-title">3D model details</div>
-			  <div class="row annotation-options">
-				<label><input type="checkbox" id="stlBuildingsToggle" checked autocomplete="off" title="Include visible building footprints in STL and 3MF exports"> Buildings</label>
-				<label><input type="checkbox" id="stlRoadsToggle" checked autocomplete="off" title="Include visible streets in STL and 3MF exports"> Streets</label>
-			  </div>
-			</div>
+										<div class="control-group">
+											<label for="buildingMinZoom">Show buildings from zoom <span id="buildingMinZoomVal">10.5</span></label>
+											<input type="range" id="buildingMinZoom" min="8" max="12" step="0.25" value="10.5" autocomplete="off" title="Choose how far out buildings appear in the preview and 3D exports">
+										</div>
 		  </div>
 		</div>
 
@@ -611,8 +608,6 @@
 				<span id="imageExportBtnLabel">Export</span>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
 			</button>
-			<!-- STATUS-MESSAGE -->
-			<div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
 			<!-- FOOTER -->
 			<div class="footer-meta">
 				<span id="appVersion"></span>
@@ -629,8 +624,8 @@
 	<!-- POPUP: Export image -->
 	<dialog id="exportDialog" class="export-dialog" aria-labelledby="exportDialogTitle">
 		<div class="export-dialog-header">
-			<img src="img/cartiva_logo.png" height="70" alt="cartiva">
-			<h2 id="exportDialogTitle" class="visually-hidden">Export image</h2>
+			    <img src="img/cartiva_logo_only.png" alt="">
+			    <h2 id="exportDialogTitle">Export</h2>
 			<button type="button" id="exportDialogCloseBtn" class="icon-btn" title="Cancel export" aria-label="Close export dialog">×</button>
 		</div>
 		<div class="export-dialog-body">
@@ -683,27 +678,28 @@
 		</div>
 	</dialog>
 	<!-- /POPUP - EXPORT IMAGE -->
-	<dialog id="appSettingsDialog" class="export-dialog" aria-labelledby="appSettingsTitle">
-		<div class="export-dialog-header"><h2 id="appSettingsTitle">Settings</h2><button type="button" id="appSettingsCloseBtn" class="icon-btn" title="Close settings" aria-label="Close settings">×</button></div>
+	    <dialog id="appSettingsDialog" class="export-dialog" aria-labelledby="appSettingsTitle">
+		    <div class="export-dialog-header"><img src="img/cartiva_logo_only.png" alt=""><h2 id="appSettingsTitle">App settings</h2><button type="button" id="appSettingsCloseBtn" class="icon-btn" title="Close settings" aria-label="Close settings">×</button></div>
 		<div class="export-dialog-body"><div class="color-field-inline"><label for="previewBackgroundColor">Preview background</label><input type="color" id="previewBackgroundColor" value="#d1d5db" title="Choose the preview surround color"></div></div>
 		<div class="export-dialog-actions"><button type="button" id="appSettingsCancelBtn" class="secondary-action-btn">Cancel</button><button type="button" id="appSettingsSaveBtn" class="export-btn">Save</button></div>
 	</dialog>
-	<dialog id="mapServicesDialog" class="export-dialog" aria-labelledby="mapServicesTitle">
-		<div class="export-dialog-header"><h2 id="mapServicesTitle">Open coordinates in</h2><button type="button" id="mapServicesCloseBtn" class="icon-btn" aria-label="Close map services" title="Close">×</button></div>
+	    <dialog id="mapServicesDialog" class="export-dialog" aria-labelledby="mapServicesTitle">
+		    <div class="export-dialog-header"><img src="img/cartiva_logo_only.png" alt=""><h2 id="mapServicesTitle">Open coordinates in external map</h2><button type="button" id="mapServicesCloseBtn" class="icon-btn" aria-label="Close map services" title="Close">×</button></div>
 		<div id="mapServicesList" class="export-dialog-body"></div>
 	</dialog>
 	<dialog id="aboutDialog" class="export-dialog about-dialog" aria-labelledby="aboutDialogTitle">
 		<div class="export-dialog-header">
-			<img src="img/cartiva_logo.png" height="70" alt="cartiva">
+			    <img src="img/cartiva_logo_only.png" alt="">
+			    <h2 id="aboutDialogTitle">About cartiva</h2>
 			<button type="button" id="aboutCloseBtn" class="icon-btn" title="Close About" aria-label="Close About dialog">×</button>
 		</div>
 		<div class="export-dialog-body">
-			<h2 id="aboutDialogTitle">cartiva</h2>
 			<p id="aboutDescription"></p>
 			<dl class="about-details">
 				<dt>Version</dt><dd id="aboutVersion"></dd>
 				<dt>GitHub</dt><dd><a id="aboutGithubLink" target="_blank" rel="noopener noreferrer">github.com/yafp/cartiva</a></dd>
 				<dt>License</dt><dd><a href="https://github.com/yafp/cartiva/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></dd>
+							<dt>Map data</dt><dd><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Map data © OpenStreetMap contributors</a></dd>
 			</dl>
 		</div>
 	</dialog>
@@ -722,7 +718,13 @@
 		</div>
 		<!-- SEPARATOR -->
 		<div class="map-control-separator" aria-hidden="true"></div>
-	
+		<!-- SECTION: OPEN IN -->
+		<div class="map-control-group" role="group" aria-label="Sharing">
+			<button type="button" id="mapServicesBtn" class="map-zoom-btn" title="Open current coordinates in another map service" aria-label="Open map services"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
+		</div>
+		<!-- SEPARATOR -->
+		<div class="map-control-separator" aria-hidden="true"></div>
+		
 		<!-- SECTION: ZOOM -->
 	  <div class="map-control-group" role="group" aria-label="Zoom controls">
 		<button type="button" id="zoomInBigBtn" class="map-zoom-btn" title="Zoom In (Big Steps)" aria-label="Zoom in by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18"></path></svg></button>
@@ -731,6 +733,7 @@
 		<button type="button" id="zoomOutBigBtn" class="map-zoom-btn" title="Zoom Out (Big Steps)" aria-label="Zoom out by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18"></path></svg></button>
 		<div id="zoomLevelDisplay" class="zoom-level-display">13.00</div>
 	  </div>
+	  <!-- SECTION: ROTATE -->
 	  <div class="map-control-separator" aria-hidden="true"></div>
 	  <div class="map-control-group" role="group" aria-label="Rotation controls">
 		<button type="button" id="rotateLeftBtn" class="map-zoom-btn" title="Rotate Map Left" aria-label="Rotate map left"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"></path><path d="M5.5 15a8 8 0 1 0 1-8.5L4 10"></path></svg></button>
@@ -738,13 +741,14 @@
 		<button type="button" id="rotateRightBtn" class="map-zoom-btn" title="Rotate Map Right" aria-label="Rotate map right"><svg viewBox="0 0 24 24"><path d="M20 4v6h-6"></path><path d="M18.5 15a8 8 0 1 1-1-8.5L20 10"></path></svg></button>
 		<div id="rotationLevelDisplay" class="zoom-level-display">0°</div>
 	  </div>
+	  <!-- SECTION: ??? -->
 	  <div class="map-control-separator" aria-hidden="true"></div>
 	  <div class="map-control-group" role="group" aria-label="Preview tools">
 		<button type="button" id="magnifierBtn" class="map-zoom-btn" title="Toggle Live Magnifier Lens" aria-label="Toggle live magnifier"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
 		<button type="button" id="sampleColorBtn" class="map-zoom-btn" title="Pick a color from the preview" aria-label="Pick preview color"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 21 7-7m4-9 5 5m-8 8 8-8a3 3 0 0 0-4-4l-8 8a3 3 0 0 0 4 4Z"></path></svg></button>
 		<input type="color" id="sampledColor" value="#ffffff" aria-label="Picked preview color" title="Picked preview color">
-		<button type="button" id="mapServicesBtn" class="map-zoom-btn" title="Open current coordinates in another map service" aria-label="Open map services"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
 	  </div>
+	  <!-- SECTION: COLOR-PRESETS -->
 	  <div class="map-control-separator" aria-hidden="true"></div>
 	  <div class="map-control-group" role="group" aria-label="Color preset navigation">
 		<button type="button" id="previousPresetBtn" class="map-zoom-btn" title="Previous Color Preset" aria-label="Previous color preset">↑</button>
@@ -781,6 +785,7 @@
 		</div>
 		<div id="mapScaleOverlay" class="map-scale-overlay" aria-hidden="true"><span></span></div>
 		<div id="northOverlay" class="north-overlay" aria-hidden="true"><span>N</span><svg viewBox="0 0 24 24"><path d="M12 2 7 17l5-3 5 3L12 2Z"></path></svg></div>
+			<div id="previewLoadingBanner" class="preview-loading-banner" role="status" aria-live="polite" hidden>Loading details</div>
 	  </div>
 	  
 	  <!-- Notification on differences between PREVIEW and EXPORT -->

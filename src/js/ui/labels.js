@@ -1,4 +1,9 @@
 // Label contrast is shared by preview controls and random design.
+/**
+ * Handles luminance for the Cartiva application.
+ * @function relativeLuminance
+ * @param {*} hex - Input value.
+ */
 function relativeLuminance(hex) {
   const channels = [1, 3, 5].map(index => {
     const value = parseInt(hex.slice(index, index + 2), 16) / 255;
@@ -7,6 +12,10 @@ function relativeLuminance(hex) {
   return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
 }
 
+/**
+ * Updates contrast warning for the Cartiva application.
+ * @function updateContrastWarning
+ */
 function updateContrastWarning() {
   const background = relativeLuminance(state.labelBgColor);
   const ratios = [state.labelTextColor, state.labelCoordColor, state.labelCountryColor].map(color => {

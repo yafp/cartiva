@@ -35,6 +35,10 @@
     });
     const zoomLevelDisplay = $('zoomLevelDisplay');
     const rotationLevelDisplay = $('rotationLevelDisplay');
+    /**
+     * Updates zoom level display for the Cartiva application.
+     * @function updateZoomLevelDisplay
+     */
     function updateZoomLevelDisplay() {
       state.zoom = map.getZoom();
       zoomLevelDisplay.textContent = state.zoom.toFixed(2);
@@ -133,6 +137,10 @@
       }
     });
 
+    /**
+     * Renders magnifier for the Cartiva application.
+     * @function renderMagnifier
+     */
     function renderMagnifier() {
       magnifierFrame = null;
       if (!magnifierActive || !magnifierPosition) return;
@@ -200,6 +208,11 @@
       natural: ['natural', 'mountain', 'peak', 'volcano', 'glacier', 'forest_label', 'park_label']
     });
 
+    /**
+     * Returns information about label role for the Cartiva application.
+     * @function getLabelRole
+     * @param {*} layer - Input value.
+     */
     function getLabelRole(layer) {
       const id = layer.id.toLowerCase();
       const sourceLayer = String(layer['source-layer'] || '').toLowerCase();
@@ -211,6 +224,12 @@
       return 'other';
     }
 
+    /**
+     * Determines whether label visible is true.
+     * @function isLabelVisible
+     * @param {*} mode - Input value.
+     * @param {*} role - Input value.
+     */
     function isLabelVisible(mode, role) {
       if (mode === 'none') return false;
       if (mode === 'all') return true;
@@ -223,6 +242,12 @@
       return false;
     }
 
+    /**
+    * Applies the selected text-visibility filter to map symbol layers.
+     * @function applyTextFilters
+     * @param {*} targetMap - Input value.
+     * @param {*} mode - Input value.
+     */
     function applyTextFilters(targetMap = map, mode = state.textFilter) {
       const style = targetMap.getStyle();
       if (!style || !style.layers) return;
@@ -253,13 +278,28 @@
 // -----------------------------------------------------------------------------
     // Global update triggers for initial map sync
     const MAP_DETAIL_POLICY = Object.freeze({
-      buildings: Object.freeze({ minZoom: 0, maxZoom: 24 })
+      buildings: Object.freeze({ maxZoom: 24 })
     });
 
+    /**
+     * Returns information about map state layer value for the Cartiva application.
+     * @function getMapStateLayerValue
+     * @param {*} mapState - Input value.
+     * @param {*} key - Input value.
+     * @param {*} fallback - Input value.
+     */
     function getMapStateLayerValue(mapState, key, fallback) {
       return mapState.layers?.[key] ?? mapState[key] ?? fallback;
     }
 
+    /**
+     * Returns information about detailed layer color for the Cartiva application.
+     * @function getDetailedLayerColor
+     * @param {*} mapState - Input value.
+     * @param {*} layer - Input value.
+     * @param {*} role - Input value.
+     * @param {*} fallback - Input value.
+     */
     function getDetailedLayerColor(mapState, layer, role, fallback) {
       const id = layer.id.toLowerCase();
       const color = key => getMapStateLayerValue(mapState, key, null);
@@ -317,6 +357,12 @@
       return fallback;
     }
 
+    /**
+     * Configures building zoom for the Cartiva application.
+     * @function configureBuildingZoom
+     * @param {*} targetMap - Input value.
+     * @param {*} mapState - Input value.
+     */
     function configureBuildingZoom(targetMap, mapState = state) {
       const layers = targetMap.getStyle()?.layers || [];
       const enabled = getMapStateLayerValue(mapState, 'buildingToggle', true) !== false;
@@ -324,7 +370,7 @@
         if (getLayerRole(layer) !== 'building') return;
         targetMap.setLayerZoomRange(
           layer.id,
-          MAP_DETAIL_POLICY.buildings.minZoom,
+          Number.isFinite(Number(mapState.buildingMinZoom)) ? Number(mapState.buildingMinZoom) : 10.5,
           MAP_DETAIL_POLICY.buildings.maxZoom
         );
         if (layer.type === 'fill') {
@@ -335,11 +381,36 @@
 
     // This is the single styling path shared by the interactive preview and
     // the high-resolution export map. Keep provider-specific layer handling here.
+    const maritimeBoundaryLayers = new WeakMap();
+    /**
+     * Handles maritime boundaries for the Cartiva application.
+     * @function excludeMaritimeBoundaries
+     * @param {*} targetMap - Input value.
+     * @param {*} layer - Input value.
+     */
+    function excludeMaritimeBoundaries(targetMap, layer) {
+      let filteredLayers = maritimeBoundaryLayers.get(targetMap);
+      if (!filteredLayers) {
+        filteredLayers = new Set();
+        maritimeBoundaryLayers.set(targetMap, filteredLayers);
+      }
+      if (filteredLayers.has(layer.id)) return;
+      targetMap.setFilter(layer.id, ['all', ...(layer.filter ? [layer.filter] : []), ['!=', 'maritime', true]]);
+      filteredLayers.add(layer.id);
+    }
+
+    /**
+    * Applies layer colors, opacity, visibility, zoom limits, and text filters.
+     * @function applyMapState
+     * @param {*} targetMap - Input value.
+     * @param {*} mapState - Input value.
+     */
     function applyMapState(targetMap, mapState = state) {
       const layers = targetMap.getStyle()?.layers || [];
       layers.forEach(layer => {
         const role = getLayerRole(layer);
         if (!role || role === 'terrain') return;
+        if (role === 'boundary') excludeMaritimeBoundaries(targetMap, layer);
         const definition = CartivaLayerRegistry.definitions.find(item => item.role === role);
         if (!definition) return;
         const enabled = getMapStateLayerValue(mapState, definition.toggleId, true) !== false;
@@ -377,6 +448,12 @@
     }
 
     // Configure a map instance before it is allowed to render a final frame.
+    /**
+     * Configures map for render for the Cartiva application.
+     * @function configureMapForRender
+     * @param {*} targetMap - Input value.
+     * @param {*} mapState - Input value.
+     */
     function configureMapForRender(targetMap, mapState = state) {
       configureTerrain(targetMap, mapState);
       applyMapState(targetMap, mapState);
@@ -445,6 +522,10 @@
     }
 
     let previewSyncToken = 0;
+    /**
+     * Schedules preview render sync for the Cartiva application.
+     * @function schedulePreviewRenderSync
+     */
     function schedulePreviewRenderSync() {
       const token = ++previewSyncToken;
       if (typeof waitForMapIdle !== 'function') return;
@@ -456,15 +537,32 @@
       }).catch(error => CartivaDiagnostics.report('preview.sync', error));
     }
 
+    /**
+     * Returns information about layer role for the Cartiva application.
+     * @function getLayerRole
+     * @param {*} layer - Input value.
+     */
     function getLayerRole(layer) {
       return CartivaStyleAdapter.classify(layer);
     }
 
+    /**
+     * Shades hex for the Cartiva application.
+     * @function shadeHex
+     * @param {*} hex - Input value.
+     * @param {*} amount - Input value.
+     */
     function shadeHex(hex, amount) {
       const channel = index => Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(index, index + 2), 16) + amount)));
       return `rgb(${channel(1)}, ${channel(3)}, ${channel(5)})`;
     }
 
+    /**
+     * Configures terrain for the Cartiva application.
+     * @function configureTerrain
+     * @param {*} targetMap - Input value.
+     * @param {*} terrainState - Input value.
+     */
     function configureTerrain(targetMap, terrainState = state) {
       if (!targetMap.getSource(TERRAIN_SOURCE_ID)) {
         targetMap.addSource(TERRAIN_SOURCE_ID, {
@@ -495,6 +593,12 @@
       targetMap.setPaintProperty(TERRAIN_LAYER_ID, 'hillshade-exaggeration', terrainState.terrainEnabled ? Math.max(0, Math.min(1, (Number(terrainState.terrainExaggeration) || 0) / 300)) : 0);
     }
 
+    /**
+     * Updates terrain colorization for the Cartiva application.
+     * @function updateTerrainColorization
+     * @param {*} targetMap - Input value.
+     * @param {*} terrainState - Input value.
+     */
     async function updateTerrainColorization(targetMap = map, terrainState = state) {
       if (!terrainState.terrainEnabled) {
         if (targetMap.getLayer(TERRAIN_COLOR_LAYER_ID)) targetMap.setPaintProperty(TERRAIN_COLOR_LAYER_ID, 'raster-opacity', 0);
@@ -527,6 +631,11 @@
 // FIXED LAYER ORDERING
 // Moves matching MapLibre layers into the canonical cartographic stack.
 // -----------------------------------------------------------------------------
+    /**
+    * Moves thematic and terrain layers into the canonical drawing order.
+     * @function applyLayerOrder
+     * @param {*} targetMap - Input value.
+     */
     function applyLayerOrder(targetMap = map) {
       const layers = targetMap.getStyle()?.layers || [];
       const beforeId = layers.find(layer => layer.type === 'symbol')?.id;
@@ -538,6 +647,10 @@
           if (targetMap.getLayer(id)) targetMap.moveLayer(id, beforeId);
         });
       });
+      if (targetMap.getLayer('cartiva-contours')) {
+        if (beforeId) targetMap.moveLayer('cartiva-contours', beforeId);
+        else targetMap.moveLayer('cartiva-contours');
+      }
     }
 
 
@@ -546,6 +659,11 @@
 // Compute real-world scale (meters) for current center/zoom.
 // Render scale overlay and north arrow based on state and bearing.
 // -----------------------------------------------------------------------------
+    /**
+     * Returns information about scale info for the Cartiva application.
+     * @function getScaleInfo
+     * @param {*} targetMap - Input value.
+     */
     function getScaleInfo(targetMap = map) {
       const metersPerPixel = (40075016.686 * Math.cos(targetMap.getCenter().lat * Math.PI / 180)) / (512 * 2 ** targetMap.getZoom());
       const targetMeters = metersPerPixel * targetMap.getContainer().clientWidth * 0.2;
@@ -555,6 +673,10 @@
       return { meters, pixels: meters / metersPerPixel, label: meters >= 1000 ? `${meters / 1000} km` : `${Math.round(meters)} m` };
     }
 
+    /**
+     * Renders map annotations for the Cartiva application.
+     * @function renderMapAnnotations
+     */
     function renderMapAnnotations() {
       if (!runtimeState.mapReady) return;
       const scale = $('mapScaleOverlay');
@@ -569,6 +691,11 @@
       if (state.northEnabled) north.style.transform = `rotate(${-map.getBearing()}deg)`;
     }
 
+    /**
+     * Warns about unsupported layers for the Cartiva application.
+     * @function warnAboutUnsupportedLayers
+     * @param {*} targetMap - Input value.
+     */
     function warnAboutUnsupportedLayers(targetMap) {
       const unsupported = CartivaLayerRegistry.getUnsupportedLayers(targetMap.getStyle().layers);
       if (unsupported.length) CartivaDiagnostics.record('map.layers', 'Unsupported map layers were left unchanged.', { unsupported }, 'warn');
@@ -581,6 +708,11 @@
 // Handles main vs accent colors for forest/landCover.
 // -----------------------------------------------------------------------------
     // Color & Layer Controllers
+    /**
+     * Setups layer controls for the Cartiva application.
+     * @function setupLayerControls
+     * @param {*} definition - Input value.
+     */
     function setupLayerControls(definition) {
       const opacityValSpan = document.getElementById(definition.valueId);
       if (opacityValSpan) opacityValSpan.textContent = state.layers[definition.opacityId];
@@ -620,6 +752,10 @@
       swatch.style.background = `conic-gradient(${values.waterColor} 0 25%, ${values.forestColor} 25% 50%, ${values.landColor} 50% 75%, ${values.buildingColor} 75% 100%)`;
       return swatch;
     };
+    /**
+     * Updates preset picker for the Cartiva application.
+     * @function updatePresetPicker
+     */
     function updatePresetPicker() {
       const preset = presetService.get(colorPresetSelect.value);
       presetPickerButton.replaceChildren();
@@ -653,6 +789,11 @@
     colorPresetSelect.after(presetPicker);
     colorPresetSelect.classList.add('visually-hidden');
 
+    /**
+    * Applies a saved color preset to controls and map layers.
+     * @function applyColorPreset
+     * @param {*} presetName - Input value.
+     */
     function applyColorPreset(presetName) {
       const set = presetService.values(presetName);
       if (!set) return;
@@ -674,6 +815,11 @@
       applyColorPreset(e.target.value);
     });
 
+    /**
+     * Handles preset for the Cartiva application.
+     * @function stepPreset
+     * @param {*} offset - Input value.
+     */
     function stepPreset(offset) {
       const count = colorPresetSelect.options.length;
       const current = Math.max(0, colorPresetSelect.selectedIndex);
@@ -746,6 +892,10 @@
       updateStateFromControls();
     });
 
+    /**
+     * Handles all layer updates for the Cartiva application.
+     * @function triggerAllLayerUpdates
+     */
     function triggerAllLayerUpdates() {
       syncStateFromControls();
       CartivaLayerRegistry.definitions.forEach(setupLayerControls);
@@ -775,7 +925,6 @@
       const requestedPreset = urlParams.get('preset');
       if (requestedPreset && !presetService.get(requestedPreset)) {
         setStatus(`Preset "${requestedPreset}" is unavailable. Using the default preset.`, true);
-        if (typeof Toastify === 'function') Toastify({ text: 'Shared preset is unavailable. Using the default preset.', duration: 5000, gravity: 'top', position: 'right' }).showToast();
       }
       applyColorPreset(presetService.get(requestedPreset) ? requestedPreset : DEFAULTS.preset);
       $('loadingProgress').value = 100;

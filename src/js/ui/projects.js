@@ -1,4 +1,9 @@
 // Project and GeoJSON actions.
+/**
+ * Restores saved project settings, map position, and location labels.
+ * @function applyProjectState
+ * @param {*} projectState - Input value.
+ */
 function applyProjectState(projectState) {
   cancelLocationUpdate();
   clearTimeout(runtimeState.timers.mapResize);
@@ -9,8 +14,8 @@ function applyProjectState(projectState) {
     textFilter: 'textFilter', contrast: 'contrastVal', brightness: 'brightnessVal',
     saturation: 'saturationVal', shape: 'shapeSelect', shapeColor: 'shapeColor', shapeScale: 'shapeScale',
     includeExportMetadata: 'includeExportMetadata', terrainEnabled: 'terrainToggle',
-    mountainColor: 'mountainColor', terrainExaggeration: 'terrainExaggeration', stlBuildingsEnabled: 'stlBuildingsToggle',
-    stlRoadsEnabled: 'stlRoadsToggle', scaleEnabled: 'scaleToggle', northEnabled: 'northToggle',
+    mountainColor: 'mountainColor', terrainExaggeration: 'terrainExaggeration', buildingMinZoom: 'buildingMinZoom',
+    scaleEnabled: 'scaleToggle', northEnabled: 'northToggle',
     borderEnabled: 'borderCheckbox', borderColor: 'borderColor', borderWidth: 'borderWidth',
     outerBorderRadius: 'outerBorderRadius', innerBorderRadius: 'innerBorderRadius',
     innerOutlineEnabled: 'innerOutlineEnabled', innerOutlineColor: 'innerOutlineColor', innerOutlineWidth: 'innerOutlineWidth',
@@ -21,6 +26,9 @@ function applyProjectState(projectState) {
   Object.entries(controlMap).forEach(([key, id]) => {
     if (Object.prototype.hasOwnProperty.call(projectState, key)) writeControl(id, projectState[key]);
   });
+  if (Object.prototype.hasOwnProperty.call(projectState, 'buildingMinZoom')) {
+    $('buildingMinZoomVal').textContent = String(Number(projectState.buildingMinZoom));
+  }
   Object.entries(projectState.layers || {}).forEach(([key, value]) => {
     if ($(key)) writeControl(key, value);
   });
@@ -47,6 +55,10 @@ function applyProjectState(projectState) {
   saveLastLocation();
 }
 
+/**
+ * Handles project for the Cartiva application.
+ * @function currentProject
+ */
 function currentProject() {
   syncStateFromControls();
   return CartivaProject.create(state);

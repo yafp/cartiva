@@ -42,6 +42,18 @@ async function runCartivaRegressionTests(app) {
     assert(!dialog.open && document.activeElement === trigger, 'Escape or focus restoration failed');
     trigger.click(); document.getElementById('aboutCloseBtn').click();
     assert(!dialog.open, 'Close button failed');
+    assert(document.querySelector('#aboutDialog .export-dialog-header img'), 'About app icon missing');
+    assert(document.getElementById('aboutDialogTitle').textContent === 'About cartiva', 'About title missing');
+    assert(document.querySelector('#aboutDialog a[href="https://www.openstreetmap.org/copyright"]')?.textContent.includes('OpenStreetMap contributors'), 'OSM copyright link missing');
+  });
+
+  await test('Modal headers show app branding and window names', () => {
+    for (const id of ['aboutDialog', 'exportDialog', 'appSettingsDialog', 'mapServicesDialog']) {
+      const dialog = document.getElementById(id);
+      assert(dialog.querySelector('.export-dialog-header img'), `${id} app icon missing`);
+      assert(dialog.querySelector('.export-dialog-header h2')?.textContent.trim(), `${id} title missing`);
+      assert(app.getComputedStyle(dialog.querySelector('.export-dialog-header')).backgroundColor === 'rgb(243, 244, 246)', `${id} header background missing`);
+    }
   });
 
   await test('Transparent labels do not blur the map', () => {
@@ -68,10 +80,11 @@ async function runCartivaRegressionTests(app) {
   });
 
   await test('Project migration, location, outline and preset round-trip', () => {
-    const project = app.CartivaProject.create({ ...original.state, city: 'HAMBURG', shape: 'peace', innerOutlineEnabled: true, innerOutlineWidth: 2, innerOutlineColor: '#123456' });
+    const project = app.CartivaProject.create({ ...original.state, city: 'HAMBURG', shape: 'peace', buildingMinZoom: 9.25, innerOutlineEnabled: true, innerOutlineWidth: 2, innerOutlineColor: '#123456' });
     const loaded = app.CartivaProject.normalize(JSON.parse(JSON.stringify(project)));
     assert(loaded.state.city === 'HAMBURG' && loaded.state.shape === 'none', 'Location or obsolete shape migration failed');
     app.applyProjectState(loaded.state);
+    assert(document.getElementById('buildingMinZoom').value === '9.25' && document.getElementById('buildingMinZoomVal').textContent === '9.25', 'Building zoom threshold did not round-trip');
     const saved = app.currentProject();
     assert(saved.state.innerOutlineColor === '#123456' && saved.state.innerOutlineWidth === 2, 'Outline was not persisted');
     assert(saved.state.preset === original.state.preset, 'Preset was lost on load');
@@ -121,9 +134,11 @@ async function runCartivaRegressionTests(app) {
     const values = [...document.getElementById('shapeSelect').options].map(option => option.value);
     assert(!['peace', 'hexagon', 'spiral', 'smiley'].some(value => values.includes(value)), 'Removed shape still selectable');
     app.CartivaMap.jumpTo({ center: [-0.1276, 51.5074] });
-    const link = document.getElementById('googleMapsLink');
+    document.getElementById('mapServicesBtn').click();
+    const link = document.querySelector('#mapServicesList a[href*="google.com"]');
     assert(new URL(link.href).searchParams.get('query') === '51.507400,-0.127600', 'Coordinates reversed or stale');
     assert(link.target === '_blank' && link.rel.includes('noopener'), 'External link not isolated');
+    document.getElementById('mapServicesDialog').close();
   });
 
   await test('Refined rendering preserves city zoom limits and text size', () => {
@@ -213,11 +228,59 @@ async function runCartivaRegressionTests(app) {
     assert(model.querySelector('triangle[p1="7"]'), '3MF sides not assigned brown material');
   });
 
-  await test('3D-only Buildings/Streets toggles affect feature collection', () => {
-    change('stlBuildingsToggle', false); change('stlRoadsToggle', false);
+  await test('3D export follows preview layer visibility', () => {
+    change('buildingToggle', false); change('roadToggle', false);
     const spec = app.createRenderSnapshot();
     const features = app.getVisibleCityFeatures(spec);
-    assert(features.buildings.length === 0 && features.roads.length === 0, '3D toggles ignored');
+    assert(features.buildings.length === 0 && features.roads.length === 0, 'Disabled preview layers were exported');
+    assert(!('includeBuildings' in spec.model) && !('includeRoads' in spec.model), 'Obsolete model-only options remain');
+    change('buildingToggle', true); change('roadToggle', true);
+    change('buildingMinZoom', 9.25);
+    assert(app.createRenderSnapshot().buildingMinZoom === 9.25, 'Building zoom threshold was not included in render state');
+  });
+
+  await test('Successful STL and 3MF exports close the export dialog', async () => {
+    const functionNames = ['getElevationGrid', 'createTerrainMesh', 'rotateMeshToMapBearing', 'createTerrainStl', 'createColoredThreeMf', 'downloadBlob'];
+    const originalFunctions = new Map(functionNames.map(name => [name, app[name]]));
+    app.getElevationGrid = async () => ({ heights: Array(81).fill(0), size: 9 });
+    app.createTerrainMesh = () => ({ triangleMaterials: [] });
+    app.rotateMeshToMapBearing = mesh => mesh;
+    app.createTerrainStl = () => new app.Blob(['stl']);
+    app.createColoredThreeMf = () => new app.Blob(['3mf']);
+    app.downloadBlob = () => {};
+    const dialog = document.getElementById('exportDialog');
+    try {
+      for (const [buttonId, area] of [['stlExportBtn', 'stl.export'], ['threeMfExportBtn', '3mf.export']]) {
+        dialog.showModal();
+        document.getElementById(buttonId).click();
+        for (let attempt = 0; attempt < 100 && app.CartivaRuntime.operations[area]; attempt += 1) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+        assert(!dialog.open, `${buttonId} left the export dialog open`);
+      }
+    } finally {
+      originalFunctions.forEach((value, name) => { app[name] = value; });
+      dialog.close();
+    }
+  });
+
+  await test('Error notifications wait for a click to dismiss', () => {
+    const originalToastify = app.Toastify;
+    const toastElement = document.createElement('div');
+    let duration;
+    let dismissed = false;
+    try {
+      app.Toastify = options => {
+        duration = options.duration;
+        return { toastElement, showToast() {}, hideToast() { dismissed = true; } };
+      };
+      app.CartivaOperations.notify('Export failed', 'error');
+      assert(duration === -1, 'Error notification is not persistent');
+      toastElement.click();
+      assert(dismissed, 'Click did not acknowledge the error notification');
+    } finally {
+      app.Toastify = originalToastify;
+    }
   });
 
   await test('Water islands are not filled and adjacent fragments share one level', () => {

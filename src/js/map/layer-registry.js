@@ -15,9 +15,9 @@
     Object.freeze({ role: 'forest', toggleId: 'forestToggle', colorId: 'forestColor', accentColorId: 'forestColorAccent', opacityId: 'forestOpacity', valueId: 'forestOpacityVal', featureKey: 'forest', featureLimit: 4000, material: 'forest' }),
     Object.freeze({ role: 'land', toggleId: 'landToggle', colorId: 'landColor', opacityId: 'landOpacity', valueId: 'landOpacityVal', material: 'terrain' }),
     Object.freeze({ role: 'landCover', toggleId: 'landCoverToggle', colorId: 'landCoverColor', accentColorId: 'landCoverColorAccent', opacityId: 'landCoverOpacity', valueId: 'landCoverOpacityVal', featureKey: 'landCover', featureLimit: 4000, material: 'landCover' }),
-    Object.freeze({ role: 'road', toggleId: 'roadToggle', colorId: 'roadColor', opacityId: 'roadOpacity', valueId: 'roadOpacityVal', featureKey: 'roads', featureLimit: 8000, material: 'road', modelToggle: 'includeRoads' }),
+    Object.freeze({ role: 'road', toggleId: 'roadToggle', colorId: 'roadColor', opacityId: 'roadOpacity', valueId: 'roadOpacityVal', featureKey: 'roads', featureLimit: 8000, material: 'road' }),
     Object.freeze({ role: 'boundary', toggleId: 'boundaryToggle', colorId: 'boundaryColor', opacityId: 'boundaryOpacity', valueId: 'boundaryOpacityVal', featureKey: 'boundary', featureLimit: 4000, material: 'boundary' }),
-    Object.freeze({ role: 'building', toggleId: 'buildingToggle', colorId: 'buildingColor', opacityId: 'buildingOpacity', valueId: 'buildingOpacityVal', outlineToggleId: 'buildingOutlineToggle', outlineColorId: 'buildingOutlineColor', featureKey: 'buildings', featureLimit: 3000, material: 'building', modelToggle: 'includeBuildings' })
+    Object.freeze({ role: 'building', toggleId: 'buildingToggle', colorId: 'buildingColor', opacityId: 'buildingOpacity', valueId: 'buildingOpacityVal', outlineToggleId: 'buildingOutlineToggle', outlineColorId: 'buildingOutlineColor', featureKey: 'buildings', featureLimit: 3000, material: 'building' })
   ]);
   const controlIds = Object.freeze([...new Set(definitions.flatMap(definition => [
     definition.colorId,
@@ -28,6 +28,11 @@
     definition.outlineColorId
   ].filter(Boolean)))]);
 
+  /**
+   * Returns information about role for the Cartiva application.
+   * @function getRole
+   * @param {*} layer - Input value.
+   */
   function getRole(layer) {
     const id = layer.id.toLowerCase();
     const sourceLayer = String(layer['source-layer'] || '').toLowerCase();
@@ -39,6 +44,11 @@
     return null;
   }
 
+  /**
+   * Returns information about unsupported layers for the Cartiva application.
+   * @function getUnsupportedLayers
+   * @param {*} layers - Input value.
+   */
   function getUnsupportedLayers(layers) {
     return layers
       .filter(layer => ['background', 'fill', 'line'].includes(layer.type) && !getRole(layer))
