@@ -14,7 +14,6 @@ Create beautiful printable map art from any location in the world.
 - Export high-resolution artwork (images or 3D models)
 - Save and reload projects
 - Generate artistic map designs
-- Share a URL with location, zoom, rotation, and preset; open coordinates in Google Maps or OpenStreetMap
 
 You can find a **live demo** of the latest released version on [Github Pages](https://yafp.github.io/cartiva/index.html)
 
@@ -25,8 +24,6 @@ No installation required.
 ![Cartiva Screenshot Copenhagen](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_COPENHAGEN_300dpi.png)
 ![Cartiva Screenshot Hamburg](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_HAMBURG_300dpi.png)
 ![Cartiva Screenshot Heidelberg](https://raw.githubusercontent.com/yafp/cartiva/refs/heads/main/.github/examples/cartiva_HEIDELBERG_300dpi.png)
-
-
 
 
 ## Getting started
