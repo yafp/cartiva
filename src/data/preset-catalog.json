@@ -12,10 +12,6 @@
     "name": "Arctic Badlands"
   },
   {
-    "id": "blueprint",
-    "name": "Blueprint / Technical"
-  },
-  {
     "id": "burnished-delta",
     "name": "Burnished Delta"
   },
@@ -34,10 +30,6 @@
   {
     "id": "cobalt",
     "name": "Cobalt Spark"
-  },
-  {
-    "id": "coffee",
-    "name": "Coffee and Cream"
   },
   {
     "id": "copper",
@@ -60,20 +52,12 @@
     "name": "Deep Archipelago"
   },
   {
-    "id": "electric-highlands",
-    "name": "Electric Highlands"
-  },
-  {
     "id": "frostbite",
     "name": "Frostbite Blue"
   },
   {
     "id": "galaxy",
     "name": "Galaxy Deep"
-  },
-  {
-    "id": "ice",
-    "name": "Glacial Ice"
   },
   {
     "id": "hazelnut",
@@ -96,20 +80,12 @@
     "name": "Matrix Green"
   },
   {
-    "id": "midnight",
-    "name": "Midnight Purple"
-  },
-  {
     "id": "mocha",
     "name": "Mocha Roast"
   },
   {
     "id": "nebula",
     "name": "Nebula Glow"
-  },
-  {
-    "id": "olive",
-    "name": "Olive Grove"
   },
   {
     "id": "opal-archipelago",
@@ -122,10 +98,6 @@
   {
     "id": "peacock",
     "name": "Peacock Feather"
-  },
-  {
-    "id": "polar-archipelago",
-    "name": "Polar Archipelago"
   },
   {
     "id": "monochrome",
@@ -164,10 +136,6 @@
     "name": "Aero Blue"
   },
   {
-    "id": "alabaster-coast",
-    "name": "Alabaster Coast"
-  },
-  {
     "id": "cream-fjord",
     "name": "Cream Fjord"
   },
@@ -176,16 +144,8 @@
     "name": "Graphite Coast"
   },
   {
-    "id": "linen-lagoon",
-    "name": "Linen Lagoon"
-  },
-  {
     "id": "mauve-harbor",
     "name": "Mauve Harbor"
-  },
-  {
-    "id": "oatmeal-bay",
-    "name": "Oatmeal Bay"
   },
   {
     "id": "spruce-inlet",
@@ -198,10 +158,6 @@
   {
     "id": "thistle-shore",
     "name": "Thistle Shore"
-  },
-  {
-    "id": "zinc-marina",
-    "name": "Zinc Marina"
   },
   {
     "id": "cocoa-inlet",

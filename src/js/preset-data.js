@@ -21,10 +21,6 @@ window.CartivaPresetCatalog = [
     name: 'Arctic Badlands'
   },
   {
-    id: 'blueprint',
-    name: 'Blueprint / Technical'
-  },
-  {
     id: 'burnished-delta',
     name: 'Burnished Delta'
   },
@@ -43,10 +39,6 @@ window.CartivaPresetCatalog = [
   {
     id: 'cobalt',
     name: 'Cobalt Spark'
-  },
-  {
-    id: 'coffee',
-    name: 'Coffee and Cream'
   },
   {
     id: 'copper',
@@ -69,20 +61,12 @@ window.CartivaPresetCatalog = [
     name: 'Deep Archipelago'
   },
   {
-    id: 'electric-highlands',
-    name: 'Electric Highlands'
-  },
-  {
     id: 'frostbite',
     name: 'Frostbite Blue'
   },
   {
     id: 'galaxy',
     name: 'Galaxy Deep'
-  },
-  {
-    id: 'ice',
-    name: 'Glacial Ice'
   },
   {
     id: 'hazelnut',
@@ -101,20 +85,12 @@ window.CartivaPresetCatalog = [
     name: 'Matrix Green'
   },
   {
-    id: 'midnight',
-    name: 'Midnight Purple'
-  },
-  {
     id: 'mocha',
     name: 'Mocha Roast'
   },
   {
     id: 'nebula',
     name: 'Nebula Glow'
-  },
-  {
-    id: 'olive',
-    name: 'Olive Grove'
   },
   {
     id: 'opal-archipelago',
@@ -127,10 +103,6 @@ window.CartivaPresetCatalog = [
   {
     id: 'peacock',
     name: 'Peacock Feather'
-  },
-  {
-    id: 'polar-archipelago',
-    name: 'Polar Archipelago'
   },
   {
     id: 'monochrome',
@@ -169,10 +141,6 @@ window.CartivaPresetCatalog = [
     name: 'Aero Blue'
   },
   {
-    id: 'alabaster-coast',
-    name: 'Alabaster Coast'
-  },
-  {
     id: 'cream-fjord',
     name: 'Cream Fjord'
   },
@@ -181,16 +149,8 @@ window.CartivaPresetCatalog = [
     name: 'Graphite Coast'
   },
   {
-    id: 'linen-lagoon',
-    name: 'Linen Lagoon'
-  },
-  {
     id: 'mauve-harbor',
     name: 'Mauve Harbor'
-  },
-  {
-    id: 'oatmeal-bay',
-    name: 'Oatmeal Bay'
   },
   {
     id: 'spruce-inlet',
@@ -203,10 +163,6 @@ window.CartivaPresetCatalog = [
   {
     id: 'thistle-shore',
     name: 'Thistle Shore'
-  },
-  {
-    id: 'zinc-marina',
-    name: 'Zinc Marina'
   },
   {
     id: 'cocoa-inlet',
@@ -374,41 +330,58 @@ window.CartivaPresetData = {
 		buildingOutlineColor: '#ffffff'
       },
 	  'testei': {
-        waterColor: '#6e9adb', waterwayColor: '#4f6e9c', waterShadowColor: '#6e9adb', waterOpacity: '100', waterToggle: true,
-        forestColor: '#509648', forestColorAccent: '#3f7538', parkColor: '#509648', natureReserveColor: '#509648', grassColor: '#67b05f', woodColor: '#4cb83e', forestOpacity: '100', forestToggle: true,
-        landColor: '#f1f0f2', landOpacity: '100', landToggle: true,
-        landCoverColor: '#bebdbf', landCoverColorAccent: '#bebdbf', residentialColor: '#bebdbf', cemeteryColor: '#bebdbf', stadiumColor: '#bebdbf', landCoverOpacity: '100', landCoverToggle: true,
-        roadColor: '#3d3d3d', roadCaseColor: '#3d3d3d', motorwayColor: '#3d3d3d', motorwayCaseColor: '#3d3d3d', trunkRoadColor: '#3d3d3d', primaryRoadColor: '#3d3d3d', secondaryRoadColor: '#3d3d3d', minorRoadColor: '#3d3d3d', serviceRoadColor: '#3d3d3d', pathColor: '#3d3d3d', railColor: '#3d3d3d', bridgeColor: '#3d3d3d', bridgeCaseColor: '#3d3d3d', tunnelColor: '#3d3d3d', tunnelCaseColor: '#3d3d3d', roadOpacity: '100', roadToggle: true,
-        boundaryColor: '#5ffcff', countryBoundaryColor: '#595757', stateBoundaryColor: '#8f2222', countyBoundaryColor: '#5ffcff', boundaryOpacity: '100', boundaryToggle: true,
-        buildingColor: '#969595', buildingTopColor: '#969595', buildingOpacity: '95', buildingToggle: true,
-        buildingOutlineToggle: true, buildingOutlineColor: '#3d3d3d'
-      },
-      'blueprint': {
-        waterColor: '#1d4ed8', 
+        waterColor: '#6e9adb', 
+		waterwayColor: '#4f6e9c', 
+		waterShadowColor: '#6e9adb', 
 		waterOpacity: '100', 
 		waterToggle: true,
-        forestColor: '#1e40af', 
-		forestColorAccent: '#2563eb', 
+        forestColor: '#509648', 
+		forestColorAccent: '#3f7538', 
+		parkColor: '#509648', 
+		natureReserveColor: '#509648', 
+		grassColor: '#67b05f', 
+		woodColor: '#4cb83e', 
 		forestOpacity: '100', 
 		forestToggle: true,
-        landColor: '#0f172a', 
+        landColor: '#f1f0f2', 
 		landOpacity: '100', 
 		landToggle: true,
-        landCoverColor: '#1e293b', 
-		landCoverColorAccent: '#334155', 
+        landCoverColor: '#bebdbf', 
+		landCoverColorAccent: '#bebdbf', 
+		residentialColor: '#bebdbf', 
+		cemeteryColor: '#bebdbf', 
+		stadiumColor: '#bebdbf', 
 		landCoverOpacity: '100', 
 		landCoverToggle: true,
-        roadColor: '#60a5fa', 
+        roadColor: '#3d3d3d', 
+		roadCaseColor: '#3d3d3d', 
+		motorwayColor: '#3d3d3d', 
+		motorwayCaseColor: '#3d3d3d', 
+		trunkRoadColor: '#3d3d3d', 
+		primaryRoadColor: '#3d3d3d', 
+		secondaryRoadColor: '#3d3d3d', 
+		minorRoadColor: '#3d3d3d', 
+		serviceRoadColor: '#3d3d3d', 
+		pathColor: '#3d3d3d', 
+		railColor: '#3d3d3d', 
+		bridgeColor: '#3d3d3d', 
+		bridgeCaseColor: '#3d3d3d', 
+		tunnelColor: '#3d3d3d', 
+		tunnelCaseColor: '#3d3d3d', 
 		roadOpacity: '100', 
 		roadToggle: true,
-        boundaryColor: '#93c5fd', 
+        boundaryColor: '#5ffcff', 
+		countryBoundaryColor: '#595757', 
+		stateBoundaryColor: '#8f2222', 
+		countyBoundaryColor: '#5ffcff', 
 		boundaryOpacity: '100', 
 		boundaryToggle: true,
-        buildingColor: '#1e3a8a', 
-		buildingOpacity: '100', 
+        buildingColor: '#969595', 
+		buildingTopColor: '#969595', 
+		buildingOpacity: '95', 
 		buildingToggle: true,
         buildingOutlineToggle: true, 
-		buildingOutlineColor: '#93c5fd'
+		buildingOutlineColor: '#3d3d3d'
       },
       'warmvintage': {
         waterColor: '#93c5fd', 
@@ -436,33 +409,6 @@ window.CartivaPresetData = {
 		buildingToggle: true,
         buildingOutlineToggle: true, 
 		buildingOutlineColor: '#dda15e'
-      },
-      'midnight': {
-        waterColor: '#6366f1', 
-		waterOpacity: '100', 
-		waterToggle: true,
-        forestColor: '#312e81', 
-		forestColorAccent: '#3730a3', 
-		forestOpacity: '100', 
-		forestToggle: true,
-        landColor: '#030712', 
-		landOpacity: '100', 
-		landToggle: true,
-        landCoverColor: '#111827', 
-		landCoverColorAccent: '#1f2937', 
-		landCoverOpacity: '100', 
-		landCoverToggle: true,
-        roadColor: '#a5b4fc', 
-		roadOpacity: '100', 
-		roadToggle: true,
-        boundaryColor: '#4f46e5', 
-		boundaryOpacity: '100', 
-		boundaryToggle: true,
-        buildingColor: '#1e1b4b',
-		buildingOpacity: '100', 
-		buildingToggle: true,
-        buildingOutlineToggle: true, 
-		buildingOutlineColor: '#818cf8'
       },
       'cyberalt': {
         waterColor: '#22d3ee', 
@@ -492,44 +438,57 @@ window.CartivaPresetData = {
 		buildingOutlineColor: '#22d3ee'
       },
       'pasteldream': {
-        waterColor: '#bae6fd', waterOpacity: '100', waterToggle: true,
-        forestColor: '#fed7aa', forestColorAccent: '#ffedd5', forestOpacity: '100', forestToggle: true,
-        landColor: '#fdf4ff', landOpacity: '100', landToggle: true,
-        landCoverColor: '#fae8ff', landCoverColorAccent: '#f5d0fe', landCoverOpacity: '100', landCoverToggle: true,
-        roadColor: '#c084fc', roadOpacity: '100', roadToggle: true,
-        boundaryColor: '#e879f9', boundaryOpacity: '100', boundaryToggle: true,
-        buildingColor: '#f5d0fe', buildingOpacity: '100', buildingToggle: true,
-        buildingOutlineToggle: true, buildingOutlineColor: '#e879f9'
-      },
-      'coffee': {
-        waterColor: '#7dd3fc', waterOpacity: '100', waterToggle: true,
-        forestColor: '#78350f', forestColorAccent: '#92400e', forestOpacity: '100', forestToggle: true,
-        landColor: '#fef3c7', landOpacity: '100', landToggle: true,
-        landCoverColor: '#fde68a', landCoverColorAccent: '#fcd34d', landCoverOpacity: '100', landCoverToggle: true,
-        roadColor: '#451a03', roadOpacity: '100', roadToggle: true,
-        boundaryColor: '#b45309', boundaryOpacity: '100', boundaryToggle: true,
-        buildingColor: '#fcd34d', buildingOpacity: '100', buildingToggle: true,
-        buildingOutlineToggle: true, buildingOutlineColor: '#92400e'
+        waterColor: '#bae6fd', 
+		waterOpacity: '100', 
+		waterToggle: true,
+        forestColor: '#fed7aa', 
+		forestColorAccent: '#ffedd5', 
+		forestOpacity: '100', 
+		forestToggle: true,
+        landColor: '#fdf4ff', 
+		landOpacity: '100', 
+		landToggle: true,
+        landCoverColor: '#fae8ff', 
+		landCoverColorAccent: '#f5d0fe', 
+		landCoverOpacity: '100', 
+		landCoverToggle: true,
+        roadColor: '#c084fc', 
+		roadOpacity: '100', 
+		roadToggle: true,
+        boundaryColor: '#e879f9', 
+		boundaryOpacity: '100', 
+		boundaryToggle: true,
+        buildingColor: '#f5d0fe', 
+		buildingOpacity: '100', 
+		buildingToggle: true,
+        buildingOutlineToggle: true, 
+		buildingOutlineColor: '#e879f9'
       },
       'synthwave': {
-        waterColor: '#ff007f', waterOpacity: '100', waterToggle: true,
-        forestColor: '#7928ca', forestColorAccent: '#8a2be2', forestOpacity: '100', forestToggle: true,
-        landColor: '#120428', landOpacity: '100', landToggle: true,
-        landCoverColor: '#1a0b36', landCoverColorAccent: '#2b1055', landCoverOpacity: '100', landCoverToggle: true,
-        roadColor: '#00f0ff', roadOpacity: '100', roadToggle: true,
-        boundaryColor: '#ff007f', boundaryOpacity: '100', boundaryToggle: true,
-        buildingColor: '#2b1055', buildingOpacity: '100', buildingToggle: true,
-        buildingOutlineToggle: true, buildingOutlineColor: '#00f0ff'
-      },
-      'olive': {
-        waterColor: '#60a5fa', waterOpacity: '100', waterToggle: true,
-        forestColor: '#365314', forestColorAccent: '#3f6212', forestOpacity: '100', forestToggle: true,
-        landColor: '#fefce8', landOpacity: '100', landToggle: true,
-        landCoverColor: '#fef08a', landCoverColorAccent: '#fde047', landCoverOpacity: '100', landCoverToggle: true,
-        roadColor: '#1a2e05', roadOpacity: '100', roadToggle: true,
-        boundaryColor: '#65a30d', boundaryOpacity: '100', boundaryToggle: true,
-        buildingColor: '#fde047', buildingOpacity: '100', buildingToggle: true,
-        buildingOutlineToggle: true, buildingOutlineColor: '#4d7c0f'
+        waterColor: '#ff007f', 
+		waterOpacity: '100', 
+		waterToggle: true,
+        forestColor: '#7928ca', 
+		forestColorAccent: '#8a2be2', 
+		forestOpacity: '100', 
+		forestToggle: true,
+        landColor: '#120428', 
+		landOpacity: '100', 
+		landToggle: true,
+        landCoverColor: '#1a0b36', 
+		landCoverColorAccent: '#2b1055', 
+		landCoverOpacity: '100', 
+		landCoverToggle: true,
+        roadColor: '#00f0ff', 
+		roadOpacity: '100', roadToggle: true,
+        boundaryColor: '#ff007f', 
+		boundaryOpacity: '100', 
+		boundaryToggle: true,
+        buildingColor: '#2b1055', 
+		buildingOpacity: '100', 
+		buildingToggle: true,
+        buildingOutlineToggle: true, 
+		buildingOutlineColor: '#00f0ff'
       },
       'solarized': {
         waterColor: '#268bd2', 
@@ -637,33 +596,6 @@ window.CartivaPresetData = {
 		buildingToggle: true,
         buildingOutlineToggle: true, 
 		buildingOutlineColor: '#94a3b8'
-      },
-      'ice': {
-        waterColor: '#0284c7', 
-		waterOpacity: '100', 
-		waterToggle: true,
-        forestColor: '#7dd3fc', 
-		forestColorAccent: '#bae6fd', 
-		forestOpacity: '100', 
-		forestToggle: true,
-        landColor: '#f0fdf4', 
-		landOpacity: '100', 
-		landToggle: true,
-        landCoverColor: '#e0f2fe', 
-		landCoverColorAccent: '#bae6fd', 
-		landCoverOpacity: '100', 
-		landCoverToggle: true,
-        roadColor: '#0369a1', 
-		roadOpacity: '100', 
-		roadToggle: true,
-        boundaryColor: '#38bdf8', 
-		boundaryOpacity: '100', 
-		boundaryToggle: true,
-        buildingColor: '#bae6fd', 
-		buildingOpacity: '100', 
-		buildingToggle: true,
-        buildingOutlineToggle: true, 
-		buildingOutlineColor: '#0284c7'
       },
       'magma': {
         waterColor: '#3b82f6', 
@@ -1286,33 +1218,6 @@ window.CartivaPresetData = {
         buildingOutlineToggle: true,
         buildingOutlineColor: '#e14aff'
       },
-      'electric-highlands': {
-        waterColor: '#152ff3',
-        waterOpacity: '100',
-        waterToggle: true,
-        forestColor: '#8d7784',
-        forestColorAccent: '#3c6fdc',
-        forestOpacity: '100',
-        forestToggle: true,
-        landColor: '#387ca2',
-        landOpacity: '100',
-        landToggle: true,
-        landCoverColor: '#5ea202',
-        landCoverColorAccent: '#84cd28',
-        landCoverOpacity: '100',
-        landCoverToggle: true,
-        roadColor: '#6ceec8',
-        roadOpacity: '100',
-        roadToggle: true,
-        boundaryColor: '#f18f2f',
-        boundaryOpacity: '100',
-        boundaryToggle: true,
-        buildingColor: '#40aada',
-        buildingOpacity: '100',
-        buildingToggle: true,
-        buildingOutlineToggle: true,
-        buildingOutlineColor: '#20bf50'
-      },
       'opal-archipelago': {
         waterColor: '#240848',
         waterOpacity: '100',
@@ -1339,33 +1244,6 @@ window.CartivaPresetData = {
         buildingToggle: true,
         buildingOutlineToggle: true,
         buildingOutlineColor: '#f95267'
-      },
-      'polar-archipelago': {
-        waterColor: '#792b7f',
-        waterOpacity: '100',
-        waterToggle: true,
-        forestColor: '#6123f0',
-        forestColorAccent: '#80d390',
-        forestOpacity: '100',
-        forestToggle: true,
-        landColor: '#a4309e',
-        landOpacity: '100',
-        landToggle: true,
-        landCoverColor: '#129e8e',
-        landCoverColorAccent: '#8011fc',
-        landCoverOpacity: '100',
-        landCoverToggle: true,
-        roadColor: '#f8ea7c',
-        roadOpacity: '100',
-        roadToggle: true,
-        boundaryColor: '#c51b2b',
-        boundaryOpacity: '100',
-        boundaryToggle: true,
-        buildingColor: '#f4ee66',
-        buildingOpacity: '100',
-        buildingToggle: true,
-        buildingOutlineToggle: true,
-        buildingOutlineColor: '#1c9394'
       },
       'quiet-highlands': {
         waterColor: '#126ae2',
@@ -1396,16 +1274,12 @@ window.CartivaPresetData = {
       },
       ...Object.fromEntries([
         ['aero-blue', '#0ea5e9', '#164e63', '#ecfeff', '#cffafe', '#155e75'],
-        ['alabaster-coast', '#38bdf8', '#475569', '#fafafa', '#e5e7eb', '#334155'],
         ['cream-fjord', '#93c5fd', '#57534e', '#fffbeb', '#fef3c7', '#44403c'],
         ['graphite-coast', '#0284c7', '#1f2937', '#f3f4f6', '#d1d5db', '#111827'],
-        ['linen-lagoon', '#38bdf8', '#78716c', '#fafaf9', '#e7e5e4', '#57534e'],
         ['mauve-harbor', '#2563eb', '#86198f', '#fdf4ff', '#fae8ff', '#701a75'],
-        ['oatmeal-bay', '#60a5fa', '#713f12', '#fefce8', '#fef9c3', '#422006'],
         ['spruce-inlet', '#0284c7', '#064e3b', '#ecfdf5', '#a7f3d0', '#022c22'],
         ['stone-marina', '#60a5fa', '#44403c', '#fafaf9', '#d6d3d1', '#292524'],
         ['thistle-shore', '#38bdf8', '#7e22ce', '#faf5ff', '#e9d5ff', '#6b21a8'],
-        ['zinc-marina', '#38bdf8', '#52525b', '#fafafa', '#e4e4e7', '#3f3f46'],
         ['cocoa-inlet', '#0ea5e9', '#78350f', '#fdf8f6', '#e7d8cf', '#4b2e24'],
         ['coral-harbor', '#60a5fa', '#be123c', '#fff1f2', '#fecdd3', '#9f1239']
       ].map(([name, waterColor, forestColor, landColor, landCoverColor, roadColor]) => [
