@@ -119,7 +119,7 @@
 
     /**
      * Chooses a bounded tile budget from reported memory, CPU and WebGL limits.
-     * @param {{deviceMemory?: number, hardwareConcurrency?: number}} [device] - Hardware hints.
+     * @param {{deviceMemory: number, hardwareConcurrency: number}} [device] - Hardware hints.
      * @param {number} [gpuLimit] - Maximum supported texture/renderbuffer side.
      * @returns {{tileSize: number, maxRenderSide: number}} Rendering budget in pixels.
      */
