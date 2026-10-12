@@ -35,16 +35,21 @@ function applyProjectState(projectState) {
   state.layerOrder = [...FIXED_LAYER_ORDER];
   if (Object.prototype.hasOwnProperty.call(projectState, 'preset')) writeControl('colorPresetSelect', projectState.preset || '');
   $('customSizeControls').hidden = projectState.format !== 'custom';
-  if (projectState.city) {
-    $('cityName').textContent = projectState.city;
-    $('searchInput').value = projectState.city;
-  }
-  if (projectState.coordinates) $('cityCoords').textContent = projectState.coordinates;
-  if (projectState.country) $('cityCountry').textContent = projectState.country;
   if (Array.isArray(projectState.center) && Number.isFinite(projectState.zoom)) {
     locationSelectionInProgress = true;
     map.jumpTo({ center: projectState.center, zoom: projectState.zoom, bearing: projectState.bearing || 0, pitch: projectState.pitch || 0 });
   }
+  /** Restores explicit labels after synchronous map movement or resizing callbacks. */
+  const restoreProjectLabels = () => {
+    if (Object.prototype.hasOwnProperty.call(projectState, 'city')) {
+      $('cityName').textContent = projectState.city || '';
+      $('searchInput').value = projectState.city || '';
+    }
+    if (Object.prototype.hasOwnProperty.call(projectState, 'coordinates')) $('cityCoords').textContent = projectState.coordinates || '';
+    if (Object.prototype.hasOwnProperty.call(projectState, 'country')) $('cityCountry').textContent = projectState.country || '';
+  };
+  restoreProjectLabels();
+  preserveLocationName();
   syncStateFromControls();
   triggerAllLayerUpdates();
   renderPreview();
@@ -52,6 +57,8 @@ function applyProjectState(projectState) {
   map.resize();
   locationSelectionInProgress = false;
   preserveLocationName();
+  restoreProjectLabels();
+  syncStateFromControls();
   saveLastLocation();
 }
 
@@ -71,7 +78,8 @@ const projectFileInput = $('projectFileInput');
 saveProjectBtn?.addEventListener('click', async () => {
   await CartivaOperations.run({
     area: 'project.save', button: saveProjectBtn,
-    startStatus: 'Saving project...', successStatus: 'Project JSON downloaded.', errorPrefix: 'Project save failed'
+    startStatus: 'Saving project...', successStatus: 'Project JSON downloaded.', errorPrefix: 'Project save failed',
+    successNotification: { message: 'Project saved: JSON download started.', duration: 30000 }
   }, async () => {
     const project = currentProject();
     const location = String(project.state.city || 'MAP_LOCATION').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'MAP_LOCATION';
@@ -89,6 +97,7 @@ projectFileInput?.addEventListener('change', async () => {
     button: loadProjectBtn,
     startStatus: 'Loading project...',
     successStatus: 'Project loaded.',
+    successNotification: { message: 'Project loaded successfully.', duration: 30000 },
     errorPrefix: 'Project load failed'
   }, async cleanup => {
     cleanup(() => { projectFileInput.value = ''; });

@@ -45,6 +45,38 @@
       const bearing = Math.round(map.getBearing());
       rotationLevelDisplay.textContent = `${bearing === 0 ? 0 : bearing}°`;
     }
+    window.CartivaMapDetailPolicy = Object.freeze({
+      thresholds: Object.freeze({ centerMovementPx: 24, zoom: 0.08, orientationDegrees: 2 }),
+      /**
+       * Checks a candidate camera against the last fully rendered camera using spatial hysteresis.
+       * @param {Object|null} previous - Settled camera snapshot with center, zoom, bearing, and pitch.
+       * @param {Object} current - Candidate camera snapshot with center, zoom, bearing, and pitch.
+       * @param {*} targetMap - MapLibre map used to project the center displacement.
+       * @returns {boolean} True when the map detail should be refreshed.
+       */
+      isSignificant(previous, current, targetMap = map) {
+        if (!previous || !current) return true;
+        const limits = window.CartivaMapDetailPolicy.thresholds;
+        const zoomDelta = Math.abs(Number(current.zoom) - Number(previous.zoom));
+        if (!Number.isFinite(zoomDelta)) return true;
+        const angleDistance = (left, right) => {
+          const difference = Math.abs(Number(left || 0) - Number(right || 0)) % 360;
+          return Math.min(difference, 360 - difference);
+        };
+        if (zoomDelta > limits.zoom
+          || angleDistance(current.bearing, previous.bearing) > limits.orientationDegrees
+          || Math.abs(Number(current.pitch || 0) - Number(previous.pitch || 0)) > limits.orientationDegrees) return true;
+        const center = point => Array.isArray(point)
+          ? point
+          : [Number(point?.lng ?? point?.lon), Number(point?.lat)];
+        const previousCenter = center(previous.center);
+        const currentCenter = center(current.center);
+        if (![...previousCenter, ...currentCenter].every(Number.isFinite)) return true;
+        const previousPixel = targetMap.project(previousCenter);
+        const currentPixel = targetMap.project(currentCenter);
+        return Math.hypot(previousPixel.x - currentPixel.x, previousPixel.y - currentPixel.y) > limits.centerMovementPx;
+      }
+    });
     map.on('move', updateZoomLevelDisplay);
     map.on('move', renderMapAnnotations);
     const mapServices = [
@@ -69,7 +101,41 @@
       mapServicesDialog.showModal();
     });
     $('mapServicesCloseBtn').addEventListener('click', () => mapServicesDialog.close());
-    map.on('movestart', () => globalThis.CartivaRefinedPreview?.hide());
+    map.on('movestart', () => globalThis.CartivaRefinedPreview?.hide({ preserveImage: true }));
+    let mapDragActive = false;
+    let dragDetailTimer = null;
+    const DRAG_DETAIL_ROLES = new Set(['forest', 'landCover', 'road', 'boundary', 'building']);
+    /**
+     * Hides expensive thematic details during a pointer drag while retaining the base land/water map.
+     * @param {*} targetMap - MapLibre map being simplified.
+     */
+    function applyLightweightDragStyle(targetMap) {
+      (targetMap.getStyle()?.layers || []).forEach(layer => {
+        if (layer.type === 'symbol' || DRAG_DETAIL_ROLES.has(getLayerRole(layer))) {
+          targetMap.setLayoutProperty(layer.id, 'visibility', 'none');
+        }
+      });
+    }
+    /**
+     * Restores full styling after map movement has settled.
+     */
+    function scheduleDragStyleRestore() {
+      if (!mapDragActive) return;
+      clearTimeout(dragDetailTimer);
+      dragDetailTimer = setTimeout(() => {
+        mapDragActive = false;
+        applyMapState(map, state);
+        applyTextFilters(map, readControl('textFilter'));
+        map.triggerRepaint();
+        schedulePreviewRenderSync();
+      }, 300);
+    }
+    map.on('dragstart', () => {
+      clearTimeout(dragDetailTimer);
+      mapDragActive = true;
+      if (!globalThis.CartivaRefinedPreview?.hasBufferedDetail()) applyLightweightDragStyle(map);
+    });
+    map.on('dragend', scheduleDragStyleRestore);
     map.on('zoomend', () => {
       configureMapForRender(map, state);
       triggerAllLayerUpdates();
@@ -80,6 +146,7 @@
       saveLastLocation();
       updateShareUrl();
       schedulePreviewRenderSync();
+      scheduleDragStyleRestore();
     });
     let terrainRefreshTimer;
     map.on('moveend', () => {
@@ -122,20 +189,56 @@
     const mapMagnifierLens = document.getElementById('mapMagnifierLens');
     const magnifierContext = mapMagnifierLens.getContext('2d');
     const mapFrame = document.getElementById('mapFrame');
+    const magnifierPreviewImage = document.getElementById('refinedMapPreview');
     let magnifierActive = false;
     let magnifierFrame = null;
     let magnifierPosition = null;
+    const MAGNIFIER_SIZE = 180;
 
     magnifierBtn.addEventListener('click', () => {
       magnifierActive = !magnifierActive;
-      if (magnifierActive) {
-        magnifierBtn.classList.add('active-magnifier');
-        mapMagnifierLens.style.display = 'block';
-      } else {
-        magnifierBtn.classList.remove('active-magnifier');
-        mapMagnifierLens.style.display = 'none';
-      }
+      magnifierBtn.classList.toggle('active-magnifier', magnifierActive);
+      magnifierBtn.setAttribute('aria-pressed', String(magnifierActive));
+      if (magnifierActive) queueMagnifierRender();
+      else mapMagnifierLens.style.display = 'none';
     });
+
+    /**
+     * Schedules a magnifier refresh without queuing duplicate animation frames.
+     * @function queueMagnifierRender
+     */
+    function queueMagnifierRender() {
+      if (magnifierActive && magnifierPosition && !magnifierFrame) {
+        magnifierFrame = requestAnimationFrame(renderMagnifier);
+      }
+    }
+
+    /**
+     * Returns the highest-detail image currently visible beneath the lens.
+     * @function getMagnifierSource
+     * @returns {{image: HTMLCanvasElement|HTMLImageElement, rect: DOMRect, width: number, height: number}|null}
+     */
+    function getMagnifierSource() {
+      const previewOpacity = Number.parseFloat(getComputedStyle(magnifierPreviewImage).opacity);
+      if (magnifierPreviewImage.classList.contains('ready')
+        && magnifierPreviewImage.complete
+        && magnifierPreviewImage.naturalWidth > 0
+        && previewOpacity > 0.05) {
+        return {
+          image: magnifierPreviewImage,
+          rect: magnifierPreviewImage.getBoundingClientRect(),
+          width: magnifierPreviewImage.naturalWidth,
+          height: magnifierPreviewImage.naturalHeight
+        };
+      }
+      const canvas = map.getCanvas();
+      return {
+        image: canvas,
+        rect: canvas.getBoundingClientRect(),
+        width: canvas.width,
+        height: canvas.height
+      };
+    }
 
     /**
      * Renders magnifier for the Cartiva application.
@@ -144,27 +247,34 @@
     function renderMagnifier() {
       magnifierFrame = null;
       if (!magnifierActive || !magnifierPosition) return;
-      const { x, y, rect } = magnifierPosition;
-      const mapCanvas = map.getCanvas();
-      const canvasRect = mapCanvas.getBoundingClientRect();
-      const sourceX = ((x + rect.left - canvasRect.left) / canvasRect.width) * mapCanvas.width;
-      const sourceY = ((y + rect.top - canvasRect.top) / canvasRect.height) * mapCanvas.height;
-      const sourceSize = Math.min(mapCanvas.width, mapCanvas.height) * 0.09;
+      const source = getMagnifierSource();
+      if (!source || !source.rect.width || !source.rect.height) return;
+      const { clientX, clientY } = magnifierPosition;
+      const sourceX = ((clientX - source.rect.left) / source.rect.width) * source.width;
+      const sourceY = ((clientY - source.rect.top) / source.rect.height) * source.height;
+      const sourceSize = Math.min(source.width, source.height) * 0.09;
+      const lensWidth = mapMagnifierLens.width;
+      const lensHeight = mapMagnifierLens.height;
       magnifierContext.clearRect(0, 0, mapMagnifierLens.width, mapMagnifierLens.height);
+      magnifierContext.save();
+      magnifierContext.beginPath();
+      magnifierContext.arc(lensWidth / 2, lensHeight / 2, Math.min(lensWidth, lensHeight) / 2, 0, Math.PI * 2);
+      magnifierContext.clip();
       magnifierContext.drawImage(
-        mapCanvas,
+        source.image,
         sourceX - sourceSize / 2,
         sourceY - sourceSize / 2,
         sourceSize,
         sourceSize,
         0,
         0,
-        mapMagnifierLens.width,
-        mapMagnifierLens.height
+        lensWidth,
+        lensHeight
       );
+      magnifierContext.restore();
     }
 
-    mapFrame.addEventListener('mousemove', (e) => {
+    mapFrame.addEventListener('pointermove', (e) => {
       if (!magnifierActive) return;
       const rect = mapFrame.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -176,19 +286,26 @@
       }
 
       mapMagnifierLens.style.display = 'block';
-      const lensSize = 180;
+      const lensSize = Math.min(MAGNIFIER_SIZE, rect.width, rect.height);
       mapMagnifierLens.style.width = `${lensSize}px`;
       mapMagnifierLens.style.height = `${lensSize}px`;
-      mapMagnifierLens.style.left = `${x - lensSize / 2}px`;
-      mapMagnifierLens.style.top = `${y - lensSize / 2}px`;
-      magnifierPosition = { x, y, rect };
-      if (!magnifierFrame) magnifierFrame = requestAnimationFrame(renderMagnifier);
+      const halfSize = lensSize / 2;
+      const left = Math.max(0, Math.min(rect.width - lensSize, x - halfSize));
+      const top = Math.max(0, Math.min(rect.height - lensSize, y - halfSize));
+      mapMagnifierLens.style.left = `${left}px`;
+      mapMagnifierLens.style.top = `${top}px`;
+      magnifierPosition = { clientX: e.clientX, clientY: e.clientY };
+      queueMagnifierRender();
     });
 
-    mapFrame.addEventListener('mouseleave', () => {
-      if (magnifierActive) {
-        mapMagnifierLens.style.display = 'none';
-      }
+    mapFrame.addEventListener('pointerleave', () => {
+      mapMagnifierLens.style.display = 'none';
+    });
+    map.on('render', queueMagnifierRender);
+    magnifierPreviewImage.addEventListener('load', queueMagnifierRender);
+    new MutationObserver(queueMagnifierRender).observe(magnifierPreviewImage, {
+      attributes: true,
+      attributeFilter: ['class', 'src']
     });
 
 
@@ -395,7 +512,9 @@
         maritimeBoundaryLayers.set(targetMap, filteredLayers);
       }
       if (filteredLayers.has(layer.id)) return;
-      targetMap.setFilter(layer.id, ['all', ...(layer.filter ? [layer.filter] : []), ['!=', 'maritime', true]]);
+      // CARTO's boundary source exposes `maritime` as a numeric field (0/1).
+      // Keep the provider's admin-level filter and explicitly discard sea borders.
+      targetMap.setFilter(layer.id, ['all', ...(layer.filter ? [layer.filter] : []), ['!=', 'maritime', 1]]);
       filteredLayers.add(layer.id);
     }
 
@@ -445,6 +564,7 @@
       });
       configureBuildingZoom(targetMap, mapState);
       applyTextFilters(targetMap, mapState.textFilter);
+      if (targetMap === map && mapDragActive) applyLightweightDragStyle(targetMap);
     }
 
     // Configure a map instance before it is allowed to render a final frame.
@@ -466,17 +586,34 @@
     }
 
     const contourRequests = new WeakMap();
-    /** Derives elevation isolines from the same DEM grid used for terrain exports. */
-    async function updateContours(targetMap = map, mapState = state) {
+    /**
+     * Derives elevation isolines from the same DEM grid used for terrain exports.
+     * Callers rendering adjacent map regions may pass their shared full-footprint bounds
+     * so each render uses the same sampling grid and contour geometry.
+     * @param {*} targetMap - MapLibre map to receive the contour layer.
+     * @param {*} mapState - Current visual state.
+     * @param {Object} [options] - Optional contour generation settings.
+     * @param {*} [options.bounds] - Shared full-footprint bounds in MapLibre or GeoJSON bounds form.
+     * @param {number} [options.zoom] - Shared sampling zoom; defaults to state.zoom or map zoom.
+     * @returns {Promise<void>} Resolves when the contour source and layer are current.
+     */
+    async function updateContours(targetMap = map, mapState = state, options = {}) {
       if (!mapState.contourEnabled || !targetMap.getStyle()?.layers?.length) return;
-      const bounds = targetMap.getBounds();
-      const requestKey = JSON.stringify([bounds.toArray(), Math.floor(targetMap.getZoom()), mapState.mountainColor]);
+      const boundsInput = options.bounds ?? mapState.bounds;
+      const bounds = boundsInput?.getWest
+        ? boundsInput
+        : boundsInput?.length === 2
+          ? new maplibregl.LngLatBounds(boundsInput[0], boundsInput[1])
+          : targetMap.getBounds();
+      const requestedZoom = Number(options.zoom ?? mapState.zoom ?? targetMap.getZoom());
+      const sampleZoom = Number.isFinite(requestedZoom) ? requestedZoom : targetMap.getZoom();
+      const requestKey = JSON.stringify([bounds.toArray(), Math.floor(sampleZoom), mapState.mountainColor]);
       if (contourRequests.get(targetMap) === requestKey) return;
       contourRequests.set(targetMap, requestKey);
       const size = 49;
       let heights;
       try {
-        ({ heights } = await getElevationGrid(bounds, size, Math.min(12, Math.max(9, Math.floor(targetMap.getZoom())))));
+        ({ heights } = await getElevationGrid(bounds, size, Math.min(12, Math.max(9, Math.floor(sampleZoom)))));
       } catch (error) {
         if (contourRequests.get(targetMap) === requestKey) contourRequests.delete(targetMap);
         throw error;
@@ -522,6 +659,7 @@
     }
 
     let previewSyncToken = 0;
+    let previewSyncTimer = null;
     /**
      * Schedules preview render sync for the Cartiva application.
      * @function schedulePreviewRenderSync
@@ -529,12 +667,16 @@
     function schedulePreviewRenderSync() {
       const token = ++previewSyncToken;
       if (typeof waitForMapIdle !== 'function') return;
-      waitForMapIdle(map, 10000).then(() => {
-        if (token !== previewSyncToken || !runtimeState.mapReady) return;
-        configureMapForRender(map, state);
-        map.triggerRepaint();
-        globalThis.CartivaRefinedPreview?.schedule();
-      }).catch(error => CartivaDiagnostics.report('preview.sync', error));
+      clearTimeout(previewSyncTimer);
+      previewSyncTimer = setTimeout(() => {
+        previewSyncTimer = null;
+        waitForMapIdle(map, 10000).then(() => {
+          if (token !== previewSyncToken || !runtimeState.mapReady) return;
+          configureMapForRender(map, state);
+          map.triggerRepaint();
+          globalThis.CartivaRefinedPreview?.schedule();
+        }).catch(error => CartivaDiagnostics.report('preview.sync', error));
+      }, mapDragActive ? 350 : 180);
     }
 
     /**

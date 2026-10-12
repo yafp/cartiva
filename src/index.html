@@ -44,8 +44,13 @@
 <body>
 	<div id="loadingSplash" class="loading-splash" role="status" aria-live="polite"><img src="img/cartiva_logo.png" alt="cartiva"><div>Loading map…</div><progress id="loadingProgress" max="100" value="10" aria-label="Loading progress"></progress></div>
 	<form id="settingsForm" class="settings-form" autocomplete="off">
+		<nav class="sidebar-rail" aria-label="Design sections">
+			<button type="button" id="sidebarToggleBtn" class="sidebar-rail-btn" aria-controls="designSidebar" aria-expanded="false" aria-label="Open design settings" title="Open or close design settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+			<div id="sidebarSectionRail" class="sidebar-section-rail"></div>
+			<button type="button" id="sidebarActionsBtn" class="sidebar-rail-btn" aria-controls="designSidebar" aria-expanded="false" aria-label="Project and export actions" title="Project and export actions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4"/></svg></button>
+		</nav>
 		<!-- SIDEBAR -->
-		<div class="sidebar">
+		<div class="sidebar" id="designSidebar">
 			<!-- SIDEBAR-HEADER -->
 			<div class="sidebar-header">
 				<button type="button" id="aboutBtn" class="about-trigger" title="About cartiva" aria-label="About cartiva"><img src="img/cartiva_logo.png" height="60" alt="cartiva"></button>
@@ -106,6 +111,10 @@
 							<option value="square-large">Square Large (420 mm)</option>
 							<option value="square-medium">Square Medium (297 mm)</option>
 							<option value="square-small">Square Small (210 mm)</option>
+							<option value="poster-50x70">Poster Portrait (500 × 700 mm)</option>
+							<option value="poster-70x50">Poster Landscape (700 × 500 mm)</option>
+							<option value="ratio-3x4">3:4 Portrait (300 × 400 mm)</option>
+							<option value="ratio-4x3">4:3 Landscape (400 × 300 mm)</option>
 							<option value="custom">Custom size</option>
 						</select>
 					</div>
@@ -651,6 +660,7 @@ stroke-linecap="round" stroke-linejoin="round">
 					<select id="exportType" autocomplete="off" title="Select the export file format">
 						<option value="image/png">PNG</option>
 						<option value="image/jpeg">JPEG</option>
+						<option value="image/tiff">TIFF lossless (.tiff)</option>
 						<option value="image/webp">WebP</option>
 						<option value="image/svg+xml">SVG</option>
 						<option value="application/pdf">PDF</option>
@@ -683,8 +693,13 @@ stroke-linecap="round" stroke-linejoin="round">
 			</div>
 			<div id="exportDialogDimensions" class="export-dialog-summary">2480 × 3508 px</div>
 			<div id="exportDialogProgress" class="export-dialog-progress" role="status" aria-live="polite"></div>
+			<div id="exportProgressVisual" hidden>
+				<progress id="exportProgressBar" max="100" value="0" aria-label="Export progress"></progress>
+				<span id="exportProgressPercent">0%</span>
+				<canvas id="exportProgressThumbnail" width="240" height="160" aria-label="Completed export tiles preview"></canvas>
 			</div>
-			<div id="exportModelsPanel" role="tabpanel" hidden><div class="model-actions"><button type="button" class="secondary-action-btn" id="stlExportBtn" title="Export STL terrain model">3D .stl</button><button type="button" class="secondary-action-btn" id="threeMfExportBtn" title="Export colored 3MF terrain model">3D .3mf</button></div></div>
+			</div>
+			<div id="exportModelsPanel" role="tabpanel" hidden><div class="model-actions"><button type="button" class="secondary-action-btn" id="threeMfExportBtn" title="Export colored 3MF terrain model"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Zm0 10v8M3 8l9 5 9-5"/></svg>Export .3mf</button><button type="button" class="secondary-action-btn" id="stlExportBtn" title="Export STL terrain model"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 18H3L12 3Zm0 0v12m0 0 9 6m-9-6-9 6"/></svg>Export .stl</button></div></div>
 		</div>
 		<div class="export-dialog-actions">
 			<button type="button" id="exportCancelBtn" class="secondary-action-btn">Cancel</button>
@@ -696,7 +711,9 @@ stroke-linecap="round" stroke-linejoin="round">
 	<!-- MODAL POPUP: CARTIVA SETTINGS -->
 	    <dialog id="appSettingsDialog" class="export-dialog" aria-labelledby="appSettingsTitle">
 		    <div class="export-dialog-header"><img src="img/cartiva_logo_only.png" alt=""><h2 id="appSettingsTitle">cartiva settings</h2><button type="button" id="appSettingsCloseBtn" class="icon-btn" title="Close settings" aria-label="Close settings">×</button></div>
-		<div class="export-dialog-body"><div class="color-field-inline"><label for="previewBackgroundColor">Preview background</label><input type="color" id="previewBackgroundColor" value="#d1d5db" title="Choose the preview surround color"></div></div>
+		<div class="export-dialog-body"><div class="color-field-inline"><label for="previewBackgroundColor">Preview background</label><input type="color" id="previewBackgroundColor" value="#d1d5db" title="Choose the preview surround color"></div>
+			<div class="control-group"><label for="previewCacheRings">Preview tile cache rings</label><select id="previewCacheRings" title="Cache surrounding detail tiles in 256-pixel rings after the visible area loads"><option value="0">0 - No surrounding cache</option><option value="1" selected>1 ring</option><option value="2">2 rings</option><option value="3">3 rings</option><option value="4">4 rings</option></select></div>
+		</div>
 		<div class="export-dialog-actions"><button type="button" id="appSettingsCancelBtn" class="secondary-action-btn">Cancel</button><button type="button" id="appSettingsSaveBtn" class="export-btn">Save</button></div>
 	</dialog>
 	    <dialog id="mapServicesDialog" class="export-dialog" aria-labelledby="mapServicesTitle">
@@ -728,14 +745,9 @@ stroke-linecap="round" stroke-linejoin="round">
 	<!-- RIGHT-SIDEBAR - Floating map controls grouped by function. -->
 	<div class="map-zoom-controls" role="toolbar" aria-label="Map view controls">
 		<!-- SECTION: SHARING -->
-		<div class="map-control-group" role="group" aria-label="Sharing">
+		<div class="map-control-group" role="group" aria-label="Sharing and external maps">
 			<button type="button" id="shareBtn" class="share-btn" title="Recommend cartiva" aria-label="Recommend cartiva">
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 preview-icon"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></button>
-		</div>
-		<!-- SEPARATOR -->
-		<div class="map-control-separator" aria-hidden="true"></div>
-		<!-- SECTION: OPEN IN -->
-		<div class="map-control-group" role="group" aria-label="Sharing">
 			<button type="button" id="mapServicesBtn" class="map-zoom-btn" title="Open current coordinates in another map service" aria-label="Open map services"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
 		</div>
 		<!-- SEPARATOR -->
@@ -745,30 +757,34 @@ stroke-linecap="round" stroke-linejoin="round">
 	  <div class="map-control-group" role="group" aria-label="Zoom controls">
 		<button type="button" id="zoomInBigBtn" class="map-zoom-btn" title="Zoom In (Big Steps)" aria-label="Zoom in by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18"></path></svg></button>
 		<button type="button" id="zoomInFineBtn" class="map-zoom-btn" title="Zoom In (Fine Adjustment)" aria-label="Zoom in slightly"><svg class="zoom-icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v10M7 12h10"></path></svg></button>
-		<button type="button" id="zoomOutFineBtn" class="map-zoom-btn" title="Zoom Out (Fine Adjustment)" aria-label="Zoom out slightly"><svg class="zoom-icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 12h10"></path></svg></button>
 		<button type="button" id="zoomOutBigBtn" class="map-zoom-btn" title="Zoom Out (Big Steps)" aria-label="Zoom out by two levels"><svg class="zoom-icon-large" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18"></path></svg></button>
-		<div id="zoomLevelDisplay" class="zoom-level-display">13.00</div>
+		<button type="button" id="zoomOutFineBtn" class="map-zoom-btn" title="Zoom Out (Fine Adjustment)" aria-label="Zoom out slightly"><svg class="zoom-icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 12h10"></path></svg></button>
+		<div id="zoomLevelDisplay" class="zoom-level-display" aria-label="Current zoom level">13.00</div>
 	  </div>
 	  <!-- SECTION: ROTATE -->
 	  <div class="map-control-separator" aria-hidden="true"></div>
 	  <div class="map-control-group" role="group" aria-label="Rotation controls">
 		<button type="button" id="rotateLeftBtn" class="map-zoom-btn" title="Rotate Map Left" aria-label="Rotate map left"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"></path><path d="M5.5 15a8 8 0 1 0 1-8.5L4 10"></path></svg></button>
-		<button type="button" id="resetBearingBtn" class="map-zoom-btn" title="Reset Map Orientation" aria-label="Reset map orientation"><svg viewBox="0 0 24 24"><path d="M12 3 8 12l4-2 4 2-4-9Z"></path><circle cx="12" cy="12" r="9"></circle></svg></button>
 		<button type="button" id="rotateRightBtn" class="map-zoom-btn" title="Rotate Map Right" aria-label="Rotate map right"><svg viewBox="0 0 24 24"><path d="M20 4v6h-6"></path><path d="M18.5 15a8 8 0 1 1-1-8.5L20 10"></path></svg></button>
-		<div id="rotationLevelDisplay" class="zoom-level-display">0°</div>
+		<button type="button" id="resetBearingBtn" class="map-zoom-btn map-control-centered" title="Reset Map Orientation" aria-label="Reset map orientation"><svg viewBox="0 0 24 24"><path d="M12 3 8 12l4-2 4 2-4-9Z"></path><circle cx="12" cy="12" r="9"></circle></svg></button>
+		<div id="rotationLevelDisplay" class="zoom-level-display" aria-label="Current rotation">0°</div>
 	  </div>
-	  <!-- SECTION: ??? -->
+	  <!-- SECTION: MAGNIFIER -->
 	  <div class="map-control-separator" aria-hidden="true"></div>
 	  <div class="map-control-group" role="group" aria-label="Preview tools">
-		<button type="button" id="magnifierBtn" class="map-zoom-btn" title="Toggle Live Magnifier Lens" aria-label="Toggle live magnifier"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
+		<button type="button" id="magnifierBtn" class="map-zoom-btn map-control-centered" title="Toggle Live Magnifier Lens" aria-label="Toggle live magnifier"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg></button>
+	  </div>
+	  <!-- SECTION: COLOR PICKER -->
+	  <div class="map-control-separator" aria-hidden="true"></div>
+	  <div class="map-control-group" role="group" aria-label="Color picker">
 		<button type="button" id="sampleColorBtn" class="map-zoom-btn" title="Pick a color from the preview" aria-label="Pick preview color"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 21 7-7m4-9 5 5m-8 8 8-8a3 3 0 0 0-4-4l-8 8a3 3 0 0 0 4 4Z"></path></svg></button>
 		<input type="color" id="sampledColor" value="#ffffff" aria-label="Picked preview color" title="Picked preview color">
 	  </div>
 	  <!-- SECTION: COLOR-PRESETS -->
 	  <div class="map-control-separator" aria-hidden="true"></div>
 	  <div class="map-control-group" role="group" aria-label="Color preset navigation">
-		<button type="button" id="previousPresetBtn" class="map-zoom-btn" title="Previous Color Preset" aria-label="Previous color preset">↑</button>
 		<button type="button" id="nextPresetBtn" class="map-zoom-btn" title="Next Color Preset" aria-label="Next color preset">↓</button>
+		<button type="button" id="previousPresetBtn" class="map-zoom-btn" title="Previous Color Preset" aria-label="Previous color preset">↑</button>
 	  </div>
 	</div>
 
@@ -842,6 +858,7 @@ stroke-linecap="round" stroke-linejoin="round">
   <script src="js/location.js"></script>
   <script src="js/ui/projects.js"></script>
   <script src="js/export.js"></script>
+  <script src="js/export/model-geometry.js"></script>
   <script src="js/export/model-export.js"></script>
   <script src="js/ui/shortcuts.js"></script>
   <script src="js/app.js"></script>

@@ -28,11 +28,16 @@
       base: '#8b5e3c',
       terrain: source.terrainEnabled ? source.mountainColor : layers.landColor,
       forest: layers.forestColor,
+      forestAccent: layers.forestColorAccent || layers.forestColor,
       landCover: layers.landCoverColor,
+      landCoverAccent: layers.landCoverColorAccent || layers.landCoverColor,
       boundary: layers.boundaryColor,
       building: layers.buildingColor,
       road: layers.roadColor,
-      water: layers.waterColor
+      water: layers.waterColor,
+      contour: source.mountainColor,
+      overlayFill: '#059669',
+      overlayLine: '#047857'
     });
     return Object.freeze({
       ...source,

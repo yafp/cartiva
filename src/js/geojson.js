@@ -42,6 +42,44 @@
   }
 
   /**
+   * Discards imported metadata before it enters overlay state or MapLibre.
+   * Overlay paints are constants: no feature properties are consumed by their
+   * styling or filters. Geometry and feature identity remain available to exports.
+   * @param {Object} input - Validated GeoJSON feature collection.
+   * @returns {Object} Compact GeoJSON retaining geometry and optional feature IDs.
+   */
+  function compact(input) {
+    return {
+      type: 'FeatureCollection',
+      features: input.features.map(feature => ({
+        type: 'Feature',
+        ...(feature.id !== undefined ? { id: feature.id } : {}),
+        properties: {},
+        geometry: feature.geometry == null ? null : {
+          type: feature.geometry.type,
+          ...(feature.geometry.type === 'GeometryCollection'
+            ? { geometries: compactGeometries(feature.geometry.geometries) }
+            : { coordinates: feature.geometry.coordinates })
+        }
+      }))
+    };
+  }
+
+  /**
+   * Removes foreign geometry members recursively without altering coordinates.
+   * @param {Object[]} geometries - GeometryCollection children.
+   * @returns {Object[]} Minimal geometry objects.
+   */
+  function compactGeometries(geometries) {
+    return (geometries || []).map(geometry => ({
+      type: geometry.type,
+      ...(geometry.type === 'GeometryCollection'
+        ? { geometries: compactGeometries(geometry.geometries) }
+        : { coordinates: geometry.coordinates })
+    }));
+  }
+
+  /**
   * Adds an imported GeoJSON source and its rendered layers to the map.
    * @function addToMap
    * @param {*} targetMap - Input value.
@@ -81,7 +119,7 @@
    */
   async function load(file, targetMap = global.CartivaMap) {
     global.CartivaDiagnostics?.record('geojson', 'GeoJSON import started.', { filename: file.name, bytes: file.size });
-    const parsed = validate(JSON.parse(await file.text()));
+    const parsed = compact(validate(JSON.parse(await file.text())));
     data = parsed;
     addToMap(targetMap);
     fitMap(targetMap);
@@ -91,6 +129,7 @@
 
   global.CartivaGeoJson = Object.freeze({
     load,
+    compact,
     addToMap,
     getData: () => data,
     sourceId: SOURCE_ID,

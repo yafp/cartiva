@@ -11,7 +11,7 @@
     const details = typeof notification === 'string' ? { message: notification } : notification;
     const toast = global.Toastify({
       text: details.message,
-      duration: type === 'error' ? -1 : 4500,
+      duration: type === 'error' ? -1 : (details.duration ?? 4500),
       close: true,
       gravity: 'top',
       position: 'right',
@@ -67,9 +67,11 @@
     if (label && busyLabel) label.textContent = busyLabel;
     if (startStatus) global.setStatus?.(startStatus);
     global.CartivaRuntime.operations[area] = { startedAt: Date.now() };
+    if (area.endsWith('.export')) global.CartivaExportProgress?.start(area);
     global.CartivaDiagnostics.record(area, 'Operation started.');
     try {
       const result = await task(cleanup => cleanups.push(cleanup));
+      if (area.endsWith('.export')) global.CartivaExportProgress?.complete();
       if (successStatus) global.setStatus?.(successStatus);
       notify(typeof successNotification === 'function' ? successNotification(result) : successNotification, 'success');
       global.CartivaDiagnostics.record(area, 'Operation completed.', {
@@ -84,10 +86,12 @@
       }
       return null;
     } finally {
+      if (area.endsWith('.export')) global.CartivaExportProgress?.finish();
       while (cleanups.length) {
         try { await cleanups.pop()(); } catch (error) { global.CartivaDiagnostics.report(`${area}.cleanup`, error); }
       }
       delete global.CartivaRuntime.operations[area];
+      if (area.endsWith('.export')) global.CartivaRefinedPreview?.schedule();
       if (label) label.textContent = idleLabel || previousLabel;
       if (button) button.disabled = false;
     }

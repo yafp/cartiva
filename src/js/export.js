@@ -11,6 +11,10 @@
      */
     function createRenderSnapshot() {
       syncStateFromControls();
+      // A paper-size change may still have a pending debounced live-map resize.
+      const canvas = map.getCanvas();
+      const container = map.getContainer();
+      if (canvas.clientWidth !== container.clientWidth || canvas.clientHeight !== container.clientHeight) map.resize();
       return getExportState();
     }
 
@@ -55,6 +59,85 @@
     const exportConfirmBtn = document.getElementById('exportConfirmBtn');
     const exportCancelBtn = document.getElementById('exportCancelBtn');
     const exportDialogCloseBtn = document.getElementById('exportDialogCloseBtn');
+    let exportProgressActive = false;
+
+    /**
+     * Updates the accessible progress bar and a bounded composite thumbnail.
+     * @param {number|null} percent - Completion percentage, or null for unknown work.
+     * @param {HTMLCanvasElement} [canvas] - Current completed composite.
+     */
+    function updateExportProgress(percent, canvas) {
+      if (!exportProgressActive) return;
+      const bar = $('exportProgressBar');
+      if (percent == null) {
+        bar.removeAttribute('value');
+        $('exportProgressPercent').textContent = 'Working...';
+      } else {
+        bar.value = Math.max(bar.value || 0, Math.max(0, Math.min(100, percent)));
+        $('exportProgressPercent').textContent = `${Math.round(bar.value)}%`;
+      }
+      if (canvas) {
+        const thumbnail = $('exportProgressThumbnail');
+        thumbnail.hidden = false;
+        const context = thumbnail.getContext('2d');
+        if (!context) throw new Error('Export progress thumbnail is unavailable.');
+        const scale = Math.min(thumbnail.width / canvas.width, thumbnail.height / canvas.height);
+        context.clearRect(0, 0, thumbnail.width, thumbnail.height);
+        context.drawImage(canvas, (thumbnail.width - canvas.width * scale) / 2,
+          (thumbnail.height - canvas.height * scale) / 2, canvas.width * scale, canvas.height * scale);
+      }
+    }
+
+    /**
+     * Starts export feedback without claiming progress for unknown model work.
+     * @param {string} area - Structured export operation name.
+     */
+    function startExportProgress(area) {
+      exportProgressActive = true;
+      ['exportConfirmBtn', 'stlExportBtn', 'threeMfExportBtn', 'exportImagesTab', 'exportModelsTab',
+        'exportCancelBtn', 'exportDialogCloseBtn'].forEach(id => { $(id).disabled = true; });
+      $('exportProgressVisual').hidden = false;
+      $('exportProgressThumbnail').hidden = true;
+      $('exportProgressBar').value = 0;
+      updateExportProgress(area === 'image.export' ? 2 : null);
+    }
+
+    /** Releases feedback state after either success or failure. */
+    function finishExportProgress() {
+      exportProgressActive = false;
+      ['exportConfirmBtn', 'stlExportBtn', 'threeMfExportBtn', 'exportImagesTab', 'exportModelsTab',
+        'exportCancelBtn', 'exportDialogCloseBtn'].forEach(id => { $(id).disabled = false; });
+      $('exportProgressVisual').hidden = true;
+      const thumbnail = $('exportProgressThumbnail');
+      thumbnail.getContext('2d')?.clearRect(0, 0, thumbnail.width, thumbnail.height);
+    }
+
+    globalThis.CartivaExportProgress = Object.freeze({
+      start: startExportProgress, update: updateExportProgress,
+      complete: () => updateExportProgress(100), finish: finishExportProgress
+    });
+
+    /**
+     * Chooses a bounded tile budget from reported memory, CPU and WebGL limits.
+     * @param {{deviceMemory?: number, hardwareConcurrency?: number}} [device] - Hardware hints.
+     * @param {number} [gpuLimit] - Maximum supported texture/renderbuffer side.
+     * @returns {{tileSize: number, maxRenderSide: number}} Rendering budget in pixels.
+     */
+    function getCanvasTileBudget(device = navigator, gpuLimit = 4096) {
+      const memory = Number(device.deviceMemory);
+      const cores = Number(device.hardwareConcurrency);
+      let tileSize = !Number.isFinite(memory) ? 1024 : memory <= 1 ? 512
+        : memory <= 2 ? 1024 : memory <= 4 ? 1536 : memory <= 8 ? 2048 : 3072;
+      if (Number.isFinite(cores) && cores <= 2) tileSize = Math.min(tileSize, 1024);
+      const maxRenderSide = Math.max(256, Math.min(4096, Number(gpuLimit) || 4096, tileSize + 1024));
+      tileSize = Math.min(tileSize, Math.max(128, maxRenderSide - 128));
+      return { tileSize, maxRenderSide };
+    }
+
+    /** Yields between tiles so feedback can paint and released buffers can be reclaimed. */
+    function yieldExportFrame() {
+      return new Promise(resolve => setTimeout(resolve, 0));
+    }
 
     /**
      * Returns information about export tab for the Cartiva application.
@@ -79,11 +162,11 @@
     });
     [exportCancelBtn, exportDialogCloseBtn].forEach(button => {
       button.addEventListener('click', () => {
-        if (!runtimeState.operations['image.export']) exportDialog.close();
+        if (!Object.keys(runtimeState.operations).some(area => area.endsWith('.export'))) exportDialog.close();
       });
     });
     exportDialog.addEventListener('cancel', event => {
-      if (runtimeState.operations['image.export']) event.preventDefault();
+      if (Object.keys(runtimeState.operations).some(area => area.endsWith('.export'))) event.preventDefault();
     });
     const pdfExporter = CartivaPdfExporter.create();
     /**
@@ -129,10 +212,20 @@
           const bitmap = await createImageBitmap(await response.blob());
           const canvas = document.createElement('canvas');
           canvas.width = canvas.height = 256;
-          const context = canvas.getContext('2d', { willReadFrequently: true });
-          context.drawImage(bitmap, 0, 0);
-          bitmap.close();
-          return context.getImageData(0, 0, 256, 256).data;
+          let context = canvas.getContext('2d', { willReadFrequently: true });
+          if (!context) {
+            bitmap.close();
+            throw new Error('Elevation tile canvas is unavailable.');
+          }
+          try {
+            context.drawImage(bitmap, 0, 0);
+            return context.getImageData(0, 0, 256, 256).data;
+          } finally {
+            bitmap.close();
+            context.clearRect(0, 0, 256, 256);
+            canvas.width = canvas.height = 1;
+            context = null;
+          }
         })().catch(error => { CartivaDiagnostics.report('terrain', error, { key }); throw error; });
         elevationTileCache.set(`${zoom}:${key}`, tilePromise);
         return tilePromise;
@@ -588,11 +681,14 @@
      */
     function validateExportSize(width, height) {
       const pixels = width * height;
-      const maxPixels = 160000000;
+      const memory = Number(navigator.deviceMemory);
+      const maxPixels = Number.isFinite(memory) && memory > 0
+        ? Math.min(160000000, Math.floor(memory * 1024 ** 3 * 0.2 / 12))
+        : 160000000;
       const maxSide = 16384;
-      if (!Number.isFinite(pixels) || width < 1 || height < 1) throw new Error('Invalid export dimensions.');
+      if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1) throw new Error('Invalid export dimensions.');
       if (width > maxSide || height > maxSide || pixels > maxPixels) {
-        throw new Error(`Export is too large for this browser (${width} × ${height}, ${(pixels / 1000000).toFixed(1)} MP). Choose a smaller DPI or paper size.`);
+        throw new Error(`Export is too large for this browser (${width} × ${height}, ${(pixels / 1000000).toFixed(1)} MP; budget ${(maxPixels / 1000000).toFixed(1)} MP). Choose a smaller DPI or paper size.`);
       }
     }
 
@@ -624,6 +720,71 @@
     }
 
     /**
+     * Encodes baseline little-endian TIFF with lossless RGBA strips and physical DPI.
+     * @param {HTMLCanvasElement} canvas - Completed poster.
+     * @param {number} dpi - Output resolution in pixels per inch.
+     * @returns {Promise<Blob>} Uncompressed TIFF with unassociated alpha.
+     */
+    async function canvasToTiff(canvas, dpi) {
+      if (!Number.isFinite(dpi) || dpi <= 0) throw new Error('Invalid TIFF resolution.');
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('TIFF pixel readback is unavailable.');
+      const rowsPerStrip = Math.max(1, Math.floor(1048576 / (canvas.width * 4)));
+      const strips = Math.ceil(canvas.height / rowsPerStrip);
+      const tagCount = 15;
+      const ifdEnd = 8 + 2 + tagCount * 12 + 4;
+      const bitsOffset = ifdEnd;
+      const resolutionOffset = bitsOffset + 8;
+      const offsetsOffset = resolutionOffset + 16;
+      const countsOffset = offsetsOffset + (strips > 1 ? strips * 4 : 0);
+      const pixelOffset = countsOffset + (strips > 1 ? strips * 4 : 0);
+      const header = new Uint8Array(pixelOffset);
+      const view = new DataView(header.buffer);
+      header[0] = header[1] = 73;
+      view.setUint16(2, 42, true);
+      view.setUint32(4, 8, true);
+      view.setUint16(8, tagCount, true);
+      const bytesPerStrip = rowsPerStrip * canvas.width * 4;
+      const tags = [
+        [256, 4, 1, canvas.width], [257, 4, 1, canvas.height], [258, 3, 4, bitsOffset],
+        [259, 3, 1, 1], [262, 3, 1, 2], [273, 4, strips, strips > 1 ? offsetsOffset : pixelOffset],
+        [274, 3, 1, 1], [277, 3, 1, 4], [278, 4, 1, rowsPerStrip],
+        [279, 4, strips, strips > 1 ? countsOffset : canvas.width * canvas.height * 4],
+        [282, 5, 1, resolutionOffset], [283, 5, 1, resolutionOffset + 8],
+        [284, 3, 1, 1], [296, 3, 1, 2], [338, 3, 1, 2]
+      ];
+      tags.forEach(([tag, type, count, value], index) => {
+        const offset = 10 + index * 12;
+        view.setUint16(offset, tag, true);
+        view.setUint16(offset + 2, type, true);
+        view.setUint32(offset + 4, count, true);
+        if (type === 3 && count === 1) view.setUint16(offset + 8, value, true);
+        else view.setUint32(offset + 8, value, true);
+      });
+      for (let channel = 0; channel < 4; channel += 1) view.setUint16(bitsOffset + channel * 2, 8, true);
+      for (const offset of [resolutionOffset, resolutionOffset + 8]) {
+        view.setUint32(offset, Math.round(dpi * 1000), true);
+        view.setUint32(offset + 4, 1000, true);
+      }
+      const parts = [header];
+      for (let index = 0; index < strips; index += 1) {
+        const row = index * rowsPerStrip;
+        const rows = Math.min(rowsPerStrip, canvas.height - row);
+        const count = rows * canvas.width * 4;
+        if (strips > 1) {
+          view.setUint32(offsetsOffset + index * 4, pixelOffset + index * bytesPerStrip, true);
+          view.setUint32(countsOffset + index * 4, count, true);
+        }
+        let pixels = context.getImageData(0, row, canvas.width, rows);
+        parts.push(new Blob([pixels.data]));
+        pixels = null;
+        updateExportProgress(90 + 8 * (index + 1) / strips);
+        await yieldExportFrame();
+      }
+      return new Blob(parts, { type: 'image/tiff' });
+    }
+
+    /**
     * Adjusts map line weights to match the selected print profile.
      * @function applyExportLineWeight
      * @param {*} targetMap - Input value.
@@ -652,7 +813,7 @@
      * @param {*} height - Input value.
      * @param {*} tileSize - Input value.
      */
-    function drawCanvasInTiles(context, source, x, y, width, height, tileSize = 2048) {
+    function drawCanvasInTiles(context, source, x, y, width, height, tileSize = getCanvasTileBudget().tileSize) {
       const scaleX = width / source.width;
       const scaleY = height / source.height;
       for (let sourceY = 0; sourceY < source.height; sourceY += tileSize) {
@@ -688,7 +849,10 @@
      */
     function waitForMapIdle(targetMap, timeoutMs = 30000) {
       return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Map tiles did not finish loading in time.')), timeoutMs);
+        const timeout = setTimeout(() => {
+          targetMap.off('idle', finish);
+          reject(new Error('Map tiles did not finish loading in time.'));
+        }, timeoutMs);
         const finish = () => {
           if (!targetMap.loaded() || !targetMap.areTilesLoaded()) return;
           clearTimeout(timeout);
@@ -749,7 +913,7 @@
     }
 
     /** Preserves label and layer visibility when a larger viewport raises the render zoom. */
-    function createScaledMapStyle(style, scale) {
+    function createScaledMapStyle(style, scale, printProfile = 'standard') {
       const result = JSON.parse(JSON.stringify(style));
       result.layers = result.layers.filter(layer => ![TERRAIN_COLOR_SOURCE_ID, TERRAIN_SOURCE_ID].includes(layer.source));
       delete result.sources[TERRAIN_COLOR_SOURCE_ID];
@@ -757,17 +921,26 @@
       const offset = Math.log2(scale);
       const layoutPixels = new Set(['text-size', 'icon-size', 'text-padding', 'icon-padding', 'symbol-spacing']);
       const paintPixels = new Set(['text-halo-width', 'text-halo-blur', 'icon-halo-width', 'icon-halo-blur']);
+      const linePixels = new Set(['line-width', 'line-gap-width', 'line-offset', 'line-blur']);
+      const profileScale = { fine: 0.78, standard: 1, bold: 1.28 }[printProfile] || 1;
       result.layers.forEach(layer => {
         if (layer.minzoom != null) layer.minzoom = Math.max(0, Math.min(24, layer.minzoom + offset));
         if (layer.maxzoom != null) layer.maxzoom = Math.max(0, Math.min(24, layer.maxzoom + offset));
-        if (layer.type !== 'symbol') return;
         layer.layout ||= {};
-        if (layer.layout['text-field'] != null && layer.layout['text-size'] == null) layer.layout['text-size'] = 16;
+        if (layer.type === 'symbol' && layer.layout['text-field'] != null && layer.layout['text-size'] == null) layer.layout['text-size'] = 16;
         for (const group of ['layout', 'paint']) {
           Object.entries(layer[group] || {}).forEach(([key, value]) => {
-            const multiplier = (group === 'layout' ? layoutPixels : paintPixels).has(key) ? scale : 1;
+            let multiplier = (group === 'layout' ? layoutPixels : paintPixels).has(key) ? scale : 1;
+            if (group === 'paint' && linePixels.has(key)) multiplier = scale * profileScale;
             layer[group][key] = shiftStyleZoom(value, offset, multiplier);
           });
+        }
+      });
+      // User GeoJSON is re-tiled at print zoom without screen-oriented simplification.
+      Object.values(result.sources).forEach(source => {
+        if (source.type === 'geojson') {
+          source.tolerance = 0;
+          source.maxzoom = 24;
         }
       });
       return result;
@@ -799,7 +972,7 @@
         pixelRatio: 1,
         attributionControl: false,
         interactive: false,
-        style: createScaledMapStyle(map.getStyle(), renderScale),
+        style: createScaledMapStyle(map.getStyle(), renderScale, options.preview ? 'standard' : exportState.printLineWeight),
         maxZoom: Math.max(24, exportZoom),
         center: options.center || exportState.center,
         zoom: exportZoom,
@@ -809,9 +982,16 @@
       try {
       CartivaWebGl.prepareMap(exportMap);
       await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Export map did not load in time.')), 30000);
-        exportMap.once('load', () => { clearTimeout(timeout); resolve(); });
-        exportMap.once('error', event => { clearTimeout(timeout); reject(event.error || new Error('Export map failed to load.')); });
+        const cleanup = () => {
+          clearTimeout(timeout);
+          exportMap.off('load', loaded);
+          exportMap.off('error', failed);
+        };
+        const loaded = () => { cleanup(); resolve(); };
+        const failed = event => { cleanup(); reject(event.error || new Error('Export map failed to load.')); };
+        const timeout = setTimeout(() => failed({ error: new Error('Export map did not load in time.') }), 30000);
+        exportMap.once('load', loaded);
+        exportMap.once('error', failed);
       });
       const geoJsonDefinition = globalThis.CartivaGeoJson?.definition?.();
       if (geoJsonDefinition && !exportMap.getSource('cartiva-user-geojson')) {
@@ -819,8 +999,13 @@
         geoJsonDefinition.layers.forEach(layer => exportMap.addLayer(layer));
       }
       configureMapForRender(exportMap, exportState);
-      if (options.includeContours && exportState.contourEnabled) await updateContours(exportMap, exportState);
-      applyExportLineWeight(exportMap, exportState);
+      const buildingThreshold = Number.isFinite(Number(exportState.buildingMinZoom))
+        ? Number(exportState.buildingMinZoom) : 10.5;
+      configureBuildingZoom(exportMap, { ...exportState, buildingMinZoom: buildingThreshold + Math.log2(renderScale) });
+      exportMap.getStyle().layers.filter(layer => getLayerRole(layer) === 'building').forEach(layer => {
+        exportMap.setLayerZoomRange(layer.id, Math.max(0, buildingThreshold + Math.log2(renderScale)),
+          Math.max(24, exportZoom + 1, buildingThreshold + Math.log2(renderScale) + 1));
+      });
       exportMap.resize();
       // Preserve the preview camera exactly. The preview and export dimensions
       // use the same aspect ratio, so center/zoom is more faithful than fitting
@@ -832,7 +1017,12 @@
         pitch: exportState.pitch
       });
       await updateTerrainColorization(exportMap, exportState);
-      if (exportState.contourEnabled) await updateContours(exportMap, exportState);
+      if (exportState.contourEnabled) await updateContours(exportMap, exportState, { bounds: exportState.bounds });
+      const contourLayer = exportMap.getStyle().layers.find(layer => layer.id.includes('contour') && layer.type === 'line');
+      if (contourLayer) {
+        const contourWidth = Number(exportState.contourWidth) || 0.8;
+        exportMap.setPaintProperty(contourLayer.id, 'line-width', contourWidth * renderScale);
+      }
       await waitForMapIdle(exportMap);
       if (!options.fullWidth) compareRenderBounds(exportMap, exportState);
       return { exportMap, container };
@@ -858,19 +1048,35 @@
 
     /** Composites bounded WebGL tiles directly into the final print canvas. */
     async function drawExportMap(context, exportState, sourceWidth, sourceHeight, x, y, width, height) {
-      const tileSize = 2048;
-      const overlap = Math.min(512, Math.ceil(64 * sourceWidth / exportState.previewMapSize.width));
+      const liveCanvas = map.getCanvas();
+      const gl = liveCanvas.getContext('webgl2') || liveCanvas.getContext('webgl');
+      const gpuLimit = gl ? Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)) : 4096;
+      const { tileSize, maxRenderSide } = getCanvasTileBudget(navigator, gpuLimit);
+      const overlap = Math.min(Math.floor((maxRenderSide - tileSize) / 2),
+        Math.max(64, Math.ceil(64 * sourceWidth / exportState.previewMapSize.width)));
       let exportMap;
       let container;
+      let tileCanvas;
+      let tileContext;
+      updateExportProgress(10);
+      CartivaDiagnostics.record('image.tiles', 'Selected hardware-aware canvas budget.', {
+        tileSize, maxRenderSide, memoryGb: navigator.deviceMemory ?? null, overlap
+      });
       try {
-        if (sourceWidth <= 4096 && sourceHeight <= 4096 || exportState.pitch !== 0) {
-          const scale = Math.min(1, 4096 / Math.max(sourceWidth, sourceHeight));
-          if (scale < 1) CartivaDiagnostics.record('image.export', 'Pitched map render resolution limited to the GPU budget.', { scale }, 'warn');
-          ({ exportMap, container } = await createExportMap(Math.round(sourceWidth * scale), Math.round(sourceHeight * scale), exportState));
+        if (sourceWidth <= tileSize && sourceHeight <= tileSize) {
+          ({ exportMap, container } = await createExportMap(sourceWidth, sourceHeight, exportState));
           drawCanvasInTiles(context, exportMap.getCanvas(), x, y, width, height);
+          updateExportProgress(85, context.canvas);
+          await yieldExportFrame();
           return;
         }
+        if (exportState.pitch !== 0) {
+          throw new Error('This pitched view exceeds the device GPU budget. Set map pitch to zero or reduce paper size/DPI; resolution will not be silently reduced.');
+        }
         const columns = Math.ceil(sourceWidth / tileSize), rows = Math.ceil(sourceHeight / tileSize);
+        tileCanvas = document.createElement('canvas');
+        tileContext = tileCanvas.getContext('2d');
+        if (!tileContext) throw new Error('Tile composite context is unavailable.');
         for (let row = 0; row < rows; row += 1) {
           for (let column = 0; column < columns; column += 1) {
             const left = column * tileSize, top = row * tileSize;
@@ -886,15 +1092,35 @@
               exportMap.resize();
               exportMap.jumpTo({ center });
               await updateTerrainColorization(exportMap, exportState);
+              if (exportState.contourEnabled) {
+                await updateContours(exportMap, exportState, { bounds: exportState.bounds });
+                const contour = exportMap.getStyle().layers.find(layer => layer.id.includes('contour') && layer.type === 'line');
+                if (contour) exportMap.setPaintProperty(contour.id, 'line-width',
+                  (Number(exportState.contourWidth) || 0.8) * sourceWidth / exportState.previewMapSize.width);
+              }
               await waitForMapIdle(exportMap);
             }
-            context.drawImage(exportMap.getCanvas(), overlap, overlap, tileWidth, tileHeight,
-              x + left * width / sourceWidth, y + top * height / sourceHeight,
-              tileWidth * width / sourceWidth, tileHeight * height / sourceHeight);
+            tileCanvas.width = tileWidth;
+            tileCanvas.height = tileHeight;
+            try {
+              tileContext.drawImage(exportMap.getCanvas(), overlap, overlap, tileWidth, tileHeight,
+                0, 0, tileWidth, tileHeight);
+              context.drawImage(tileCanvas, 0, 0, tileWidth, tileHeight,
+                x + left * width / sourceWidth, y + top * height / sourceHeight,
+                tileWidth * width / sourceWidth, tileHeight * height / sourceHeight);
+            } finally {
+              tileContext.clearRect(0, 0, tileWidth, tileHeight);
+              tileCanvas.width = tileCanvas.height = 1;
+            }
+            updateExportProgress(10 + 75 * (row * columns + column + 1) / (rows * columns), context.canvas);
+            await yieldExportFrame();
           }
         }
         CartivaDiagnostics.record('image.export', 'Tiled map rendering completed.', { columns, rows, sourceWidth, sourceHeight });
       } finally {
+        if (tileCanvas) tileCanvas.width = tileCanvas.height = 1;
+        tileContext = null;
+        tileCanvas = null;
         exportMap?.remove();
         container?.remove();
       }
@@ -910,15 +1136,68 @@
     let refinedPreviewUrl = '';
     let refinedPreviewRendering = false;
     let refinedPreviewPending = false;
+    let refinedPreviewCamera = null;
+    let refinedPreviewDesign = '';
+    let refinedPreviewPadding = 0;
+    let refinedPreviewRingsLoaded = 0;
+    let cachedDetailMap = null;
+    let cachedDetailContainer = null;
+    let cachedDetailDesign = '';
+
+    /** Releases the isolated map and its tile cache at invalidation or shutdown. */
+    function releaseDetailTileCache() {
+      cachedDetailMap?.remove();
+      cachedDetailContainer?.remove();
+      cachedDetailMap = cachedDetailContainer = null;
+      cachedDetailDesign = '';
+    }
+
+    /** Tests whether a same-orientation pan is wholly covered by buffered detail. */
+    function hasBufferedDetail(extraPadding = 0) {
+      if (!refinedPreviewUrl || !refinedPreviewCamera
+        || refinedPreviewDesign !== getRefinedPreviewDesign()) return false;
+      if (map.getZoom() !== refinedPreviewCamera.zoom
+        || map.getBearing() !== refinedPreviewCamera.bearing
+        || map.getPitch() !== refinedPreviewCamera.pitch) return false;
+      const center = map.project(refinedPreviewCamera.center);
+      const viewport = map.getContainer();
+      return Math.abs(center.x - viewport.clientWidth / 2) + extraPadding <= refinedPreviewPadding + 0.01
+        && Math.abs(center.y - viewport.clientHeight / 2) + extraPadding <= refinedPreviewPadding + 0.01;
+    }
+
+    /**
+     * Captures the render-affecting design and viewport size without camera/name churn.
+     * @returns {string} Stable detail-cache key.
+     */
+    function getRefinedPreviewDesign() {
+      const { center, zoom, bearing, pitch, city, coordinates, country, ...design } = state;
+      return JSON.stringify({ design, width: map.getContainer().clientWidth,
+        height: map.getContainer().clientHeight, rings: CartivaPreviewCacheSettings.getRings(),
+        overlay: globalThis.CartivaGeoJson?.definition?.() });
+    }
+
+    /** Restores a detailed image after sub-threshold movement using the current camera. */
+    function restoreBufferedDetail() {
+      const oldCenter = map.project(refinedPreviewCamera.center);
+      const container = map.getContainer();
+      const scale = 2 ** (map.getZoom() - refinedPreviewCamera.zoom);
+      const rotation = refinedPreviewCamera.bearing - map.getBearing();
+      refinedMapPreview.style.transform = `translate(${oldCenter.x - container.clientWidth / 2}px, ${oldCenter.y - container.clientHeight / 2}px) rotate(${rotation}deg) scale(${scale})`;
+      refinedMapPreview.classList.add('ready');
+      setRefinedPreviewState(true, refinedPreviewRingsLoaded > 0
+        && hasBufferedDetail(CartivaPreviewCacheSettings.getRings() * 256));
+    }
 
     /**
      * Sets refined preview state for the Cartiva application.
      * @function setRefinedPreviewState
      * @param {*} detailed - Input value.
      */
-    function setRefinedPreviewState(detailed) {
-      const label = detailed ? 'Detailed preview loaded' : 'Limited preview';
+    function setRefinedPreviewState(detailed, cached = false) {
+      const label = cached ? 'Detailed preview and surrounding tiles loaded'
+        : detailed ? 'Detailed preview loaded' : 'Limited preview';
       previewStateIndicator.classList.toggle('detailed', detailed);
+      previewStateIndicator.classList.toggle('cached', detailed && cached);
       previewStateIndicator.classList.toggle('limited', !detailed);
       previewStateIndicator.setAttribute('aria-label', label);
       previewStateIndicator.title = label;
@@ -929,11 +1208,59 @@
      * Handles refined preview for the Cartiva application.
      * @function hideRefinedPreview
      */
-    function hideRefinedPreview() {
+    function hideRefinedPreview({ preserveImage = false } = {}) {
       refinedPreviewToken += 1;
       clearTimeout(runtimeState.timers.refinedPreview);
-      refinedMapPreview.classList.remove('ready');
-      setRefinedPreviewState(false);
+      if (preserveImage && hasBufferedDetail()) restoreBufferedDetail();
+      else {
+        refinedMapPreview.classList.remove('ready');
+        setRefinedPreviewState(false);
+      }
+      if (!preserveImage) {
+        refinedPreviewDesign = '';
+        refinedMapPreview.style.transform = '';
+      }
+    }
+
+    /** Aligns buffered detail continuously during a pan, hiding it only outside coverage. */
+    function updateBufferedDetail() {
+      if (hasBufferedDetail()) restoreBufferedDetail();
+      else {
+        refinedMapPreview.classList.remove('ready');
+        setRefinedPreviewState(false);
+      }
+    }
+    map.on('move', updateBufferedDetail);
+
+    /** Decodes a completed ring off-DOM before replacing the visible detail image. */
+    async function publishDetailRing(targetMap, token, exportState, design, padding, ring) {
+      const blob = await new Promise((resolve, reject) => targetMap.getCanvas().toBlob(
+        result => result ? resolve(result) : reject(new Error('Refined preview encoding failed.')), 'image/png'));
+      if (token !== refinedPreviewToken) return false;
+      const nextUrl = URL.createObjectURL(blob);
+      const image = new Image();
+      try {
+        image.src = nextUrl;
+        await image.decode();
+        if (token !== refinedPreviewToken) { URL.revokeObjectURL(nextUrl); return false; }
+        const previousUrl = refinedPreviewUrl;
+        refinedMapPreview.src = nextUrl;
+        refinedPreviewUrl = nextUrl;
+        refinedPreviewCamera = { center: exportState.center, zoom: exportState.zoom,
+          bearing: exportState.bearing, pitch: exportState.pitch };
+        refinedPreviewDesign = design;
+        refinedPreviewPadding = padding;
+        refinedPreviewRingsLoaded = ring;
+        refinedMapPreview.style.width = `${exportState.previewMapSize.width + padding * 2}px`;
+        refinedMapPreview.style.height = `${exportState.previewMapSize.height + padding * 2}px`;
+        refinedMapPreview.style.left = refinedMapPreview.style.top = `${-padding}px`;
+        restoreBufferedDetail();
+        if (previousUrl) URL.revokeObjectURL(previousUrl);
+        return true;
+      } catch (error) {
+        URL.revokeObjectURL(nextUrl);
+        throw error;
+      }
     }
 
     /**
@@ -952,13 +1279,35 @@
       let container;
       try {
         const exportState = createRenderSnapshot();
+        const detailDesign = getRefinedPreviewDesign();
         const previewWidth = Math.max(1, exportState.previewMapSize.width);
         const previewHeight = Math.max(1, exportState.previewMapSize.height);
+        const rings = exportState.pitch === 0 ? CartivaPreviewCacheSettings.getRings() : 0;
         const requestedScale = 2 ** REFINED_PREVIEW_ZOOM_BOOST;
-        const scale = Math.max(1, Math.min(requestedScale, REFINED_PREVIEW_MAX_SIDE / Math.max(previewWidth, previewHeight)));
+        const liveCanvas = map.getCanvas();
+        const gl = liveCanvas.getContext('webgl2') || liveCanvas.getContext('webgl');
+        const gpuLimit = gl ? Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)) : 4096;
+        const scale = Math.min(requestedScale, REFINED_PREVIEW_MAX_SIDE / Math.max(previewWidth, previewHeight),
+          Math.min(4096, gpuLimit) / (Math.max(previewWidth, previewHeight) + rings * 512));
         const width = Math.round(previewWidth * scale);
         const height = Math.round(previewHeight * scale);
-        ({ exportMap: refinedMap, container } = await createExportMap(width, height, exportState, { includeContours: true }));
+        if (cachedDetailDesign !== detailDesign) releaseDetailTileCache();
+        if (!cachedDetailMap) {
+          ({ exportMap: cachedDetailMap, container: cachedDetailContainer } =
+            await createExportMap(width, height, exportState, { preview: true }));
+          cachedDetailContainer.classList.add('preview-cache-map-container');
+          cachedDetailDesign = detailDesign;
+        }
+        refinedMap = cachedDetailMap;
+        container = cachedDetailContainer;
+        container.style.width = `${width}px`;
+        container.style.height = `${height}px`;
+        refinedMap.resize();
+        refinedMap.jumpTo({ center: exportState.center, zoom: exportState.zoom + Math.log2(scale),
+          bearing: exportState.bearing, pitch: exportState.pitch });
+        await updateTerrainColorization(refinedMap, exportState);
+        if (exportState.contourEnabled) await updateContours(refinedMap, exportState, { bounds: refinedMap.getBounds().toArray() });
+        await waitForMapIdle(refinedMap);
         if (token !== refinedPreviewToken) return;
         const buildingLayerIds = (refinedMap.getStyle()?.layers || [])
           .filter(layer => getLayerRole(layer) === 'building')
@@ -966,20 +1315,9 @@
         const buildingFeatures = buildingLayerIds.length
           ? refinedMap.queryRenderedFeatures({ layers: buildingLayerIds }).length
           : 0;
-        const blob = await new Promise((resolve, reject) => {
-          refinedMap.getCanvas().toBlob(result => result ? resolve(result) : reject(new Error('Refined preview encoding failed.')), 'image/png');
-        });
-        if (token !== refinedPreviewToken) return;
-        const nextUrl = URL.createObjectURL(blob);
-        refinedMapPreview.onload = () => {
-          if (token !== refinedPreviewToken) {
-            URL.revokeObjectURL(nextUrl);
-            return;
-          }
-          if (refinedPreviewUrl) URL.revokeObjectURL(refinedPreviewUrl);
-          refinedPreviewUrl = nextUrl;
-          refinedMapPreview.classList.add('ready');
-          setRefinedPreviewState(true);
+        if (!hasBufferedDetail() || refinedPreviewPadding === 0) {
+          if (!await publishDetailRing(refinedMap, token, exportState, detailDesign, 0, 0)) return;
+        }
           CartivaDiagnostics.record('preview.refine', 'High-fidelity preview rendered.', {
             location: exportState.city,
             center: exportState.center,
@@ -988,16 +1326,28 @@
             detailZoom: exportState.zoom + Math.log2(scale),
             buildingFeatures
           });
-        };
-        refinedMapPreview.src = nextUrl;
+        for (let ring = 1; ring <= rings; ring += 1) {
+          if (token !== refinedPreviewToken) return;
+          const padding = ring * 256;
+          container.style.width = `${Math.floor((previewWidth + padding * 2) * scale)}px`;
+          container.style.height = `${Math.floor((previewHeight + padding * 2) * scale)}px`;
+          refinedMap.resize();
+          await updateTerrainColorization(refinedMap, exportState);
+          if (exportState.contourEnabled) await updateContours(refinedMap, exportState, { bounds: refinedMap.getBounds().toArray() });
+          await waitForMapIdle(refinedMap);
+          if (ring === rings || !hasBufferedDetail(padding)) {
+            if (!await publishDetailRing(refinedMap, token, exportState, detailDesign, padding, ring)) return;
+          }
+          CartivaDiagnostics.record('preview.cache', 'Surrounding tile ring loaded.', { ring, rings, padding });
+          await yieldExportFrame();
+        }
       } catch (error) {
         if (token === refinedPreviewToken) {
           previewLoadingBanner.hidden = true;
+          releaseDetailTileCache();
           CartivaDiagnostics.report('preview.refine', error);
         }
       } finally {
-        refinedMap?.remove();
-        container?.remove();
         refinedPreviewRendering = false;
         if (refinedPreviewPending) {
           refinedPreviewPending = false;
@@ -1010,17 +1360,28 @@
      * Schedules refined preview for the Cartiva application.
      * @function scheduleRefinedPreview
      */
-    function scheduleRefinedPreview() {
-      hideRefinedPreview();
-      if (document.hidden) return;
-      previewLoadingBanner.hidden = false;
+    function scheduleRefinedPreview({ preserveImage = false } = {}) {
+      hideRefinedPreview({ preserveImage: true });
+      if (document.hidden || Object.keys(runtimeState.operations).some(area => area.endsWith('.export'))) return;
+      const currentCamera = { center: map.getCenter().toArray(), zoom: map.getZoom(),
+        bearing: map.getBearing(), pitch: map.getPitch() };
+      if (CartivaPreviewCacheSettings.getRings() === 0
+        && refinedPreviewUrl && refinedPreviewCamera && refinedPreviewDesign === getRefinedPreviewDesign()
+        && globalThis.CartivaMapDetailPolicy
+        && !CartivaMapDetailPolicy.isSignificant(refinedPreviewCamera, currentCamera, map)) {
+        restoreBufferedDetail();
+        return;
+      }
+      previewLoadingBanner.hidden = refinedMapPreview.classList.contains('ready');
       const token = refinedPreviewToken;
       runtimeState.timers.refinedPreview = setTimeout(() => renderRefinedPreview(token), REFINED_PREVIEW_DELAY_MS);
     }
 
     globalThis.CartivaRefinedPreview = Object.freeze({
       hide: hideRefinedPreview,
-      schedule: scheduleRefinedPreview
+      schedule: scheduleRefinedPreview,
+      hasBufferedDetail,
+      isRendering: () => refinedPreviewRendering
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) hideRefinedPreview();
@@ -1028,6 +1389,7 @@
     });
     globalThis.addEventListener('pagehide', () => {
       hideRefinedPreview();
+      releaseDetailTileCache();
       if (refinedPreviewUrl) URL.revokeObjectURL(refinedPreviewUrl);
       refinedPreviewUrl = '';
     });
@@ -1258,6 +1620,17 @@
         const mimeType = exportState.exportType;
         const baseFilename = `cartiva_${exportState.city.trim().replace(/\s+/g, '_')}_${exportState.exportDpi}dpi_${getFileTimestamp()}`;
         setStatus('4/5 Encoding output...');
+        updateExportProgress(90, exportCanvas);
+        await yieldExportFrame();
+        if (mimeType === 'image/tiff') {
+          const filename = `${baseFilename}.tiff`;
+          const blob = await canvasToTiff(exportCanvas, exportState.exportDpi);
+          downloadBlob(blob, filename);
+          if (exportState.includeExportMetadata) downloadExportMetadata(exportState, baseFilename);
+          CartivaDiagnostics.record('image.export', 'TIFF export completed.', { filename, bytes: blob.size });
+          setStatus('5/5 Poster exported.');
+          return { filename };
+        }
         if (mimeType === 'image/svg+xml') {
           const filename = `${baseFilename}.svg`;
           downloadBlob(new Blob([canvasToSvg(exportCanvas, exportState)], { type: mimeType }), filename);

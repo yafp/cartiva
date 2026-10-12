@@ -7,7 +7,7 @@
 const APP = {
   NAME: "cartiva",
   DESCRIPTION: "Create beautiful printable map art from any location",
-  VERSION: "2026.10.06.223200", // yyyy.mm.dd.HHMMSS
+  VERSION: "2026.10.11.150000", // yyyy.mm.dd.HHMMSS
   GITHUBLINK: "https://github.com/yafp/cartiva"
 };
 
@@ -263,6 +263,8 @@ const DEFAULTS = Object.freeze({
     const controls = Object.freeze(Object.fromEntries(
       Array.from(document.querySelectorAll('[id]'), element => [element.id, element])
     ));
+    document.querySelector('label[for="colorPresetSelect"]').textContent =
+      `Color palette presets (${window.CartivaPresetCatalog.length})`;
     document.querySelectorAll('svg').forEach(icon => {
       icon.setAttribute('aria-hidden', 'true');
       icon.setAttribute('focusable', 'false');
@@ -276,23 +278,33 @@ const DEFAULTS = Object.freeze({
 
 // -----------------------------------------------------------------------------
 
-// OUTPUT DIMENSIONS MAP
-// Pixel dimensions for each paper format at 300 DPI.
-// Scaled later according to the chosen export DPI.
+// PHYSICAL PAPER DIMENSIONS
+// Exact millimeter dimensions drive both preview framing and DPI conversion.
 // -----------------------------------------------------------------------------
-    const dimsMap = {
-      'a2-portrait': { width: 4961, height: 7016 },
-      'a2-landscape': { width: 7016, height: 4961 },
-      'a3-portrait': { width: 3508, height: 4961 },
-      'a3-landscape': { width: 4961, height: 3508 },
-      'a4-portrait': { width: 2480, height: 3508 },
-      'a4-landscape': { width: 3508, height: 2480 },
-      'a5-portrait': { width: 1748, height: 2480 },
-      'a5-landscape': { width: 2480, height: 1748 },
-      'square-large': { width: 4961, height: 4961 },
-      'square-medium': { width: 3508, height: 3508 },
-      'square-small': { width: 2480, height: 2480 }
-    };
+    const paperSizesMm = Object.freeze({
+      'a2-portrait': [420, 594], 'a2-landscape': [594, 420],
+      'a3-portrait': [297, 420], 'a3-landscape': [420, 297],
+      'a4-portrait': [210, 297], 'a4-landscape': [297, 210],
+      'a5-portrait': [148, 210], 'a5-landscape': [210, 148],
+      'square-large': [420, 420], 'square-medium': [297, 297], 'square-small': [210, 210],
+      'poster-50x70': [500, 700], 'poster-70x50': [700, 500],
+      'ratio-3x4': [300, 400], 'ratio-4x3': [400, 300]
+    });
+
+    /**
+     * Returns exact physical paper dimensions, independent of rounded raster pixels.
+     * @param {string} format - Standard format or custom.
+     * @returns {{width: number, height: number}} Paper dimensions in millimeters.
+     */
+    function getPaperDimensions(format = readControl('formatSelect')) {
+      const size = format === 'custom'
+        ? [Number(readControl('customWidthMm')), Number(readControl('customHeightMm'))]
+        : paperSizesMm[format];
+      if (!size || size.some(value => !Number.isFinite(value) || value <= 0)) {
+        throw new Error('Invalid physical paper dimensions.');
+      }
+      return { width: size[0], height: size[1] };
+    }
 
     const mmToPixels = (mm, dpi) => Math.round(Number(mm) * dpi / 25.4);
 
@@ -425,18 +437,11 @@ const DEFAULTS = Object.freeze({
      * @param {*} format - Input value.
      */
     function getTargetDimensions(format = readControl('formatSelect'), dpi = Number(readControl('exportDpi'))) {
-      if (format === 'custom') {
-        return {
-          width: mmToPixels(readControl('customWidthMm'), dpi),
-          height: mmToPixels(readControl('customHeightMm'), dpi)
-        };
-      }
-      const baseDims = dimsMap[format];
-      if (!baseDims) throw new Error('Unsupported output format.');
-      const scale = dpi / 300;
+      const physical = getPaperDimensions(format);
+      if (!Number.isFinite(dpi) || dpi <= 0) throw new Error('Invalid output DPI.');
       return {
-        width: Math.round(baseDims.width * scale),
-        height: Math.round(baseDims.height * scale)
+        width: mmToPixels(physical.width, dpi),
+        height: mmToPixels(physical.height, dpi)
       };
     }
 
@@ -465,6 +470,13 @@ const DEFAULTS = Object.freeze({
       if (delegatedControlExclusions.has(control.id)) return;
       const continuous = control.matches('input[type="range"], input[type="color"], input[type="number"]');
       if ((continuous && event.type !== 'input') || (!continuous && event.type !== 'change')) return;
+      if (control.type === 'number' && (control.value === '' || !control.checkValidity())) {
+        control.setAttribute('aria-invalid', 'true');
+        CartivaDiagnostics.record('ui.validation', 'Numeric setting is incomplete or outside its allowed range.', { control: control.id }, 'warn');
+        setStatus(`Enter a valid value for ${control.getAttribute('aria-label') || control.id}.`);
+        return;
+      }
+      control.removeAttribute('aria-invalid');
 
       if (control.closest('.layer-control-card')) {
         state.preset = null;

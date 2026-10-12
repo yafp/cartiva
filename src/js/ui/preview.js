@@ -51,11 +51,15 @@ function renderPreview() {
   $('innerOutlineWidthVal').textContent = renderSpec.innerOutlineWidth;
   $('innerOutlineColor').disabled = $('innerOutlineWidth').disabled = !renderSpec.innerOutlineEnabled;
   mapFrame.className = `map-frame ratio-${renderSpec.format}`;
-  if (renderSpec.format === 'custom') mapFrame.style.aspectRatio = `${renderSpec.customWidthMm} / ${renderSpec.customHeightMm}`;
-  else mapFrame.style.removeProperty('aspect-ratio');
+  const physicalSize = getPaperDimensions(renderSpec.format);
+  mapFrame.style.aspectRatio = `${physicalSize.width} / ${physicalSize.height}`;
+  mapFrame.style.setProperty('--preview-aspect-ratio', String(physicalSize.width / physicalSize.height));
   document.body.classList.toggle('guides-visible', renderSpec.guidesEnabled);
   const safeGuide = mapFrame.querySelector('.safe-guide');
-  if (safeGuide) safeGuide.style.inset = `${Math.max(0, renderSpec.safeMm)}mm`;
+  const pixelsPerMm = mapFrame.clientWidth / physicalSize.width;
+  if (safeGuide) safeGuide.style.inset = `${Math.max(0, renderSpec.safeMm) * pixelsPerMm}px`;
+  const bleedGuide = mapFrame.querySelector('.bleed-guide');
+  if (bleedGuide) bleedGuide.style.inset = `${Math.max(0, renderSpec.bleedMm) * pixelsPerMm}px`;
   renderShapeMask(renderSpec);
   renderMapAnnotations();
   applyMapState(map, renderSpec);
