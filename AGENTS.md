@@ -74,5 +74,4 @@ The idea is to use
 ## AI Working Instructions
 - Whenever you create a new version/update - please ensure all new code is tested & commented
 - Existing test routines should be executed
-- README.md files should be updated
 - Version-number should be updated
